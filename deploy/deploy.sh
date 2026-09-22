@@ -18,10 +18,10 @@ docker compose up -d --wait --wait-timeout 180 postgres redis
 
 mkdir -p backups
 backup_name="backups/pre-deploy-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
-docker compose exec -T postgres pg_dump -U app -d app | gzip > "$backup_name"
+docker compose exec -T --interactive=false postgres pg_dump -U app -d app </dev/null | gzip > "$backup_name"
 
 # A migration failure stops here, before replacing the existing web container.
-docker compose run --rm --no-deps migrate
+docker compose run --rm -T --interactive=false --no-deps migrate </dev/null
 
 if ! docker compose up -d --no-deps --wait --wait-timeout 180 web; then
   echo 'Web startup failed. Inspect container logs. The previous successful image references remain in release.env.' >&2
