@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { admin, magicLink, twoFactor } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { ac, roles } from "./permissions";
+import { TOTP_PERIOD_SECONDS } from "./2fa";
 
 import { appName } from "@/src/lib/config";
 import { db } from "@/src/lib/db";
@@ -77,7 +78,7 @@ export const auth = betterAuth({
       // Authenticator app (TOTP).
       totpOptions: {
         digits: 6,
-        period: 30,
+        period: TOTP_PERIOD_SECONDS,
       },
 
       // Email code (OTP). Configuring `sendOTP` is what makes "otp" show up in

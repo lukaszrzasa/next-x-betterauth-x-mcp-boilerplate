@@ -11,7 +11,11 @@ import type { BetterAuthOptions } from "better-auth";
 const globalForRedis = globalThis as unknown as { redis?: Redis };
 
 export const redis =
-  globalForRedis.redis ?? new Redis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
+  globalForRedis.redis ??
+  new Redis(process.env.REDIS_URL!, {
+    maxRetriesPerRequest: null,
+    lazyConnect: true,
+  });
 
 if (process.env.NODE_ENV !== "production") globalForRedis.redis = redis;
 
@@ -31,6 +35,16 @@ if value == 1 then
 end
 return value
 `;
+
+/**
+ * Shared by the step-up failure counter, which needs the same "count within a
+ * fixed window" semantics the rate limiter uses: the window starts at the first
+ * failure rather than sliding forward with each one, so an attacker cannot hold
+ * a lock open indefinitely by keeping the counter warm.
+ */
+export async function incrementWithTtl(key: string, ttlSeconds: number): Promise<number> {
+  return (await redis.eval(INCREMENT_WITH_TTL, 1, key, ttlSeconds)) as number;
+}
 
 /**
  * Better Auth 1.7 widened this interface: on top of the `get`/`set`/`delete`
