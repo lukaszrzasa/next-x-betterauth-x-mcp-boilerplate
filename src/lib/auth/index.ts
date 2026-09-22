@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { nextCookies } from "better-auth/next-js";
 import { admin, magicLink, twoFactor } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { ac, roles } from "./permissions";
@@ -112,6 +113,7 @@ export const auth = betterAuth({
       // How long `trustDevice: true` suppresses the challenge on this browser.
       trustDeviceMaxAge: 60 * 60 * 24 * 30,
     }),
+    nextCookies(),
   ],
   emailAndPassword: {
     enabled: true,

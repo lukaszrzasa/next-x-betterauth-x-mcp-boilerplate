@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHash, randomInt, timingSafeEqual } from "node:crypto";
+import { createHash, randomInt } from "node:crypto";
 import { APIError } from "better-auth/api";
 import { z } from "zod";
 
@@ -16,6 +16,7 @@ import {
   type TwoFactorPoolName,
 } from "./2fa";
 import { ActionError } from "./errors";
+import { VERIFY_EMAIL_CHALLENGE } from "./emailChallenge";
 import { sendTwoFactorOtpEmail } from "@/src/lib/email";
 import { incrementWithTtl, redis } from "@/src/lib/redis";
 
@@ -178,6 +179,20 @@ export async function issueEmailChallenge(
     });
   }
 
+  // This helper is now client-callable: bound email sends on the server too.
+  const allowed = await redis.set(
+    `stepup:send:${scopeOf(scope)}`,
+    "1",
+    "EX",
+    30,
+    "NX",
+  );
+  if (allowed !== "OK") {
+    throw new ActionError("RATE_LIMITED", {
+      message: "Wait 30 seconds before requesting another email code.",
+    });
+  }
+
   const code = `${randomInt(0, 10 ** CHALLENGE_DIGITS)}`.padStart(
     CHALLENGE_DIGITS,
     "0",
@@ -202,15 +217,21 @@ async function verifyEmailChallenge(
   scope: Scope,
   code: string,
 ): Promise<boolean> {
-  // GETDEL: a code is spent whether or not it was correct, so a wrong guess
-  // cannot be retried against the same code.
-  const stored = await redis.getdel(challengeKey(scope));
-  if (!stored) return false;
-
-  const expected = Buffer.from(stored, "hex");
-  const actual = hash(code);
-
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
+  const result = await redis.eval(
+    VERIFY_EMAIL_CHALLENGE,
+    2,
+    challengeKey(scope),
+    failureKey(scope),
+    hash(code).toString("hex"),
+    MAX_FAILED_ATTEMPTS,
+    LOCK_DURATION_SECONDS,
+  );
+  if (result === -1) {
+    throw new ActionError("STEP_UP_LOCKED", {
+      message: "Too many failed verification attempts. Try again later.",
+    });
+  }
+  return result === 1;
 }
 
 /* ---------------------------------------------------------------------------
@@ -278,7 +299,7 @@ export async function verifyStepUp({
       : await verifyEmailChallenge(scope, proof.code);
 
   if (!ok) {
-    await recordFailure(scope);
+    if (proof.method === "totp") await recordFailure(scope);
     throw new ActionError("STEP_UP_INVALID_CODE", {
       message: "That verification code is not valid.",
     });
@@ -303,7 +324,7 @@ export async function verifyStepUp({
     }
   }
 
-  await clearFailures(scope);
+  if (proof.method === "totp") await clearFailures(scope);
   if (persistGrant) await writeGrant(scope, pool);
 }
 

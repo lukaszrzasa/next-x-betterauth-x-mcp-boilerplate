@@ -35,6 +35,17 @@ const getSession = mock(async () => resolved);
 const verifyTOTP = mock(async () => ({ token: session.token, user }));
 const requestHeaders = new Headers({ cookie: "session=real" });
 const redis = {
+  eval: mock(async (_script, _keys, challenge, failure, hash, max) => {
+    const count = Number(stored.get(failure) ?? 0);
+    if (count >= max) return -1;
+    if (stored.get(challenge) === hash) {
+      stored.delete(challenge);
+      stored.delete(failure);
+      return 1;
+    }
+    stored.set(failure, String(count + 1));
+    return count + 1 >= max ? -1 : 0;
+  }),
   get: mock(async (key) => stored.get(key) ?? null),
   getdel: mock(async (key) => {
     const value = stored.get(key) ?? null;
@@ -62,9 +73,8 @@ mock.module("../../src/lib/redis/index.ts", () => ({
   redis,
   incrementWithTtl,
 }));
-mock.module("../../src/lib/email/index.ts", () => ({
-  sendTwoFactorOtpEmail: mock(async () => {}),
-}));
+const sendTwoFactorOtpEmail = mock(async () => {});
+mock.module("../../src/lib/email/index.tsx", () => ({ sendTwoFactorOtpEmail }));
 mock.module("next/headers", () => ({ headers: async () => requestHeaders }));
 
 const { defineAction } =
@@ -73,6 +83,7 @@ const { toRouteHandler, toServerAction } =
   await import("../../src/lib/auth/builders/adapters/index.ts");
 const { Ctx } = await import("../../src/lib/auth/builders/context/index.ts");
 const { ActionError } = await import("../../src/lib/auth/errors.ts");
+const { sendStepUpEmail } = await import("../../src/lib/auth/stepUpActions.ts");
 const { hasGrant } = await import("../../src/lib/auth/stepUp.ts");
 const meta = {
   headers: new Headers({
@@ -89,6 +100,7 @@ beforeEach(() => {
   stored = new Map();
   for (const fn of [
     getSession,
+    sendTwoFactorOtpEmail,
     verifyTOTP,
     incrementWithTtl,
     ...Object.values(redis),
@@ -300,6 +312,50 @@ describe("action pipeline", () => {
     expect(redis.set).not.toHaveBeenCalled();
     expect(auditLog.mock.calls[0][0].twoFactorPool).toBe("one_time");
     await denied(run(undefined, meta), "TWO_FACTOR_REQUIRED");
+  });
+
+  test("email code survives a typo and succeeds only once", async () => {
+    const key = "stepup:chal:user-1:session-1";
+    const digest = createHash("sha256").update("123456").digest("hex");
+    stored.set(key, digest);
+    const handler = mock(() => "done");
+    const run = action({ twoFactorPool: "one_time", handler });
+    await denied(
+      run(undefined, { ...meta, stepUp: { method: "email", code: "000000" } }),
+      "STEP_UP_INVALID_CODE",
+    );
+    expect(stored.get(key)).toBe(digest);
+    expect(stored.get(failureKey)).toBe("1");
+    expect(handler).not.toHaveBeenCalled();
+    const results = await Promise.allSettled([
+      run(undefined, { ...meta, stepUp: { method: "email", code: "123456" } }),
+      run(undefined, { ...meta, stepUp: { method: "email", code: "123456" } }),
+    ]);
+    expect(
+      results.filter((result) => result.status === "fulfilled"),
+    ).toHaveLength(1);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(stored.has(key)).toBe(false);
+  });
+
+  test("five incorrect email codes lock verification without deleting the code", async () => {
+    const key = "stepup:chal:user-1:session-1";
+    stored.set(key, createHash("sha256").update("123456").digest("hex"));
+    const run = action({ twoFactorPool: "one_time" });
+    for (let i = 0; i < 5; i++) {
+      await denied(
+        run(undefined, {
+          ...meta,
+          stepUp: { method: "email", code: "000000" },
+        }),
+        i === 4 ? "STEP_UP_LOCKED" : "STEP_UP_INVALID_CODE",
+      );
+    }
+    await denied(
+      run(undefined, { ...meta, stepUp: { method: "email", code: "123456" } }),
+      "STEP_UP_LOCKED",
+    );
+    expect(stored.has(key)).toBe(true);
   });
 
   test("higher-importance grants satisfy lower pools within their own windows", async () => {
@@ -570,5 +626,31 @@ describe("transport adapters", () => {
       pool: "default",
       methods: ["totp", "email"],
     });
+  });
+});
+
+
+describe("email challenge action", () => {
+  test("requires a session and verified email before sending", async () => {
+    resolved = null;
+    expect((await sendStepUpEmail()).reason).toBe("UNAUTHENTICATED");
+    resolved = { user: { ...user, emailVerified: false }, session };
+    expect((await sendStepUpEmail()).reason).toBe("EMAIL_VERIFICATION_REQUIRED");
+    expect(sendTwoFactorOtpEmail).not.toHaveBeenCalled();
+  });
+
+  test("throttles repeat sends without resetting the failed-attempt budget", async () => {
+    stored.set(failureKey, "2");
+    const response = await sendStepUpEmail();
+    expect(response.ok).toBe(true);
+    const challenge = stored.get("stepup:chal:user-1:session-1");
+    expect((await sendStepUpEmail()).reason).toBe("RATE_LIMITED");
+    expect(sendTwoFactorOtpEmail).toHaveBeenCalledTimes(1);
+    expect(stored.get(failureKey)).toBe("2");
+    expect(stored.get("stepup:chal:user-1:session-1")).toBe(challenge);
+    stored.delete("stepup:send:user-1:session-1");
+    expect((await sendStepUpEmail()).ok).toBe(true);
+    expect(sendTwoFactorOtpEmail).toHaveBeenCalledTimes(2);
+    expect(stored.get(failureKey)).toBe("2");
   });
 });
