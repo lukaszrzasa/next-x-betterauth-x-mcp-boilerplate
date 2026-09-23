@@ -118,6 +118,14 @@ Keep global infrastructure and generic utilities independent of capability-speci
 
 ## Sensitive-operation policy
 
+The auth catch-all rejects the Better Auth `/admin/*` namespace at the HTTP
+boundary, including administrative reads and impersonation endpoints. The
+plugin remains available server-side; expose only explicitly required operations
+through guarded `defineAction` definitions with permissions, required verification,
+audit descriptions, and named safe response shapes. Do not forward its admin
+endpoints directly from another transport. No application admin operations are
+currently exposed.
+
 Operations are classified as follows:
 
 | Operation | Sensitive? |
