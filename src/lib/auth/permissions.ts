@@ -1,6 +1,6 @@
 import { createAccessControl } from "better-auth/plugins/access";
 import type { RoleAuthorizeRequest } from "better-auth/plugins/access";
-import { defaultStatements, adminAc, userAc } from "better-auth/plugins/admin/access";
+import { defaultStatements, userAc } from "better-auth/plugins/admin/access";
 
 export const statement = {
   ...defaultStatements,
@@ -17,9 +17,8 @@ export const roles = {
     user: ["list", "update", "ban"],
   }),
 
-  admin: ac.newRole({
-    ...adminAc.statements,
-  }),
+  // All declared permissions, including future additions, without a second grant list.
+  admin: ac.newRole(statement),
 } as const;
 
 /* ---------------------------------------------------------------------------
@@ -40,12 +39,12 @@ export type Permission = {
   [TResource in Resource]: `${TResource}.${Action<TResource>}`;
 }[Resource];
 
-/** Role names declared above: `"user" | "manager" | "admin"`. */
+/** Role names declared above: `"user" | "moderator" | "admin"`. */
 export type RoleName = keyof typeof roles;
 
 /**
  * What `session.user.role` holds: a role name, a comma-separated list of them
- * ("admin,manager"), or nothing. The `string & {}` keeps the known role names in
+ * ("admin,moderator"), or nothing. The `string & {}` keeps the known role names in
  * editor autocomplete without rejecting other values.
  */
 export type UserRole = RoleName | (string & {}) | null | undefined;
@@ -96,7 +95,7 @@ function toRequest(
  * can(session.user.role, ["user.ban", "user.delete"], "OR");        // either
  * ```
  *
- * `admin` skips the statement check and is granted everything. Unknown roles
+ * `admin` receives all declared permissions through the shared role. Unknown roles
  * and an empty permission list both deny.
  */
 export function can(
@@ -111,12 +110,7 @@ export function can(
   }
 
   // Better Auth stores roles as a comma-separated list.
-  const names = (role ?? "user").split(",").map((name) => name.trim());
-
-  // admin bypasses the statement check entirely.
-  if (names.includes("admin")) {
-    return true;
-  }
+  const names = (role ?? "user").split(",");
 
   const request = toRequest(requested, connector);
 

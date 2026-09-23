@@ -6,9 +6,9 @@ This document defines the application’s constraints, implementation defaults, 
 
 - Next.js application with SSR, Server Actions, and selected MCP tools. Application REST endpoints are out of scope; adding them requires an explicit scope decision and docs update. Auth and MCP protocol handlers are distinct from an application REST surface.
 - Global users and roles; no tenants or organization membership scaffolding.
-- Better Auth with one auth authority and shared role/permission definitions. Admin bypasses role-permission checks; other roles are checked. Authentication, verification and business invariants still apply to admin.
-- Password sign-in with email OTP or authenticator TOTP. All staff entering the administration panel require login verification; sensitive operations require step-up verification. Magic links are out of scope.
-- MCP cannot perform sensitive operations, even for admin. Initial MCP use is finding accounts and reading role/status with an explicit safe response shape.
+- Better Auth with one auth authority and shared role/permission definitions. Admin receives every declared permission through the shared role evaluator; unknown permissions deny. Authentication, verification and business invariants still apply to admin.
+- Password sign-in with email OTP or authenticator TOTP. Staff must enroll the required second factor. Remembered login verification is allowed and never grants operation step-up; enrollment and sign-in enforcement are deferred until those flows are designed. Magic links are out of scope.
+- MCP requires explicit operation opt-in and cannot invoke operations requiring step-up, even for admin. Initial MCP use is finding accounts and reading role/status with an explicit safe response shape.
 - MCP user lookup is available to authenticated admins and staff whose roles grant user lookup. A connection uses the connected user's authority; it is not an implicit admin identity.
 - Admin shell, R2 upload/storage integration with a working example, Resend integration, and WebSocket editing presence. Presence covers all staff on form pages, without dirty state, typing indicators, or inferred edit locks. A complete media library is out of scope.
 
@@ -18,9 +18,9 @@ The shared operation owns validated input, permission policy, required verificat
 
 Trusted entry adapters resolve caller identity and entry-point information. Clients cannot supply an authoritative role, verification grant, or a flag claiming to be a different transport. A branded TypeScript context prevents some accidental misuse but is not runtime authorization.
 
-Staff verification is enforced on protected reads and operations, including direct Server Action and MCP calls, not only by a panel layout redirect. Use current authoritative roles, account status and session/token validity for protected calls. Long-lived MCP/presence connections must lose revoked privileges; define and test invalidation/revalidation rather than trusting the role captured when a connection opened. This does not require one particular cache implementation.
+The planned staff enrollment gate must be enforced on protected reads and operations, including direct Server Action and MCP calls, not only by a panel layout redirect. Use current authoritative roles, account status and session/token validity for protected calls. Long-lived MCP/presence connections must lose revoked privileges; define and test invalidation/revalidation rather than trusting the role captured when a connection opened. This does not require one particular cache implementation.
 
-Sensitive-operation checks apply in the shared operation path as well as MCP registration. Omitting a tool alone is insufficient: a generic tool must not expose the operation indirectly. Admin permission bypass never turns into a bypass of this restriction.
+MCP eligibility checks apply in the shared operation path as well as MCP registration. Omitting a tool alone is insufficient: a generic tool must not expose the operation indirectly. Admin permission bypass never turns into a bypass of this restriction.
 
 Shared action definitions live in `operations/`. Each definition uses `defineAction` to declare its input schema, permissions, verification requirements, and handler. The definition is the guarded operation; do not add a separate business-operation wrapper around it just to satisfy a layer diagram. Database queries and writes live in the owning scope's `db/` services.
 
@@ -116,7 +116,7 @@ The admin scope rule still applies: admin code can use module-wide code, while n
 
 Keep global infrastructure and generic utilities independent of capability-specific behavior. Put business coordination with its owning capability rather than moving it into a global helper merely to share it.
 
-## Sensitive-operation policy
+## MCP eligibility and step-up policy
 
 The auth catch-all rejects the Better Auth `/admin/*` namespace at the HTTP
 boundary, including administrative reads and impersonation endpoints. The
@@ -126,28 +126,49 @@ audit descriptions, and named safe response shapes. Do not forward its admin
 endpoints directly from another transport. No application admin operations are
 currently exposed.
 
-Operations are classified as follows:
+Operations declare `mcpAllowed` (default false) separately from `stepUp`
+(default `"none"`). `mcpAllowed: true` permits selected tool registration; it does
+not register a tool. `stepUp` accepts `"none"`, `"five_minutes"`, or `"every_time"`.
+MCP opt-in combined with a step-up requirement is an invalid definition, rejected
+by types and at runtime. Browser-only operations may have no step-up requirement.
 
-| Operation | Sensitive? |
-| --- | --- |
-| Grant/revoke roles or permissions | Yes |
-| Delete an account, ban/unban an account | Yes |
-| Start impersonation | Yes; this classification does not add impersonation to scope |
-| Change credentials, sign-in email, or 2FA/recovery settings | Yes |
-| Revoke another user's sessions | Yes |
-| Read permitted account identity, role, and status | No; authorization and response filtering still apply |
-| Edit ordinary display name/avatar/preferences | No |
-| Ordinary sign-out or leave impersonation | No; ending elevated access must remain easy |
+| Operation | MCP allowed? | Step-up |
+| --- | --- | --- |
+| Grant/revoke roles or permissions | No | Five minutes |
+| Delete an account, ban/unban an account | No | Five minutes |
+| Start impersonation (not added to scope) | No | Five minutes |
+| Change credentials, sign-in email, or existing 2FA/recovery settings | No | Five minutes |
+| Revoke another user's sessions | No | Five minutes |
+| Read permitted account identity, role, and status | Explicit opt-in for selected lookup tools | None; permissions and safe output still apply |
+| Edit ordinary display name/avatar/preferences | No by default | None |
+| Ordinary sign-out or leave impersonation | No | None; ending elevated access must remain easy |
 
-For sensitive operations, require an explicit successful email OTP or TOTP step-up within the previous five minutes in the same authenticated session. Reuse does not extend the expiry. Login verification alone does not create this step-up grant. A role/security change or session revocation invalidates affected grants; never broaden access because the grant store is unavailable. Better Auth's own required password or enrollment checks still apply independently.
+Five-minute step-up requires explicit email OTP or TOTP verification in the same
+authenticated session. Reuse never extends expiry. Login verification and trusted
+devices do not create a step-up grant. `"every_time"` is available for operations
+requiring a fresh proof on each invocation: ignore cached grants and do not create
+or extend a reusable grant. Proof replay protection still applies. There is one
+reusable window, with no importance hierarchy or consumable grant pool.
 
-Five-minute reuse is a convenience/security tradeoff: it reduces repeated prompts but permits multiple sensitive actions in that window. Use one verification window rather than multiple overlapping freshness levels. Revisit only for a concrete requirement. Sensitive classification is declared once on the operation and enforced across entry points; a mixed operation that can change roles remains sensitive even when one call changes only a harmless field. Prefer separate operations for those separate intents.
-
-MCP cannot use a browser step-up grant to invoke a sensitive operation. The restriction is independent of grant freshness and admin authority.
+A role/security change or session revocation must invalidate affected grants;
+never broaden access because the grant store is unavailable. Better Auth's own
+password and enrollment checks apply independently. Declare policy once on each
+operation and enforce it in the shared pipeline as well as at MCP registration.
+Admin permissions bypass neither gate. Split mixed operations by intent when
+harmless edits and security changes need different verification requirements.
 
 ### Enrollment and recovery exceptions
 
-Initial enrollment cannot require a factor that does not exist yet. A newly authenticated staff member without the required verification may access only the enrollment/verification flow and sign-out until completion, not panel data, operations, MCP lookup, or presence. Enrollment must prove the selected method using the supported Better Auth flow; changing or disabling an existing factor remains sensitive.
+`twoFactorRequired` is a server-owned user policy field, separate from Better Auth's
+`twoFactorEnabled` enrollment state. The migration marks existing admins and
+moderators as required; ordinary users default to false. Future staff assignment
+must maintain this requirement. The field alone does not restrict any action;
+the enrollment gate and role-assignment integration are deferred to the next flow
+design. A remembered-login window is allowed; an initially unchecked trust-device
+checkbox for admins is planned UI behavior, not server enforcement.
+
+
+Initial enrollment cannot require a factor that does not exist yet. A newly authenticated staff member without the required verification may access only the enrollment/verification flow and sign-out until completion, not panel data, operations, MCP lookup, or presence. Enrollment must prove the selected method using the supported Better Auth flow; changing or disabling an existing factor requires step-up and remains unavailable through MCP.
 
 Forgotten-password and lost-factor recovery cannot require an already authenticated session and the unavailable factor. These are separate, narrowly scoped recovery flows with expiring single-use proofs and the supported provider checks, never a generic step-up bypass or MCP tool. Recovery must not silently grant panel access before required verification is complete. Initial enrollment, ordinary verification, and recovery do not expose unrestricted administrative operations.
 
@@ -159,13 +180,13 @@ User lookup uses the same permission policy as the application's user lookup. Es
 
 Return a named response shape for account identity, role and status, never an auth database row. Default fields are account ID, display name, email when needed for administrative lookup, role, and enabled/banned status. Password hashes, tokens, session identifiers, factor secrets and recovery codes are excluded. Bound pagination; user lookup is not a bulk account-export tool.
 
-The protocol implementation must use supported library facilities, and prove cookie/token/verification behavior in integration tests. The MCP adapter must resolve authenticated caller identity explicitly; an HTTP session wrapper alone does not establish that identity. Human account verification for a connection does not authorize sensitive MCP operations.
+The protocol implementation must use supported library facilities, and prove cookie/token/verification behavior in integration tests. The MCP adapter must resolve authenticated caller identity explicitly; an HTTP session wrapper alone does not establish that identity. Human account verification for a connection does not authorize operations without MCP opt-in.
 
 Register tools explicitly. Never derive the tool registry from all public module exports or all actions. A module's integration note names its intended agent workflow and selected operations; if it has no MCP workflow, it needs no MCP file.
 
 ## Infrastructure and effects
 
-Use PostgreSQL with Drizzle for persistent data and Redis for shared transient state. Redis is required where it holds sessions, rate limits, or verification grants; an outage there must fail the affected protected operation safely, not silently skip its checks.
+Use PostgreSQL with Drizzle for persistent data and Redis for shared transient state. Redis is required where it holds sessions, rate limits, or verification grants; an outage there must fail the affected protected operation safely, not silently skip its checks. Requests have finite Redis retry and command timeouts while the client may reconnect in the background; Redis remains mandatory, like Postgres.
 
 Presence is advisory and can degrade independently: show that presence is unavailable, expire stale entries after disconnect/heartbeat loss, and permit normal authorized form use. Presence subscription requires staff authorization; avoid leaking raw URL query strings or unrelated page details. Presence is not a locking or save-conflict system.
 
@@ -177,16 +198,16 @@ Ordinary non-staff users may opt into 2FA; panel access always requires it. Assi
 
 ## Agent completion defaults
 
-Before implementing a feature, identify its owner, required surfaces, authorization and sensitivity, and existing reusable code. Infer these from accepted requirements and established conventions; ask only about consequential ambiguity.
+Before implementing a feature, identify its owner, required surfaces, authorization, MCP eligibility and step-up, and existing reusable code. Infer these from accepted requirements and established conventions; ask only about consequential ambiguity.
 
 Complete the requested behavior and necessary integration. Update affected existing interfaces and tools; new tools follow agreed agent workflows. Neither a new module nor a new action implies a new MCP tool, REST endpoint, navigation section, or migration.
 
-Verification should exercise the shared operation's behavior and relevant adapter guarantees. For sensitive behavior, verify denial via MCP and enforcement of verification despite admin permission bypass. For roles, verify consistent decisions across entry points. For utilities, test meaningful semantic cases rather than implementation structure. Verify that non-admin code cannot reach admin-only implementation and that server-only dependencies stay out of browser code.
+Verification should exercise the shared operation's behavior and relevant adapter guarantees. Verify MCP exclusion independently of step-up, and verification despite full admin permissions. For roles, verify consistent decisions across entry points. For utilities, test meaningful semantic cases rather than implementation structure. Verify that non-admin code cannot reach admin-only implementation and that server-only dependencies stay out of browser code.
 
 ## Authority, defaults, and exceptions
 
 Architecture is the source for current constraints and defaults; the glossary defines product terms; module READMEs define non-obvious caller contracts; ADRs explain consequential decisions. The short agent instructions route readers to those sources. Current explicit user requirements can revise the design; update the relevant source rather than leaving contradictions.
 
-Hard constraints include policy enforcement, no sensitive MCP operations, runtime separation, and admin-scope isolation. Current scope constraints include no tenancy and no application REST endpoints. These can change through an explicit scope decision, not an incidental implementation exception.
+Hard constraints include policy enforcement, explicit MCP opt-in without step-up, runtime separation, and admin-scope isolation. Current scope constraints include no tenancy and no application REST endpoints. These can change through an explicit scope decision, not an incidental implementation exception.
 
 Defaults include filenames, shared-directory names, internal subdivisions, extraction timing, and the infrastructure choices above. An agent may make a local reversible exception with a concrete reason and appropriate verification. For example, keep an image helper local when its only consumer is one capability, or keep a small definition’s handler as a direct call to its db-service rather than extracting another helper. An exception to a default cannot weaken a hard constraint.

@@ -1,10 +1,12 @@
 import type { ActionErrorReason } from "../../errors";
-import type { ActionMeta } from "../actionTypes";
+import type { StepUpProof } from "../../stepUp";
+
+export type ClientActionMeta = { stepUp?: StepUpProof };
 
 /**
  * Next.js redacts thrown server errors in production, replacing their details
  * with a digest. Return expected refusals as data so the client retains the
- * TWO_FACTOR_REQUIRED pool/methods payload needed to show its step-up prompt.
+ * TWO_FACTOR_REQUIRED policy/methods payload needed to show its step-up prompt.
  */
 export type ActionResult<TOutput> =
   | {
@@ -21,5 +23,5 @@ export type ActionResult<TOutput> =
 
 export type ServerAction<TInput, TOutput> = (
   input: TInput,
-  meta?: Omit<ActionMeta, "headers">,
+  meta?: ClientActionMeta,
 ) => Promise<ActionResult<TOutput>>;

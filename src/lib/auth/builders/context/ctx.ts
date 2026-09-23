@@ -1,13 +1,13 @@
 import "server-only";
 
-import type { TwoFactorPoolName } from "../../2fa";
+import type { RequiredStepUp } from "../../2fa";
 import type { CtxInit, Logger, Session, User } from "./types";
 
 /**
  * Capability passed to server-side services.
  *
  * The builder gives handlers a Ctx only after all gates pass. Audit hooks can
- * also receive a context for a denied request; twoFactorPool stays null until
+ * also receive a context for a denied request; stepUp stays null until
  * step-up succeeds. Branding prevents structural lookalikes, and lint prevents
  * feature code from importing the factory at runtime.
  *
@@ -21,7 +21,7 @@ export class Ctx<TUser extends User | null = User> {
 
   readonly user: TUser;
   readonly session: TUser extends User ? Session : null;
-  readonly twoFactorPool: TwoFactorPoolName | null;
+  readonly stepUp: RequiredStepUp | null;
 
   readonly requestId: string;
   readonly ip: string | null;
@@ -31,7 +31,7 @@ export class Ctx<TUser extends User | null = User> {
   private constructor(init: CtxInit<TUser>) {
     this.user = init.user;
     this.session = init.session;
-    this.twoFactorPool = init.twoFactorPool;
+    this.stepUp = init.stepUp;
     this.requestId = init.requestId;
     this.ip = init.ip;
     this.userAgent = init.userAgent;

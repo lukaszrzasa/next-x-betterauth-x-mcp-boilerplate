@@ -16,6 +16,7 @@ export function toRouteHandler<TInput, TOutput>(
 
       const data = await action(input as TInput, {
         headers: request.headers,
+        entryPoint: "route-handler",
         ...(stepUp === undefined ? {} : { stepUp }),
       });
 

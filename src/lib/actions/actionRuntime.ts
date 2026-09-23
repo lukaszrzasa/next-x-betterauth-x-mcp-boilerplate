@@ -1,7 +1,6 @@
 import { startTransition } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { z } from "zod";
-import { twoFactorPools } from "../auth/2fa";
 import type {
   ActionResult,
   ServerAction,
@@ -15,12 +14,7 @@ import type {
 import { VerificationQueue } from "./verificationQueue";
 
 const challengeSchema = z.object({
-  pool: z.enum(
-    Object.keys(twoFactorPools) as [
-      keyof typeof twoFactorPools,
-      ...Array<keyof typeof twoFactorPools>,
-    ],
-  ),
+  policy: z.enum(["five_minutes", "every_time"]),
   methods: z.array(z.enum(["totp", "email"])).min(1),
 });
 

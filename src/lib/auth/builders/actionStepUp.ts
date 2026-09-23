@@ -1,4 +1,4 @@
-import { twoFactorPools, type TwoFactorPoolName } from "../2fa";
+import { type RequiredStepUp } from "../2fa";
 import { ActionError } from "../errors";
 import { availableMethods, hasGrant, verifyStepUp } from "../stepUp";
 import type { ActionMeta } from "./actionTypes";
@@ -7,7 +7,7 @@ import type { AuthedCtx } from "./context";
 export async function ensureStepUp(
   ctx: AuthedCtx,
   meta: ActionMeta,
-  pool: TwoFactorPoolName,
+  policy: RequiredStepUp,
 ): Promise<void> {
   const scope = { userId: ctx.user.id, sessionId: ctx.session.id };
 
@@ -18,14 +18,13 @@ export async function ensureStepUp(
       scope,
       headers: meta.headers,
       proof: meta.stepUp,
-      pool,
-      // An inline proof authorizes this call without leaving a one-time grant.
-      persistGrant: !twoFactorPools[pool].consumeOnce,
+      // Every-time proof authorizes this invocation only.
+      persistGrant: policy === "five_minutes",
     });
     return;
   }
 
-  if (await hasGrant(scope, pool)) return;
+  if (policy === "five_minutes" && await hasGrant(scope)) return;
 
   const methods = availableMethods(ctx.user);
   if (methods.length === 0) {
@@ -34,5 +33,5 @@ export async function ensureStepUp(
     });
   }
 
-  throw ActionError.twoFactorRequired({ pool, methods });
+  throw ActionError.twoFactorRequired({ policy, methods });
 }

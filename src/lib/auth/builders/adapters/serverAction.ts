@@ -18,7 +18,8 @@ export function toServerAction<TInput, TOutput>(
       const requestHeaders = await headers();
 
       const data = await action(input, {
-        ...meta,
+        stepUp: meta?.stepUp,
+        entryPoint: "server-action",
         headers: requestHeaders,
       });
 

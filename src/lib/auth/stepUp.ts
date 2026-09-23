@@ -5,16 +5,7 @@ import { APIError } from "better-auth/api";
 import { z } from "zod";
 
 import { auth } from "./index";
-import {
-  DEFAULT_POOL,
-  TOTP_PERIOD_SECONDS,
-  grantTtlSeconds,
-  satisfyingLevels,
-  twoFactorPools,
-  type Importance,
-  type StepUpMethod,
-  type TwoFactorPoolName,
-} from "./2fa";
+import { STEP_UP_WINDOW_SECONDS, TOTP_PERIOD_SECONDS, type StepUpMethod } from "./2fa";
 import { ActionError } from "./errors";
 import { VERIFY_EMAIL_CHALLENGE } from "./emailChallenge";
 import { sendTwoFactorOtpEmail } from "@/src/lib/email";
@@ -35,10 +26,8 @@ type Scope = { userId: string; sessionId: string };
 
 const scopeOf = ({ userId, sessionId }: Scope) => `${userId}:${sessionId}`;
 
-const grantKey = (scope: Scope, level: Importance) =>
-  `stepup:lvl:${scopeOf(scope)}:${level}`;
-const onceKey = (scope: Scope, pool: TwoFactorPoolName) =>
-  `stepup:once:${scopeOf(scope)}:${pool}`;
+// New namespace intentionally does not accept grants from the old pool model.
+const grantKey = (scope: Scope) => `stepup:grant:${scopeOf(scope)}`;
 const challengeKey = (scope: Scope) => `stepup:chal:${scopeOf(scope)}`;
 const failureKey = (scope: Scope) => `stepup:fail:${scopeOf(scope)}`;
 
@@ -77,58 +66,18 @@ async function clearFailures(scope: Scope) {
  * Grants
  * ------------------------------------------------------------------------- */
 
-/**
- * Whether `pool` is already satisfied, consuming the verification if the pool
- * is consume-once.
- *
- * Reads walk from the pool's own importance upward: any verification at least
- * as strong counts, judged against *this* pool's window rather than the window
- * of whatever pool it was created for.
- */
-export async function hasGrant(
-  scope: Scope,
-  pool: TwoFactorPoolName,
-): Promise<boolean> {
-  const config = twoFactorPools[pool];
-
-  if (config.consumeOnce) {
-    // GETDEL: two concurrent actions cannot both spend the same verification.
-    const raw = await redis.getdel(onceKey(scope, pool));
-    return isFresh(raw, config.timeWindow);
-  }
-
-  const values = await redis.mget(
-    ...satisfyingLevels(config).map((level) => grantKey(scope, level)),
-  );
-
-  return values.some((raw) => isFresh(raw, config.timeWindow));
-}
-
-function isFresh(raw: string | null, windowSeconds: number): boolean {
+/** Read-only: reuse does not refresh the timestamp or Redis expiry. */
+export async function hasGrant(scope: Scope): Promise<boolean> {
+  const raw = await redis.get(grantKey(scope));
   if (!raw) return false;
-
   const verifiedAt = Number(raw);
   if (!Number.isFinite(verifiedAt)) return false;
-
   const age = Date.now() - verifiedAt;
-  return age >= 0 && age <= windowSeconds * 1000;
+  return age >= 0 && age < STEP_UP_WINDOW_SECONDS * 1000;
 }
 
-async function writeGrant(scope: Scope, pool: TwoFactorPoolName) {
-  const config = twoFactorPools[pool];
-  const now = `${Date.now()}`;
-
-  if (config.consumeOnce) {
-    await redis.set(onceKey(scope, pool), now, "EX", config.timeWindow);
-    return;
-  }
-
-  await redis.set(
-    grantKey(scope, config.importance),
-    now,
-    "EX",
-    grantTtlSeconds(config.importance),
-  );
+async function writeGrant(scope: Scope) {
+  await redis.set(grantKey(scope), `${Date.now()}`, "EX", STEP_UP_WINDOW_SECONDS);
 }
 
 /* ---------------------------------------------------------------------------
@@ -249,7 +198,7 @@ const stepUpProofSchema = z.object({
 });
 
 /**
- * Verifies `proof` and, on success, records a grant for `pool`.
+ * Verifies `proof` and, on success, records a five-minute grant.
  *
  * TOTP is delegated to Better Auth, which owns the enrolled secret. Mid-session
  * it is a pure "is this code correct?" check: it creates no session, sets no
@@ -261,19 +210,17 @@ export async function verifyStepUp({
   scope,
   headers,
   proof: rawProof,
-  pool = DEFAULT_POOL,
   persistGrant = true,
 }: {
   user: SessionUser;
   scope: Scope;
   headers: Headers;
   proof: StepUpProof;
-  pool?: TwoFactorPoolName;
   /**
    * `false` when the verification authorises the call it arrived on and nothing
-   * else. The inline path uses it for consume-once pools: storing a grant there
+   * else. The every-time path must not store a reusable grant: doing so
    * would leave the code reusable for the rest of its window by a *second*
-   * action, which is exactly what a one-time pool exists to prevent.
+   * action.
    */
   persistGrant?: boolean;
 }): Promise<void> {
@@ -308,8 +255,7 @@ export async function verifyStepUp({
   if (proof.method === "totp") {
     // Better Auth accepts the previous, current and next time steps. Keep a
     // successful code spent for the full three-period window, across sessions
-    // and pools, including reusable grants that could otherwise mint a second
-    // one-time grant. SET NX makes concurrent verification single-use too.
+    // and verification modes. SET NX makes concurrent verification single-use too.
     const claimed = await redis.set(
       `stepup:totp-used:${user.id}:${hash(proof.code).toString("hex")}`,
       "1",
@@ -325,7 +271,7 @@ export async function verifyStepUp({
   }
 
   if (proof.method === "totp") await clearFailures(scope);
-  if (persistGrant) await writeGrant(scope, pool);
+  if (persistGrant) await writeGrant(scope);
 }
 
 async function verifyTotp(headers: Headers, code: string): Promise<boolean> {

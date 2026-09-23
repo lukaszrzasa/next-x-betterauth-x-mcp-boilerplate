@@ -1,5 +1,5 @@
 import type { auth } from "../../index";
-import type { TwoFactorPoolName } from "../../2fa";
+import type { RequiredStepUp } from "../../2fa";
 
 export type Session = (typeof auth.$Infer.Session)["session"];
 export type User = (typeof auth.$Infer.Session)["user"];
@@ -13,7 +13,7 @@ export type Logger = {
 export type CtxInit<TUser extends User | null> = {
   user: TUser;
   session: TUser extends User ? Session : null;
-  twoFactorPool: TwoFactorPoolName | null;
+  stepUp: RequiredStepUp | null;
   requestId: string;
   ip: string | null;
   userAgent: string | null;

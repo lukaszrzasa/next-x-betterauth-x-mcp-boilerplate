@@ -47,7 +47,6 @@ const eslintConfig = defineConfig([
               group: [
                 "**/builders/context",
                 "**/builders/context/**",
-                "**/builders_old/ctx",
               ],
               allowTypeImports: true,
               message:

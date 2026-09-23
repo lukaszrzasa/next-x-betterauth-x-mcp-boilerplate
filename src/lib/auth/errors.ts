@@ -1,4 +1,4 @@
-import type { StepUpMethod, TwoFactorPoolName } from "./2fa";
+import type { StepUpMethod, RequiredStepUp } from "./2fa";
 
 /**
  * Every way an action can refuse, with the HTTP status a surface that has one
@@ -27,11 +27,11 @@ export type DenialReason = Exclude<ActionErrorReason, "INTERNAL">;
 
 /**
  * Payload attached to `TWO_FACTOR_REQUIRED`. The client needs both halves: the
- * pool to name when it steps up, and the methods this user can actually use, so
+ * verification policy, and the methods this user can actually use, so
  * the modal knows whether to ask for an authenticator code or email one.
  */
 export type TwoFactorRequiredData = {
-  pool: TwoFactorPoolName;
+  policy: RequiredStepUp;
   methods: readonly StepUpMethod[];
 };
 
@@ -63,7 +63,7 @@ export class ActionError extends Error {
 
   static twoFactorRequired(data: TwoFactorRequiredData) {
     return new ActionError("TWO_FACTOR_REQUIRED", {
-      message: `Step-up verification required for pool "${data.pool}"`,
+      message: `Step-up verification required (${data.policy})`,
       data,
     });
   }

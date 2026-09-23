@@ -79,19 +79,20 @@ mock.module("next/headers", () => ({ headers: async () => requestHeaders }));
 
 const { defineAction } =
   await import("../../src/lib/auth/builders/actionBuilder.ts");
-const { toRouteHandler, toServerAction } =
+const { toRouteHandler, toServerAction, assertMcpEligible } =
   await import("../../src/lib/auth/builders/adapters/index.ts");
 const { Ctx } = await import("../../src/lib/auth/builders/context/index.ts");
 const { ActionError } = await import("../../src/lib/auth/errors.ts");
 const { sendStepUpEmail } = await import("../../src/lib/auth/stepUpActions.ts");
 const { hasGrant } = await import("../../src/lib/auth/stepUp.ts");
 const meta = {
+  entryPoint: "server-action",
   headers: new Headers({
     "x-forwarded-for": "192.0.2.1, 192.0.2.2",
     "user-agent": "test",
   }),
 };
-const grantKey = "stepup:once:user-1:session-1:one_time";
+const grantKey = "stepup:grant:user-1:session-1";
 const failureKey = "stepup:fail:user-1:session-1";
 let logs;
 
@@ -135,9 +136,102 @@ async function denied(promise, reason) {
 }
 
 describe("action pipeline", () => {
+  test("MCP exclusion is independent of step-up, and defaults to denied", async () => {
+    for (const config of [{}, { mcpAllowed: false, stepUp: "none" }]) {
+      const handler = mock(() => "done");
+      const run = action({ ...config, handler });
+      await expect(run(undefined, meta)).resolves.toBe("done");
+      await denied(run(undefined, { ...meta, entryPoint: "mcp" }), "FORBIDDEN");
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(verifyTOTP).not.toHaveBeenCalled();
+      expect(() => assertMcpEligible(run)).toThrow();
+    }
+  });
+
+  test.each([
+    { mcpAllowed: true, stepUp: "five_minutes" },
+    { mcpAllowed: true, stepUp: "every_time" },
+    { auth: "public", stepUp: "every_time" },
+    { twoFactorPool: "default" },
+    { sensitive: true },
+    { stepUp: "invalid" },
+    { mcpAllowed: "true" },
+  ])("invalid and obsolete operation policy fails at definition time: %j", (config) => {
+    expect(() => action(config)).toThrow();
+  });
+
+  test("public operations also need explicit MCP opt-in", async () => {
+    await denied(action({ auth: "public" })(undefined, { ...meta, entryPoint: "mcp" }), "FORBIDDEN");
+    await expect(action({ auth: "public", mcpAllowed: true })(undefined, { ...meta, entryPoint: "mcp" })).resolves.toBe("done");
+  });
+
+  test("grant reuse never extends expiry and old pool grants are ignored", async () => {
+    const timestamp = String(Date.now() - 299_000);
+    stored.set(grantKey, timestamp);
+    await action({ stepUp: "five_minutes" })(undefined, meta);
+    expect(stored.get(grantKey)).toBe(timestamp);
+    expect(redis.set).not.toHaveBeenCalled();
+    stored.set(grantKey, String(Date.now() - 300_000));
+    await denied(action({ stepUp: "five_minutes" })(undefined, meta), "TWO_FACTOR_REQUIRED");
+    stored.delete(grantKey);
+    stored.set("stepup:lvl:user-1:session-1:3", String(Date.now()));
+    await denied(action({ stepUp: "five_minutes" })(undefined, meta), "TWO_FACTOR_REQUIRED");
+  });
+
+  test("grant store failure refuses the operation", async () => {
+    const handler = mock();
+    redis.get.mockImplementationOnce(async () => { throw new Error("Redis unavailable"); });
+    await denied(action({ stepUp: "five_minutes", handler })(undefined, meta), "INTERNAL");
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  test.each(["mcp", undefined, "unknown"])("MCP-excluded operations deny unapproved provenance: %s", async (entryPoint) => {
+    const handler = mock(() => "done");
+    const auditLog = mock(() => "denied");
+    const run = action({ mcpAllowed: false, stepUp: "five_minutes", handler, auditLog });
+    stored.set("stepup:grant:user-1:session-1", String(Date.now()));
+    await denied(run(undefined, {
+      ...meta, entryPoint, stepUp: { method: "totp", code: "123456" },
+    }), "FORBIDDEN");
+    expect(handler).not.toHaveBeenCalled();
+    expect(verifyTOTP).not.toHaveBeenCalled();
+    expect(redis.get).not.toHaveBeenCalled();
+    expect(auditLog).toHaveBeenCalledTimes(1);
+  });
+
+  test("step-up remains required despite admin permissions", async () => {
+    const handler = mock(() => "done");
+    const run = action({ mcpAllowed: false, stepUp: "five_minutes", handler });
+    await denied(run(undefined, meta), "TWO_FACTOR_REQUIRED");
+    expect(handler).not.toHaveBeenCalled();
+    await expect(run(undefined, { ...meta, stepUp: { method: "totp", code: "123456" } })).resolves.toBe("done");
+    expect(handler.mock.calls[0][0].stepUp).toBe("five_minutes");
+  });
+
+  test("step-up actions require verified email and reject impersonation", async () => {
+    const run = action({ mcpAllowed: false, stepUp: "five_minutes" });
+    resolved.user.emailVerified = false;
+    await denied(run(undefined, meta), "EMAIL_VERIFICATION_REQUIRED");
+    resolved.user.emailVerified = true;
+    resolved.session.impersonatedBy = "other-admin";
+    await denied(run(undefined, meta), "IMPERSONATION_FORBIDDEN");
+  });
+
+  test("MCP registration rejects definitions without opt-in and unclassified functions", async () => {
+    for (const run of [action({ mcpAllowed: false, stepUp: "five_minutes" }), action({ stepUp: "five_minutes" }), async () => "unguarded"]) {
+      expect(() => assertMcpEligible(run)).toThrow();
+    }
+    const read = action({ mcpAllowed: true });
+    expect(() => assertMcpEligible(read)).not.toThrow();
+    await expect(read(undefined, { ...meta, entryPoint: "mcp" })).resolves.toBe("done");
+    const excluded = action({ mcpAllowed: false, stepUp: "five_minutes" });
+    expect(Object.isFrozen(excluded)).toBe(true);
+    expect(() => defineAction({ name: "invalid", auth: "public", mcpAllowed: false, stepUp: "five_minutes", handler: () => {} })).toThrow();
+  });
+
   test("inline TOTP cannot authorize a second one-time action", async () => {
     const handler = mock(() => "done");
-    const run = action({ twoFactorPool: "one_time", handler });
+    const run = action({ stepUp: "every_time", handler });
     const proof = { ...meta, stepUp: { method: "totp", code: "123456" } };
     await run(undefined, proof);
     await denied(run(undefined, proof), "STEP_UP_INVALID_CODE");
@@ -150,7 +244,7 @@ describe("action pipeline", () => {
 
   test("only one concurrent inline TOTP request executes", async () => {
     const handler = mock(() => "done");
-    const run = action({ twoFactorPool: "one_time", handler });
+    const run = action({ stepUp: "every_time", handler });
     const proof = { ...meta, stepUp: { method: "totp", code: "123456" } };
     const results = await Promise.allSettled([
       run(undefined, proof), run(undefined, proof),
@@ -159,11 +253,11 @@ describe("action pipeline", () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
-  test("TOTP cannot be replayed across pools or sessions; a fresh code works", async () => {
+  test("TOTP cannot be replayed across policies or sessions; a fresh code works", async () => {
     const proof = { ...meta, stepUp: { method: "totp", code: "123456" } };
-    await action({ twoFactorPool: "sensitive" })(undefined, proof);
+    await action({ stepUp: "five_minutes" })(undefined, proof);
     resolved.session.id = "session-2";
-    const run = action({ twoFactorPool: "one_time" });
+    const run = action({ stepUp: "every_time" });
     await denied(run(undefined, proof), "STEP_UP_INVALID_CODE");
     expect(await run(undefined, {
       ...meta, stepUp: { method: "totp", code: "654321" },
@@ -173,7 +267,7 @@ describe("action pipeline", () => {
   test("replay storage failure prevents the handler from running", async () => {
     const handler = mock();
     redis.set.mockImplementationOnce(async () => { throw new Error("Redis unavailable"); });
-    await denied(action({ twoFactorPool: "one_time", handler })(undefined, {
+    await denied(action({ stepUp: "every_time", handler })(undefined, {
       ...meta, stepUp: { method: "totp", code: "123456" },
     }), "INTERNAL");
     expect(handler).not.toHaveBeenCalled();
@@ -220,12 +314,12 @@ describe("action pipeline", () => {
     expect(await run("41", meta)).toBe(42);
   });
 
-  test("invalid input cannot consume a one-time grant", async () => {
+  test("invalid input leaves grants and proofs untouched", async () => {
     stored.set(grantKey, String(Date.now()));
     const handler = mock();
     const run = action({
       schema: z.object({ id: z.uuid() }),
-      twoFactorPool: "one_time",
+      stepUp: "every_time",
       handler,
     });
     await denied(run({ id: "bad" }, meta), "INVALID_INPUT");
@@ -244,14 +338,14 @@ describe("action pipeline", () => {
     const handler = mock();
     const run = action({
       permissions: "user.delete",
-      twoFactorPool: "sensitive",
+      stepUp: "five_minutes",
       auditLog,
       handler,
     });
     await denied(run(undefined, meta), reason);
     expect(handler).not.toHaveBeenCalled();
-    expect(redis.mget).not.toHaveBeenCalled();
-    expect(auditLog.mock.calls[0][0].twoFactorPool).toBeNull();
+    expect(redis.get).not.toHaveBeenCalled();
+    expect(auditLog.mock.calls[0][0].stepUp).toBeNull();
     expect(auditLog.mock.calls[0][1]).toMatchObject({
       outcome: "denied",
       reason,
@@ -271,29 +365,26 @@ describe("action pipeline", () => {
     expect(await action({ permissions: [] })(undefined, meta)).toBe("done");
   });
 
-  test("a missing grant returns pool and available methods", async () => {
+  test("a missing grant returns policy and available methods", async () => {
     await expect(
-      action({ twoFactorPool: "sensitive" })(undefined, meta),
+      action({ stepUp: "five_minutes" })(undefined, meta),
     ).rejects.toMatchObject({
       reason: "TWO_FACTOR_REQUIRED",
       status: 428,
-      data: { pool: "sensitive", methods: ["totp", "email"] },
+      data: { policy: "five_minutes", methods: ["totp", "email"] },
     });
   });
 
-  test("only one concurrent request can spend a one-time grant", async () => {
-    stored.set(grantKey, String(Date.now()));
-    const handler = mock((ctx) => ctx.twoFactorPool);
-    const run = action({ twoFactorPool: "one_time", handler });
-    const results = await Promise.allSettled([
-      run(undefined, meta),
-      run(undefined, meta),
-    ]);
-    expect(
-      results.filter((result) => result.status === "fulfilled"),
-    ).toHaveLength(1);
+  test("every-time operations ignore reusable grants without extending them", async () => {
+    const timestamp = String(Date.now() - 1000);
+    stored.set(grantKey, timestamp);
+    const handler = mock(() => "done");
+    const run = action({ stepUp: "every_time", handler });
+    await denied(run(undefined, meta), "TWO_FACTOR_REQUIRED");
+    await run(undefined, { ...meta, stepUp: { method: "totp", code: "123456" } });
+    expect(stored.get(grantKey)).toBe(timestamp);
+    await denied(run(undefined, meta), "TWO_FACTOR_REQUIRED");
     expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0][0].twoFactorPool).toBe("one_time");
   });
 
   test("inline one-time email proof is consumed without creating another grant", async () => {
@@ -302,7 +393,7 @@ describe("action pipeline", () => {
       createHash("sha256").update("123456").digest("hex"),
     );
     const auditLog = mock(async () => "verified");
-    const run = action({ twoFactorPool: "one_time", auditLog });
+    const run = action({ stepUp: "every_time", auditLog });
     expect(
       await run(undefined, {
         ...meta,
@@ -310,7 +401,7 @@ describe("action pipeline", () => {
       }),
     ).toBe("done");
     expect(redis.set).not.toHaveBeenCalled();
-    expect(auditLog.mock.calls[0][0].twoFactorPool).toBe("one_time");
+    expect(auditLog.mock.calls[0][0].stepUp).toBe("every_time");
     await denied(run(undefined, meta), "TWO_FACTOR_REQUIRED");
   });
 
@@ -319,7 +410,7 @@ describe("action pipeline", () => {
     const digest = createHash("sha256").update("123456").digest("hex");
     stored.set(key, digest);
     const handler = mock(() => "done");
-    const run = action({ twoFactorPool: "one_time", handler });
+    const run = action({ stepUp: "every_time", handler });
     await denied(
       run(undefined, { ...meta, stepUp: { method: "email", code: "000000" } }),
       "STEP_UP_INVALID_CODE",
@@ -341,7 +432,7 @@ describe("action pipeline", () => {
   test("five incorrect email codes lock verification without deleting the code", async () => {
     const key = "stepup:chal:user-1:session-1";
     stored.set(key, createHash("sha256").update("123456").digest("hex"));
-    const run = action({ twoFactorPool: "one_time" });
+    const run = action({ stepUp: "every_time" });
     for (let i = 0; i < 5; i++) {
       await denied(
         run(undefined, {
@@ -358,20 +449,22 @@ describe("action pipeline", () => {
     expect(stored.has(key)).toBe(true);
   });
 
-  test("higher-importance grants satisfy lower pools within their own windows", async () => {
-    stored.set("stepup:lvl:user-1:session-1:3", String(Date.now() - 120_000));
+  test("reusable grants last five minutes and remain session-bound", async () => {
+    stored.set("stepup:grant:user-1:session-1", String(Date.now() - 120_000));
     expect(
-      await hasGrant({ userId: user.id, sessionId: session.id }, "default"),
+      await hasGrant({ userId: user.id, sessionId: session.id }),
     ).toBe(true);
     expect(
-      await hasGrant({ userId: user.id, sessionId: session.id }, "sensitive"),
-    ).toBe(false);
+      await hasGrant({ userId: user.id, sessionId: session.id }),
+    ).toBe(true);
+    stored.set("stepup:grant:user-1:session-1", String(Date.now() - 301_000));
+    expect(await hasGrant({ userId: user.id, sessionId: session.id })).toBe(false);
     expect(
-      await hasGrant({ userId: user.id, sessionId: "other" }, "default"),
+      await hasGrant({ userId: user.id, sessionId: "other" }),
     ).toBe(false);
-    stored.set("stepup:lvl:user-1:session-1:3", String(Date.now() + 60_000));
+    stored.set("stepup:grant:user-1:session-1", String(Date.now() + 60_000));
     expect(
-      await hasGrant({ userId: user.id, sessionId: session.id }, "default"),
+      await hasGrant({ userId: user.id, sessionId: session.id }),
     ).toBe(false);
   });
 
@@ -386,7 +479,7 @@ describe("action pipeline", () => {
     async (stepUp) => {
       stored.set(grantKey, String(Date.now()));
       await denied(
-        action({ twoFactorPool: "one_time" })(undefined, { ...meta, stepUp }),
+        action({ stepUp: "every_time" })(undefined, { ...meta, stepUp }),
         "INVALID_INPUT",
       );
       expect(stored.has(grantKey)).toBe(true);
@@ -400,7 +493,7 @@ describe("action pipeline", () => {
       throw new APIError("UNAUTHORIZED", { code: "INVALID_CODE" });
     });
     await denied(
-      action({ twoFactorPool: "one_time" })(undefined, {
+      action({ stepUp: "every_time" })(undefined, {
         ...meta,
         stepUp: { method: "totp", code: "123456" },
       }),
@@ -415,7 +508,7 @@ describe("action pipeline", () => {
       throw new Error("database unavailable");
     });
     await denied(
-      action({ twoFactorPool: "sensitive" })(undefined, {
+      action({ stepUp: "five_minutes" })(undefined, {
         ...meta,
         stepUp: { method: "totp", code: "123456" },
       }),
@@ -428,7 +521,7 @@ describe("action pipeline", () => {
   test("locked sessions never verify a proof", async () => {
     stored.set(failureKey, "5");
     await denied(
-      action({ twoFactorPool: "sensitive" })(undefined, {
+      action({ stepUp: "five_minutes" })(undefined, {
         ...meta,
         stepUp: { method: "totp", code: "123456" },
       }),
@@ -440,14 +533,14 @@ describe("action pipeline", () => {
   test("successful reusable proofs persist the appropriate TTL and clear failures", async () => {
     stored.set(failureKey, "2");
     expect(
-      await action({ twoFactorPool: "sensitive" })(undefined, {
+      await action({ stepUp: "five_minutes" })(undefined, {
         ...meta,
         stepUp: { method: "totp", code: "123456" },
       }),
     ).toBe("done");
     expect(stored.has(failureKey)).toBe(false);
-    expect(redis.set.mock.calls.find(([key]) => key === "stepup:lvl:user-1:session-1:3")).toEqual([
-      "stepup:lvl:user-1:session-1:3",
+    expect(redis.set.mock.calls.find(([key]) => key === "stepup:grant:user-1:session-1")).toEqual([
+      "stepup:grant:user-1:session-1",
       expect.any(String),
       "EX",
       300,
@@ -522,6 +615,28 @@ describe("action pipeline", () => {
 });
 
 describe("transport adapters", () => {
+  test("server action copies only step-up and sets trusted provenance", async () => {
+    const proof = { method: "totp", code: "123456" };
+    const run = mock(async (_input, received) => {
+      expect(received).toEqual({ headers: requestHeaders, entryPoint: "server-action", stepUp: proof });
+    });
+    await toServerAction(run)(undefined, {
+      stepUp: proof, entryPoint: "mcp", headers: "forged", role: "admin", mcpAllowed: true,
+    });
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  test("route adapter sets provenance independently of JSON input", async () => {
+    const run = mock(async (_input, received) => {
+      expect(received.entryPoint).toBe("route-handler");
+      expect(received.mcpAllowed).toBeUndefined();
+    });
+    await toRouteHandler(run)(routeRequest("https://example.com", {
+      method: "POST", body: JSON.stringify({ entryPoint: "mcp", mcpAllowed: true }),
+    }));
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
   test.each([undefined, "null", "https://untrusted.example.com", "https://evil.test"])(
     "unsafe requests reject untrusted or missing origin: %s", async (origin) => {
       const handler = mock(() => "changed");
@@ -554,7 +669,7 @@ describe("transport adapters", () => {
     const run = mock(async (_, meta) => {
       expect(meta.headers).toBe(requestHeaders);
       throw ActionError.twoFactorRequired({
-        pool: "default",
+        policy: "five_minutes",
         methods: ["email"],
       });
     });
@@ -565,7 +680,7 @@ describe("transport adapters", () => {
       ok: false,
       status: 428,
       reason: "TWO_FACTOR_REQUIRED",
-      data: { pool: "default", methods: ["email"] },
+      data: { policy: "five_minutes", methods: ["email"] },
     });
   });
 
@@ -605,7 +720,7 @@ describe("transport adapters", () => {
   test("stepUp is removed from object input and checked even when null", async () => {
     const run = action({
       schema: z.object({ id: z.string() }).strict(),
-      twoFactorPool: "sensitive",
+      stepUp: "five_minutes",
     });
     const response = await toRouteHandler(run)(
       routeRequest("https://example.com", {
@@ -618,12 +733,12 @@ describe("transport adapters", () => {
   });
 
   test("route refusals carry their HTTP status and payload", async () => {
-    const response = await toRouteHandler(action({ twoFactorPool: "default" }))(
+    const response = await toRouteHandler(action({ stepUp: "five_minutes" }))(
       routeRequest("https://example.com"),
     );
     expect(response.status).toBe(428);
     expect((await response.json()).error.data).toEqual({
-      pool: "default",
+      policy: "five_minutes",
       methods: ["totp", "email"],
     });
   });

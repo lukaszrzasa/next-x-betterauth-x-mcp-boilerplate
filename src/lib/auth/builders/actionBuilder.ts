@@ -10,7 +10,7 @@ import { parseInput } from "./actionInput";
 import { checkAuthorization } from "./actionAuthorization";
 import { ensureStepUp } from "./actionStepUp";
 import { writeAudit, type AuditDescription } from "./actionAudit";
-import type { Action, AuthedConfig, PublicConfig } from "./actionTypes";
+import type { Action, ActionMeta, AuthedConfig, PublicConfig } from "./actionTypes";
 
 export type {
   Action,
@@ -19,7 +19,6 @@ export type {
   PublicConfig,
 } from "./actionTypes";
 export type { AuditEvent } from "./actionAudit";
-export { twoFactorPools } from "../2fa";
 
 export function defineAction<
   TInput = undefined,
@@ -42,7 +41,20 @@ export function defineAction<TInput, TOutput, TRawInput>(
     | AuthedConfig<TInput, TOutput, TRawInput>
     | PublicConfig<TInput, TOutput, TRawInput>,
 ): Action<TRawInput, TOutput> {
-  return async (rawInput, meta) => {
+  // Snapshot policy at definition time; fail loudly on obsolete or invalid config.
+  if ("sensitive" in config || "twoFactorPool" in config) {
+    throw new Error("Use mcpAllowed and stepUp instead of sensitive or twoFactorPool.");
+  }
+  const mcpAllowed = config.mcpAllowed === undefined ? false : config.mcpAllowed;
+  const stepUp = config.stepUp === undefined ? "none" : config.stepUp;
+  if (typeof mcpAllowed !== "boolean" || !["none", "five_minutes", "every_time"].includes(stepUp)) {
+    throw new Error("Invalid operation policy.");
+  }
+  if (stepUp !== "none" && (mcpAllowed || config.auth === "public")) {
+    throw new Error("Step-up requires an authenticated operation with MCP disabled.");
+  }
+  config = { ...config };
+  const run = async (rawInput: TRawInput, meta: ActionMeta) => {
     const startedAt = Date.now();
     const requestId = randomUUID();
     const log = createLogger({ requestId, action: config.name });
@@ -88,7 +100,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
         ip: clientIp(meta.headers),
         userAgent: meta.headers.get("user-agent"),
         log,
-        twoFactorPool: null,
+        stepUp: null,
       };
       let output: TOutput;
 
@@ -103,6 +115,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
         const publicAudit = config.auditLog;
         if (publicAudit)
           describeAudit = (event) => publicAudit(publicCtx, event);
+        checkEntryPoint(meta, mcpAllowed);
         output = await config.handler(publicCtx, input);
       } else {
         // Config and resolved are separate values; TypeScript needs this guard
@@ -116,15 +129,15 @@ export function defineAction<TInput, TOutput, TRawInput>(
           describeAudit = (event) => authedAudit(authedCtx, event);
 
         // Keep a context for denial auditing; it claims no step-up yet.
-        checkAuthorization(config, authedCtx);
-        const pool = config.twoFactorPool;
-        if (pool) {
-          await ensureStepUp(authedCtx, meta, pool);
+        checkEntryPoint(meta, mcpAllowed);
+        checkAuthorization({ ...config, stepUp }, authedCtx);
+        if (stepUp !== "none") {
+          await ensureStepUp(authedCtx, meta, stepUp);
           authedCtx = Ctx.create<User>({
             ...baseCtx,
             user,
             session,
-            twoFactorPool: pool,
+            stepUp,
           });
           ctx = authedCtx;
         }
@@ -167,6 +180,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
       throw new ActionError("INTERNAL", { cause: error });
     }
   };
+  return Object.freeze(Object.assign(run, { mcpAllowed }));
 }
 
 /** Proxy-provided IPs are audit metadata, never authorization evidence. */
@@ -175,4 +189,11 @@ function clientIp(headers: Headers): string | null {
     headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     headers.get("x-real-ip")
   );
+}
+
+/** Only trusted adapters supply provenance; unknown values always deny. */
+function checkEntryPoint(meta: ActionMeta, mcpAllowed: boolean): void {
+  if (meta.entryPoint === "server-action" || meta.entryPoint === "route-handler") return;
+  if (meta.entryPoint === "mcp" && mcpAllowed) return;
+  throw new ActionError("FORBIDDEN", { message: "Operation unavailable through this entry point." });
 }

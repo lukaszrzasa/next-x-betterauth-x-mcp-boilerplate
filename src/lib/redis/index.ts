@@ -13,7 +13,10 @@ const globalForRedis = globalThis as unknown as { redis?: Redis };
 export const redis =
   globalForRedis.redis ??
   new Redis(process.env.REDIS_URL!, {
-    maxRetriesPerRequest: null,
+    // Redis remains mandatory. Bound requests while reconnecting in the background.
+    maxRetriesPerRequest: 1,
+    commandTimeout: 5_000,
+    connectTimeout: 5_000,
     lazyConnect: true,
   });
 

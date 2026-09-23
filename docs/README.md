@@ -2,9 +2,9 @@
 
 ## Documents
 
-1. [Architecture](architecture.md): scope, shared operations, layout, import scopes, authorization, sensitivity, MCP, and infrastructure.
+1. [Architecture](architecture.md): scope, shared operations, layout, import scopes, authorization, step-up, MCP, and infrastructure.
 2. [Agent instructions](agent-instructions.md): working conventions and completion criteria.
-3. [Glossary](CONTEXT.md): admin, staff, editing presence, and sensitive operation.
+3. [Glossary](CONTEXT.md): admin, staff, editing presence, MCP eligibility, and step-up requirements.
 4. [Admin authority decision](adr/0001-admin-permission-bypass.md) and [shared-operation decision](adr/0002-shared-operations-and-mcp-restrictions.md): rationale for consequential choices.
 
 [Design evidence](evidence.md) records observations behind the decisions. It is background material, not an additional source of instructions.
@@ -16,7 +16,7 @@
 | Add a field to an existing form | Update the existing operation/UI and affected contracts; no automatic MCP tool or navigation addition. |
 | Add a capability with no agent workflow | No MCP scaffold solely because the capability exists. |
 | Modify account lookup | Keep SSR/action/MCP consumers of that behavior consistent; preserve caller permissions and bounded safe output. |
-| Admin invokes a sensitive operation via MCP | Deny despite admin permission bypass and any recent verification. |
+| Admin invokes an operation without MCP opt-in | Deny despite full admin permissions and any recent verification. |
 | Moderator looks up users | Allow only with current lookup permission and required staff authentication. |
 | Staff member opens an editing form | Show presence; do not add dirty indicators or edit locks. |
 | Another capability needs user lookup | Import the existing operation directly, respecting admin scope and runtime requirements. |

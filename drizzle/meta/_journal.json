@@ -8,6 +8,13 @@
       "when": 1790086744981,
       "tag": "0000_lame_richard_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790162435032,
+      "tag": "0001_require_user_two_factor",
+      "breakpoints": true
     }
   ]
 }

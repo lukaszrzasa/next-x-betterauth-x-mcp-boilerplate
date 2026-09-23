@@ -33,7 +33,7 @@ const required = {
   reason: "TWO_FACTOR_REQUIRED",
   status: 428,
   message: "Verify",
-  data: { pool: "default", methods: ["email"] },
+  data: { policy: "five_minutes", methods: ["email"] },
 };
 const success = { ok: true, data: "saved" };
 const failure = {

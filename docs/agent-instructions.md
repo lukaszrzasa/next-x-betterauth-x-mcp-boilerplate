@@ -19,7 +19,7 @@ Identify the requested outcome, owning capability, necessary UI/SSR/action/MCP s
 
 ## Exceptions and conflicts
 
-Local, reversible departures from a layout or extraction default need a concrete reason recorded near the affected contract when that reason will matter later. Hard constraints cannot be waived to make an implementation convenient. In particular, do not bypass admin-scope isolation or expose sensitive operations through MCP.
+Local, reversible departures from a layout or extraction default need a concrete reason recorded near the affected contract when that reason will matter later. Hard constraints cannot be waived to make an implementation convenient. In particular, do not bypass admin-scope isolation or expose operations through MCP without explicit opt-in, or combine MCP opt-in with step-up.
 
 When code and accepted documentation disagree, investigate the relevant implementation and tests. Fix ordinary drift within authorized scope; ask when resolving the contradiction would change intended behavior. Treat examples and historical rationale as evidence rather than overriding an explicit current requirement. Update the authoritative rule instead of duplicating it in several documents.
 

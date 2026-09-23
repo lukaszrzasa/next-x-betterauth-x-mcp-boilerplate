@@ -4,12 +4,13 @@
 
 1. Resolve and require a session (skipped for `auth: "public"`).
 2. Parse the input with Zod, including async refinements and transforms.
-3. Check impersonation, verified email and permissions, in that order.
-4. Satisfy the requested two-factor pool.
+3. Reject operations without MCP opt-in from MCP, and reject unknown entry points, then check
+   impersonation, verified email and permissions, in that order.
+4. Satisfy the declared step-up policy.
 5. Call the handler and record its outcome.
 
 Input is validated before step-up so invalid requests neither prompt for a
-second factor nor consume a one-time grant.
+second factor nor consume a verification proof.
 
 ```ts
 import { z } from "zod";
@@ -19,7 +20,8 @@ export const previewUserUpdate = defineAction({
   name: "user.preview-update",
   schema: z.object({ name: z.string().trim().min(1) }),
   permissions: "user.update",
-  twoFactorPool: "sensitive",
+  mcpAllowed: false,
+  stepUp: "none",
   handler: (ctx, input) => ({ userId: ctx.user.id, name: input.name }),
   auditLog: (ctx, event) => `${ctx.user.id}: ${event.outcome}`,
 });
@@ -31,18 +33,46 @@ no input: caller-supplied values are discarded and the handler receives
 `undefined`. Callers use the schema's raw input type; handlers and audit hooks
 receive its parsed output type.
 
+Declare MCP eligibility and step-up independently:
+
+| Declaration | Behavior |
+| --- | --- |
+| `mcpAllowed: false` (default) | Browser/server only, regardless of step-up |
+| `mcpAllowed: true` | Eligible for explicit MCP registration; step-up must be `"none"` |
+| `stepUp: "none"` (default) | No additional verification |
+| `stepUp: "five_minutes"` | Require proof or a reusable grant in the same session |
+| `stepUp: "every_time"` | Require a fresh proof for this invocation, ignoring cached grants |
+
+The definition rejects contradictory or obsolete policy at runtime, and types
+reject MCP opt-in with step-up. Public operations cannot require step-up.
+Step-up requires verified email and forbids impersonation, including for admin.
+There is one five-minute grant; reuse does not extend its timestamp or TTL.
+Every-time verification neither creates nor extends it. Old pool grants are
+not accepted, so existing sessions must verify again after this change.
+
+Definitions expose a frozen `mcpAllowed` property. Before registering a selected
+operation, call `assertMcpEligible(definition)` from `adapters`; only explicit
+opt-in passes. There is no MCP adapter yet. A future adapter must authenticate
+its caller independently and set `entryPoint: "mcp"` in server-owned metadata.
+It must not invoke browser-facing exports or forward caller metadata. Runtime
+MCP denial remains in the shared pipeline even if registration filtering is missed.
+
 Keep related writes inside one db-service transaction. Services can import
 `AuthedCtx` or `PublicCtx` as types from `builders/context`; feature code must not
 construct contexts. A handler's context has passed every configured gate. A
 **denial audit hook has not**: it must not use its context to perform the refused
-operation. Its `twoFactorPool` remains null until verification succeeds.
+operation. Its `stepUp` remains null until verification succeeds.
 
 ## Adapters
 
 `toServerAction(action)` returns `{ ok: true, data }` or
 `{ ok: false, reason, status, message, data? }`. Call it from an exported async
 function in a `"use server"` file. Headers are read from the current request;
-clients can supply only optional step-up metadata.
+clients can supply only optional step-up metadata. The adapter copies only
+`stepUp` and sets `entryPoint: "server-action"` itself. The route adapter sets
+`entryPoint: "route-handler"`; neither trusts a client-supplied entry point.
+Direct server callers must also provide an explicit entry point. All
+operations reject missing or unknown values at runtime.
 
 ```ts
 "use server";
@@ -73,11 +103,11 @@ missing, opaque and cross-origin values receive `FORBIDDEN` before the action
 runs. Non-browser clients must supply this header too. Reverse proxies must
 preserve the public request URL. GET/HEAD handlers must remain read-only.
 
-Accepted TOTP proofs are atomically marked as used across sessions and pools
+Accepted TOTP proofs are atomically marked as used across sessions and verification modes
 for 90 seconds (Better Auth's three-step acceptance window). Reusing a code
 returns `STEP_UP_INVALID_CODE`; reusable grants remain usable without resending
 the proof. A failed handler still spends its proof, so retries need a fresh code
-for one-time actions.
+for every-time actions.
 
 The builder sanitizes unexpected errors as `INTERNAL`, while allowing Next.js
 redirect/not-found control flow to propagate. Audit hooks may be async; their
@@ -92,7 +122,7 @@ a context exists, and anonymous session refusals are deliberately unrecorded.
 - `context/`: branded context, inferred auth types and structured logger.
 - `adapters/`: transport-specific request/response conversion.
 
-`builders_old` is retained as the refactor reference; new code uses `builders`.
+The obsolete pool-based builder was removed; Git history retains the reference.
 
 Run `bun run typecheck`, `bun run lint` and `bun test tests/auth`. The regression
 suite exercises the real pipeline, permission logic and step-up helpers with

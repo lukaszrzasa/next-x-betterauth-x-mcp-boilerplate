@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
-import { admin, magicLink, twoFactor } from "better-auth/plugins";
+import { admin, twoFactor } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { ac, roles } from "./permissions";
 import { TOTP_PERIOD_SECONDS } from "./2fa";
@@ -9,17 +9,21 @@ import { appName } from "@/src/lib/config";
 import { db } from "@/src/lib/db";
 import { redisSecondaryStorage } from "@/src/lib/redis";
 import {
-  sendMagicLinkEmail,
   sendPasswordResetEmail,
   sendTwoFactorOtpEmail,
   sendVerificationEmail,
 } from "@/src/lib/email";
 
-const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 10;
 const TWO_FACTOR_OTP_EXPIRES_IN_MINUTES = 5;
 
 export const auth = betterAuth({
   appName,
+  user: {
+    additionalFields: {
+      // Policy only: enrollment enforcement will be added with the enrollment flow.
+      twoFactorRequired: { type: "boolean", defaultValue: false, input: false },
+    },
+  },
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
@@ -44,32 +48,6 @@ export const auth = betterAuth({
       adminRoles: ["admin"],
       adminUserIds: [],
       impersonationSessionDuration: 60 * 60,
-    }),
-
-    /**
-     * Heads up: magic-link sign-in does NOT trigger the 2FA challenge. The
-     * twoFactor plugin hooks `/sign-in/email`, `/sign-in/username` and
-     * `/sign-in/phone-number` only - `/magic-link/verify` mints a full session
-     * directly. A user who has 2FA enabled can therefore bypass it by
-     * requesting a magic link, so treat inbox access as equivalent to the
-     * account until that is closed (custom after-hook on `/magic-link/verify`,
-     * or `disableSignUp` + gating link requests on `!user.twoFactorEnabled`).
-     */
-    magicLink({
-      expiresIn: MAGIC_LINK_EXPIRES_IN_SECONDS,
-      // The emailed token is hashed before it is stored, so a leaked database
-      // dump does not hand out live sign-in links.
-      storeToken: "hashed",
-      // Requesting a link for an unknown address creates the account. Set to
-      // `true` to make magic links sign-in-only for already-registered users.
-      disableSignUp: false,
-      sendMagicLink: async ({ email, url }) => {
-        await sendMagicLinkEmail({
-          to: email,
-          url,
-          expiresInMinutes: MAGIC_LINK_EXPIRES_IN_SECONDS / 60,
-        });
-      },
     }),
 
     twoFactor({

@@ -7,7 +7,7 @@ type AuthorizationConfig = Pick<
   AuthedConfig<unknown, unknown>,
   | "permissions"
   | "permissionsConnector"
-  | "twoFactorPool"
+  | "stepUp"
   | "requireVerifiedEmail"
 >;
 
@@ -17,8 +17,10 @@ export function checkAuthorization(
 ): void {
   const { user, session } = ctx;
 
+  const requiresStepUp = config.stepUp !== undefined && config.stepUp !== "none";
+
   // Impersonation grants an admin a session, not the user's second factor.
-  if (config.twoFactorPool && session.impersonatedBy) {
+  if (requiresStepUp && session.impersonatedBy) {
     throw new ActionError("IMPERSONATION_FORBIDDEN", {
       message:
         "Two-factor protected actions cannot be run while impersonating.",
@@ -26,7 +28,7 @@ export function checkAuthorization(
   }
 
   if (
-    (config.requireVerifiedEmail || config.twoFactorPool) &&
+    (config.requireVerifiedEmail || requiresStepUp) &&
     !user.emailVerified
   ) {
     throw new ActionError("EMAIL_VERIFICATION_REQUIRED");

@@ -3,7 +3,6 @@ import "server-only";
 import type { ReactNode } from "react";
 import { Resend } from "resend";
 
-import MagicLink from "./templates/magic-link";
 import ResetPassword from "./templates/reset-password";
 import TwoFactorOtp from "./templates/two-factor-otp";
 import VerifyEmail from "./templates/verify-email";
@@ -83,22 +82,6 @@ export function sendPasswordResetEmail({
     to,
     subject: "Reset your password",
     react: <ResetPassword url={url} name={name} />,
-  });
-}
-
-export function sendMagicLinkEmail({
-  to,
-  url,
-  expiresInMinutes,
-}: {
-  to: string;
-  url: string;
-  expiresInMinutes: number;
-}) {
-  return sendEmail({
-    to,
-    subject: "Your sign-in link",
-    react: <MagicLink url={url} expiresInMinutes={expiresInMinutes} />,
   });
 }
 

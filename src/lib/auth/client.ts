@@ -1,10 +1,8 @@
 import { createAuthClient } from "better-auth/react";
-import { magicLinkClient, twoFactorClient } from "better-auth/client/plugins";
+import { twoFactorClient } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
   plugins: [
-    magicLinkClient(),
-
     /**
      * No `twoFactorPage` / `onTwoFactorRedirect` yet: without it the client
      * simply hands the caller `data.twoFactorRedirect === true` after a

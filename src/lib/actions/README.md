@@ -62,7 +62,7 @@ an in-flight proof or email send finishes, so it cannot collide with the next fl
 
 The runtime prompts only after `TWO_FACTOR_REQUIRED`. A queued action rechecks
 without a proof when its turn starts: an earlier verification may already satisfy
-its pool. Otherwise it gets its own modal and proof; codes are never broadcast to
+its step-up policy. Otherwise it gets its own modal and proof; codes are never broadcast to
 other actions. `STEP_UP_INVALID_CODE` stays inside the modal. Lockout and all
 other action failures finish the flow. Network failures have reason `TRANSPORT`;
 there is no automatic retry because the action may have executed.
