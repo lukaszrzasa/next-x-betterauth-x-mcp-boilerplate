@@ -27,7 +27,7 @@ const VerificationModal = createCallable<
     defaultValues: { method: challenge.methods[0], code: "" },
   });
   const method = useWatch({ control, name: "method" });
-  const mutate = useMutationFlow<"finished" | "cancelled", Submission>(
+  const runSubmission = useMutationFlow<"finished" | "cancelled", Submission>(
     call,
     async (flow, submission) => {
       if (signal.aborted) return;
@@ -68,15 +68,15 @@ const VerificationModal = createCallable<
       aria-label="Verify your identity"
       onCancel={(event) => {
         event.preventDefault();
-        if (!mutate.pending) call.end("cancelled");
+        if (!runSubmission.pending) call.end("cancelled");
       }}
     >
       <form
         noValidate
-        onSubmit={handleSubmit((proof) => mutate({ kind: "verify", proof }))}
+        onSubmit={handleSubmit((proof) => runSubmission({ kind: "verify", proof }))}
       >
         <h2>Verify your identity</h2>
-        <fieldset disabled={mutate.pending}>
+        <fieldset disabled={runSubmission.pending}>
           {challenge.methods.length > 1 && (
             <label>
               Verification method
@@ -98,7 +98,7 @@ const VerificationModal = createCallable<
             </label>
           )}
           {method === "email" && (
-            <button type="button" onClick={() => mutate({ kind: "send" })}>
+            <button type="button" onClick={() => runSubmission({ kind: "send" })}>
               Send email code
             </button>
           )}
@@ -126,7 +126,7 @@ const VerificationModal = createCallable<
           </button>
         </fieldset>
         <p id="verification-feedback" role="status">
-          {mutate.pending
+          {runSubmission.pending
             ? "Please wait…"
             : (errors.code?.message ?? errors.root?.send?.message ?? notice)}
         </p>

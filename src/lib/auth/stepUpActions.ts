@@ -4,7 +4,7 @@ import { defineAction } from "./builders/actionBuilder";
 import { toServerAction } from "./builders/adapters/serverAction";
 import { issueEmailChallenge } from "./stepUp";
 
-const sendChallenge = toServerAction(
+const sendStepUpEmailAction = toServerAction(
   defineAction({
     name: "auth.sendStepUpEmail",
     requireVerifiedEmail: true,
@@ -18,5 +18,5 @@ const sendChallenge = toServerAction(
 );
 
 export async function sendStepUpEmail() {
-  return sendChallenge(undefined);
+  return sendStepUpEmailAction(undefined);
 }

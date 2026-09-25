@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { RequiredStepUp } from "../../2fa";
+import type { RequiredStepUp } from "../../stepUpPolicy";
 import type { CtxInit, Logger, Session, User } from "./types";
 
 /**

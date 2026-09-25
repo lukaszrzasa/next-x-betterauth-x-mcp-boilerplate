@@ -769,3 +769,17 @@ describe("email challenge action", () => {
     expect(stored.get(failureKey)).toBe("2");
   });
 });
+
+test("unenrolled staff cannot invoke protected operations through any transport", async () => {
+  resolved = { user: { ...user, twoFactorEnabled: false }, session };
+  const operation = defineAction({ name: "test.session", mcpAllowed: true, handler: async () => "allowed" });
+  for (const entryPoint of ["server-action", "route-handler", "mcp"]) {
+    await expect(operation(undefined, { ...meta, entryPoint })).rejects.toMatchObject({ reason: "TWO_FACTOR_ENROLLMENT_REQUIRED" });
+  }
+  expect(getSession).toHaveBeenCalledWith({
+    headers: meta.headers,
+    query: { disableCookieCache: true },
+  });
+  resolved.user.role = "user";
+  expect(await operation(undefined, meta)).toBe("allowed");
+});

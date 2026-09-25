@@ -1,4 +1,4 @@
-import { type RequiredStepUp } from "../2fa";
+import { type RequiredStepUp } from "../stepUpPolicy";
 import { ActionError } from "../errors";
 import { availableMethods, hasGrant, verifyStepUp } from "../stepUp";
 import type { ActionMeta } from "./actionTypes";

@@ -1,5 +1,5 @@
 import type { auth } from "../../index";
-import type { RequiredStepUp } from "../../2fa";
+import type { RequiredStepUp } from "../../stepUpPolicy";
 
 export type Session = (typeof auth.$Infer.Session)["session"];
 export type User = (typeof auth.$Infer.Session)["user"];

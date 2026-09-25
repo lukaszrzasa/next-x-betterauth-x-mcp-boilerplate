@@ -44,17 +44,17 @@ export function invokeAction<T>(
   });
 }
 
-function outcome<T>(result: ActionResult<T> | ActionFailure): ActionOutcome<T> {
+function toOutcome<T>(result: ActionResult<T> | ActionFailure): ActionOutcome<T> {
   return result.ok
     ? { status: "success", data: result.data }
     : { status: "error", error: result };
 }
 
 export function createActionRuntime({
-  present,
+  presentVerification,
   sendEmail,
 }: {
-  present: VerificationPresenter;
+  presentVerification: VerificationPresenter;
   sendEmail: () => Promise<ActionResult<void>>;
 }) {
   const queue = new VerificationQueue();
@@ -66,41 +66,44 @@ export function createActionRuntime({
       signal: AbortSignal,
     ): Promise<ActionOutcome<O>> {
       if (signal.aborted) return { status: "cancelled" };
-      const initial = await invokeAction(() => action(input));
+      const firstAttempt = await invokeAction(() => action(input));
       if (signal.aborted) return { status: "cancelled" };
-      if (initial.ok || initial.reason !== "TWO_FACTOR_REQUIRED")
-        return outcome(initial);
+      if (firstAttempt.ok || firstAttempt.reason !== "TWO_FACTOR_REQUIRED")
+        return toOutcome(firstAttempt);
 
       return queue.run<O>(signal, async (waited) => {
         // Only recheck after waiting behind another flow, and only after an
         // explicit refusal. This may execute the action if a grant now exists.
         const result = waited
           ? await invokeAction(() => action(input))
-          : initial;
+          : firstAttempt;
         if (signal.aborted) return { status: "cancelled" };
         if (result.ok || result.reason !== "TWO_FACTOR_REQUIRED")
-          return outcome(result);
+          return toOutcome(result);
         const parsed = challengeSchema.safeParse(result.data);
         if (!parsed.success)
-          return outcome({
+          return toOutcome({
             ok: false,
             reason: "INTERNAL",
             status: 500,
             message: "The verification request could not be understood.",
           });
 
-        let terminal: ActionOutcome<O> | undefined;
-        let thrown: { error: unknown } | undefined;
-        const close = new AbortController();
-        const modalSignal = AbortSignal.any([signal, close.signal]);
+        let finalOutcome: ActionOutcome<O> | undefined;
+        let unexpectedError: { error: unknown } | undefined;
+        const closeModal = new AbortController();
+        const modalSignal = AbortSignal.any([signal, closeModal.signal]);
         let inFlight: Promise<ActionFailure | null> | undefined;
-        const run = (operation: () => Promise<ActionFailure | null>) => {
-          if (signal.aborted || terminal) return Promise.resolve(null);
+        // Only one modal request (verify or send) is in flight at a time.
+        const runExclusive = (
+          operation: () => Promise<ActionFailure | null>,
+        ) => {
+          if (signal.aborted || finalOutcome) return Promise.resolve(null);
           if (inFlight) return inFlight;
           inFlight = operation()
             .catch((error: unknown) => {
-              thrown = { error };
-              close.abort();
+              unexpectedError = { error };
+              closeModal.abort();
               return null;
             })
             .finally(() => {
@@ -109,32 +112,32 @@ export function createActionRuntime({
           return inFlight;
         };
         try {
-          const response = await present({
+          const response = await presentVerification({
             challenge: parsed.data,
             signal: modalSignal,
             submit: (proof: StepUpProof) =>
-              run(async () => {
+              runExclusive(async () => {
                 const verified = await invokeAction(() =>
                   action(input, { stepUp: proof }),
                 );
                 if (!verified.ok && verified.reason === "STEP_UP_INVALID_CODE")
                   return verified;
-                terminal = outcome(verified);
+                finalOutcome = toOutcome(verified);
                 return null;
               }),
             sendEmail: () =>
-              run(async () => {
+              runExclusive(async () => {
                 const sent = await invokeAction(sendEmail);
                 if (sent.ok) return null;
                 if (sent.reason === "RATE_LIMITED") return sent;
-                terminal = outcome(sent);
+                finalOutcome = toOutcome(sent);
                 return sent;
               }),
           });
-          if (thrown) throw thrown.error;
+          if (unexpectedError) throw unexpectedError.error;
           if (signal.aborted || response === "cancelled")
             return { status: "cancelled" };
-          return terminal ?? { status: "cancelled" };
+          return finalOutcome ?? { status: "cancelled" };
         } finally {
           // Closing/unmounting cannot cancel an already submitted server action.
           await inFlight;

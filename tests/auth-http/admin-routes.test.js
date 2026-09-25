@@ -83,3 +83,12 @@ test("ordinary session lookup still reaches Better Auth", async () => {
   expect(response.status).toBe(200);
   expect((await response.json()).user.role).toBe("admin");
 });
+
+
+test("enrollment and factor settings cannot be changed through public HTTP", async () => {
+  for (const path of ["two-factor/disable", "two-factor/generate-backup-codes", "two-factor/get-totp-uri", "two-factor%2Fdisable"]) {
+    for (const cookie of [undefined, ...Object.values(cookies)]) {
+      expect((await request(path, "POST", cookie, { password: "test-password-12345" })).status).toBe(404);
+    }
+  }
+});

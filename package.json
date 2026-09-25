@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "bun test ./tests/auth/ && bun test ./tests/actions/ && bun test ./tests/auth-http/ && bun test ./tests/auth-config/ && bun test ./tests/redis-client/",
+    "test": "bun test ./tests/auth/ && bun test ./tests/actions/ && bun test ./tests/auth-http/ && bun test ./tests/auth-config/ && bun test ./tests/redis-client/ && bun test ./tests/auth-setup/ && bun test ./tests/auth-cache/ && bun test ./tests/auth-views/",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -19,14 +19,19 @@
   "dependencies": {
     "@better-auth/cimd": "^1.7.5",
     "@better-auth/mcp": "^1.7.5",
+    "@hookform/resolvers": "^5.9.1",
     "@modelcontextprotocol/server": "^2.0.0",
     "@react-email/components": "^1.0.12",
     "better-auth": "^1.7.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^18.0.1",
     "drizzle-orm": "^0.45.3",
     "ioredis": "^6.0.0",
+    "lucide-react": "^1.48.0",
     "next": "16.3.5",
     "pg": "^8.23.0",
+    "radix-ui": "^1.6.7",
     "react": "19.2.8",
     "react-call": "^2.0.2",
     "react-dom": "19.2.8",
@@ -34,6 +39,7 @@
     "react-qr-code": "^2.2.0",
     "resend": "^6.28.1",
     "server-only": "^0.0.1",
+    "tailwind-merge": "^3.7.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -49,7 +55,8 @@
     "eslint-config-next": "16.3.5",
     "happy-dom": "^20.14.5",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@better-auth/utils": "0.4.2"
   },
   "packageManager": "bun@1.4.2",
   "ignoreScripts": [

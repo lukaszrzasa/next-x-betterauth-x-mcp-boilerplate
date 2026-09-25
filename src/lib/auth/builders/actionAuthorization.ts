@@ -1,3 +1,4 @@
+import { needsTwoFactorEnrollment } from "../enrollment";
 import { ActionError } from "../errors";
 import { can } from "../permissions";
 import type { AuthedConfig } from "./actionTypes";
@@ -16,6 +17,10 @@ export function checkAuthorization(
   ctx: AuthedCtx,
 ): void {
   const { user, session } = ctx;
+
+  if (needsTwoFactorEnrollment(user)) {
+    throw new ActionError("TWO_FACTOR_ENROLLMENT_REQUIRED");
+  }
 
   const requiresStepUp = config.stepUp !== undefined && config.stepUp !== "none";
 

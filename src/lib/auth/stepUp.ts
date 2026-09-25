@@ -5,7 +5,7 @@ import { APIError } from "better-auth/api";
 import { z } from "zod";
 
 import { auth } from "./index";
-import { STEP_UP_WINDOW_SECONDS, TOTP_PERIOD_SECONDS, type StepUpMethod } from "./2fa";
+import { STEP_UP_WINDOW_SECONDS, TOTP_PERIOD_SECONDS, type StepUpMethod } from "./stepUpPolicy";
 import { ActionError } from "./errors";
 import { VERIFY_EMAIL_CHALLENGE } from "./emailChallenge";
 import { sendTwoFactorOtpEmail } from "@/src/lib/email";
@@ -112,7 +112,7 @@ export function availableMethods(user: SessionUser): readonly StepUpMethod[] {
 const CHALLENGE_DIGITS = 6;
 const CHALLENGE_TTL_SECONDS = 5 * 60;
 
-const hash = (code: string) => createHash("sha256").update(code).digest();
+const sha256 = (code: string) => createHash("sha256").update(code).digest();
 
 /** Sends a fresh code, replacing any outstanding one for this session. */
 export async function issueEmailChallenge(
@@ -149,7 +149,7 @@ export async function issueEmailChallenge(
 
   await redis.set(
     challengeKey(scope),
-    hash(code).toString("hex"),
+    sha256(code).toString("hex"),
     "EX",
     CHALLENGE_TTL_SECONDS,
   );
@@ -171,7 +171,7 @@ async function verifyEmailChallenge(
     2,
     challengeKey(scope),
     failureKey(scope),
-    hash(code).toString("hex"),
+    sha256(code).toString("hex"),
     MAX_FAILED_ATTEMPTS,
     LOCK_DURATION_SECONDS,
   );
@@ -225,13 +225,13 @@ export async function verifyStepUp({
   persistGrant?: boolean;
 }): Promise<void> {
   // Both adapters accept untrusted data; TypeScript types do not validate it.
-  const result = stepUpProofSchema.safeParse(rawProof);
-  if (!result.success) {
+  const parsedProof = stepUpProofSchema.safeParse(rawProof);
+  if (!parsedProof.success) {
     throw new ActionError("INVALID_INPUT", {
       message: "Step-up requires a method and a six-digit code.",
     });
   }
-  const proof = result.data;
+  const proof = parsedProof.data;
   await assertNotLocked(scope);
 
   if (!availableMethods(user).includes(proof.method)) {
@@ -240,12 +240,12 @@ export async function verifyStepUp({
     });
   }
 
-  const ok =
+  const codeValid =
     proof.method === "totp"
       ? await verifyTotp(headers, proof.code)
       : await verifyEmailChallenge(scope, proof.code);
 
-  if (!ok) {
+  if (!codeValid) {
     if (proof.method === "totp") await recordFailure(scope);
     throw new ActionError("STEP_UP_INVALID_CODE", {
       message: "That verification code is not valid.",
@@ -257,7 +257,7 @@ export async function verifyStepUp({
     // successful code spent for the full three-period window, across sessions
     // and verification modes. SET NX makes concurrent verification single-use too.
     const claimed = await redis.set(
-      `stepup:totp-used:${user.id}:${hash(proof.code).toString("hex")}`,
+      `stepup:totp-used:${user.id}:${sha256(proof.code).toString("hex")}`,
       "1",
       "EX",
       TOTP_PERIOD_SECONDS * 3,

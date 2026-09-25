@@ -54,7 +54,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
     throw new Error("Step-up requires an authenticated operation with MCP disabled.");
   }
   config = { ...config };
-  const run = async (rawInput: TRawInput, meta: ActionMeta) => {
+  const runAction = async (rawInput: TRawInput, meta: ActionMeta) => {
     const startedAt = Date.now();
     const requestId = randomUUID();
     const log = createLogger({ requestId, action: config.name });
@@ -63,7 +63,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
     let parsed: { input: TInput } | undefined;
     let describeAudit: AuditDescription<TInput, TOutput> | undefined;
 
-    const record = (
+    const logOutcome = (
       outcome: "success" | "denied" | "failed",
       fields: Record<string, unknown> = {},
     ) => {
@@ -84,11 +84,14 @@ export function defineAction<TInput, TOutput, TRawInput>(
 
     try {
       // Public actions do not depend on the session store.
-      const resolved =
+      const authSession =
         config.auth === "public"
           ? null
-          : await auth.api.getSession({ headers: meta.headers });
-      if (config.auth !== "public" && !resolved) {
+          : await auth.api.getSession({
+              headers: meta.headers,
+              query: { disableCookieCache: true },
+            });
+      if (config.auth !== "public" && !authSession) {
         throw new ActionError("UNAUTHENTICATED");
       }
 
@@ -118,10 +121,10 @@ export function defineAction<TInput, TOutput, TRawInput>(
         checkEntryPoint(meta, mcpAllowed);
         output = await config.handler(publicCtx, input);
       } else {
-        // Config and resolved are separate values; TypeScript needs this guard
+        // Config and authSession are separate values; TypeScript needs this guard
         // even though the session was required before parsing input above.
-        if (!resolved) throw new ActionError("UNAUTHENTICATED");
-        const { user, session } = resolved;
+        if (!authSession) throw new ActionError("UNAUTHENTICATED");
+        const { user, session } = authSession;
         let authedCtx = Ctx.create<User>({ ...baseCtx, user, session });
         ctx = authedCtx;
         const authedAudit = config.auditLog;
@@ -144,7 +147,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
         output = await config.handler(authedCtx, input);
       }
 
-      record("success");
+      logOutcome("success");
       await writeAudit(describeAudit, log, {
         outcome: "success",
         input,
@@ -158,7 +161,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
         throw error;
 
       if (ActionError.is(error) && error.reason !== "INTERNAL") {
-        record("denied", { reason: error.reason, status: error.status });
+        logOutcome("denied", { reason: error.reason, status: error.status });
         await writeAudit(describeAudit, log, {
           outcome: "denied",
           input: parsed ? parsed.input : null,
@@ -167,7 +170,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
         throw error;
       }
 
-      record("failed", {
+      logOutcome("failed", {
         error: error instanceof Error ? error.stack : String(error),
       });
       if (parsed) {
@@ -180,7 +183,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
       throw new ActionError("INTERNAL", { cause: error });
     }
   };
-  return Object.freeze(Object.assign(run, { mcpAllowed }));
+  return Object.freeze(Object.assign(runAction, { mcpAllowed }));
 }
 
 /** Proxy-provided IPs are audit metadata, never authorization evidence. */

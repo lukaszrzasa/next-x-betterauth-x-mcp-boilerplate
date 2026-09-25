@@ -3,7 +3,7 @@ import { nextCookies } from "better-auth/next-js";
 import { admin, twoFactor } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { ac, roles } from "./permissions";
-import { TOTP_PERIOD_SECONDS } from "./2fa";
+import { TOTP_PERIOD_SECONDS } from "./stepUpPolicy";
 
 import { appName } from "@/src/lib/config";
 import { db } from "@/src/lib/db";
@@ -16,11 +16,23 @@ import {
 
 const TWO_FACTOR_OTP_EXPIRES_IN_MINUTES = 5;
 
+/**
+ * Signed, encrypted copy of the session and user (incl. `role`,
+ * `twoFactorRequired`, `twoFactorEnabled`) in the `session_data` cookie. The
+ * proxy reads it without a store lookup. It can be up to `maxAge` stale, so
+ * access decisions read the store with `disableCookieCache: true`.
+ */
+export const sessionCookieCache = {
+  enabled: true,
+  maxAge: 5 * 60,
+  strategy: "jwe",
+} as const;
+
 export const auth = betterAuth({
   appName,
   user: {
     additionalFields: {
-      // Policy only: enrollment enforcement will be added with the enrollment flow.
+      // Server-owned enrollment policy, enforced before protected access.
       twoFactorRequired: { type: "boolean", defaultValue: false, input: false },
     },
   },
@@ -40,6 +52,7 @@ export const auth = betterAuth({
    * admin screens that list a user's active sessions.
    */
   secondaryStorage: redisSecondaryStorage,
+  session: { cookieCache: sessionCookieCache },
   plugins: [
     admin({
       ac,
@@ -95,13 +108,19 @@ export const auth = betterAuth({
   ],
   emailAndPassword: {
     enabled: true,
+    revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
       await sendPasswordResetEmail({ to: user.email, url, name: user.name });
     },
   },
+  rateLimit: { enabled: true, storage: "secondary-storage" },
   emailVerification: {
-    sendVerificationEmail: async ({ user, url }) => {
-      await sendVerificationEmail({ to: user.email, url, name: user.name });
+    sendOnSignUp: true,
+    autoSignInAfterVerification: false,
+    sendVerificationEmail: async ({ user, url, token }) => {
+      const confirmation = new URL("/auth/email-confirmation", url);
+      confirmation.searchParams.set("token", token);
+      await sendVerificationEmail({ to: user.email, url: confirmation.toString(), name: user.name });
     },
   },
 });

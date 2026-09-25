@@ -1,7 +1,7 @@
 import type { ZodType } from "zod";
 
 import type { Connector, Permission } from "../permissions";
-import type { StepUpPolicy } from "../2fa";
+import type { StepUpPolicy } from "../stepUpPolicy";
 import type { StepUpProof } from "../stepUp";
 import type { AuditEvent } from "./actionAudit";
 import type { AuthedCtx, PublicCtx } from "./context";

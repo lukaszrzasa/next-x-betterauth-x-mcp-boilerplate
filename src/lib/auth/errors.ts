@@ -1,4 +1,4 @@
-import type { StepUpMethod, RequiredStepUp } from "./2fa";
+import type { StepUpMethod, RequiredStepUp } from "./stepUpPolicy";
 
 /**
  * Every way an action can refuse, with the HTTP status a surface that has one

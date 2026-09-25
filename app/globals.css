@@ -1,0 +1,71 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(ui);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(ui);
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Prefixed utilities and a local reset preserve the existing index page. */
+.auth-ui {
+  --background: #fff;
+  --foreground: #0f172a;
+  --card: #fff;
+  --card-foreground: #0f172a;
+  --primary: #1e293b;
+  --primary-foreground: #fff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #334155;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #b91c1c;
+  --border: #e2e8f0;
+  --input: #d9dee5;
+  --ring: #94a3b8;
+  --radius: 0.625rem;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+
+@layer base {
+  .auth-ui *,
+  .auth-ui *::before,
+  .auth-ui *::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+  }
+
+  .auth-ui :where(h1, h2, p, ul) {
+    margin: 0;
+  }
+  .auth-ui :where(button, input) {
+    font: inherit;
+  }
+  .auth-ui :where(a) {
+    color: inherit;
+    text-decoration: inherit;
+  }
+}

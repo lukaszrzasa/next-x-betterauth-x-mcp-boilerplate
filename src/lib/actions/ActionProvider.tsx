@@ -31,7 +31,7 @@ export function ActionProvider({
   const parent = useContext(ActionContext);
   const [runtime] = useState(() =>
     createActionRuntime({
-      present: presentVerification,
+      presentVerification,
       sendEmail: sendStepUpEmail,
     }),
   );

@@ -7,7 +7,7 @@ This document defines the application’s constraints, implementation defaults, 
 - Next.js application with SSR, Server Actions, and selected MCP tools. Application REST endpoints are out of scope; adding them requires an explicit scope decision and docs update. Auth and MCP protocol handlers are distinct from an application REST surface.
 - Global users and roles; no tenants or organization membership scaffolding.
 - Better Auth with one auth authority and shared role/permission definitions. Admin receives every declared permission through the shared role evaluator; unknown permissions deny. Authentication, verification and business invariants still apply to admin.
-- Password sign-in with email OTP or authenticator TOTP. Staff must enroll the required second factor. Remembered login verification is allowed and never grants operation step-up; enrollment and sign-in enforcement are deferred until those flows are designed. Magic links are out of scope.
+- Password sign-in with email OTP or authenticator TOTP. Staff must enroll the required second factor. Remembered login verification never grants operation step-up. Auth views require authenticator or recovery-code verification for enrolled accounts; setup enrolls the initial admin. General account enrollment/settings are not exposed. Magic links are out of scope.
 - MCP requires explicit operation opt-in and cannot invoke operations requiring step-up, even for admin. Initial MCP use is finding accounts and reading role/status with an explicit safe response shape.
 - MCP user lookup is available to authenticated admins and staff whose roles grant user lookup. A connection uses the connected user's authority; it is not an implicit admin identity.
 - Admin shell, R2 upload/storage integration with a working example, Resend integration, and WebSocket editing presence. Presence covers all staff on form pages, without dirty state, typing indicators, or inferred edit locks. A complete media library is out of scope.
@@ -18,7 +18,7 @@ The shared operation owns validated input, permission policy, required verificat
 
 Trusted entry adapters resolve caller identity and entry-point information. Clients cannot supply an authoritative role, verification grant, or a flag claiming to be a different transport. A branded TypeScript context prevents some accidental misuse but is not runtime authorization.
 
-The planned staff enrollment gate must be enforced on protected reads and operations, including direct Server Action and MCP calls, not only by a panel layout redirect. Use current authoritative roles, account status and session/token validity for protected calls. Long-lived MCP/presence connections must lose revoked privileges; define and test invalidation/revalidation rather than trusting the role captured when a connection opened. This does not require one particular cache implementation.
+The current auth views and shared operation pipeline use Better Auth sessions directly. The signed session-token cookie identifies the Redis-backed session; there is no application-level user query on each session read. Staff promotion remains future work. Accounts requiring enrollment can access only `/auth/enroll`, sign-out, and email confirmation until Better Auth verifies TOTP. The request proxy, protected page guard, operation authorization, and auth HTTP boundary enforce this using the provider session. Long-lived MCP/presence connections must lose revoked privileges; define and test invalidation/revalidation rather than trusting the role captured when a connection opened. This does not require one particular cache implementation.
 
 MCP eligibility checks apply in the shared operation path as well as MCP registration. Omitting a tool alone is insufficient: a generic tool must not expose the operation indirectly. Admin permission bypass never turns into a bypass of this restriction.
 
@@ -55,7 +55,7 @@ app/
   (UsersModule)/
     _/
       types.ts                   # shared type declarations
-      schemas.ts
+      schema.ts
       actions.ts                 # Next.js Server Action exports
       db/
         users-service.ts
@@ -79,6 +79,7 @@ src/
   lib/
     auth/                        # one global Better Auth configuration
     actions/                     # reusable action runtime/builders
+    forms/                       # Zod + react-hook-form helpers (useSchemaForm, schemaDefaults)
     db/                          # database client and schema
     redis/
     storage/                     # R2
@@ -102,7 +103,7 @@ A business capability owns product rules and a lifecycle; global use does not tu
 
 For example, R2 storage is infrastructure, encoding an image is a technical helper, and a media library with usage rules is a business capability. WebSocket transport is infrastructure; deciding which administrators can see each other's presence is application policy.
 
-Search for an existing implementation before adding a helper. Keep a new helper local unless it is deliberately shared infrastructure or has an actual shared meaning and consumer. Promote a useful existing implementation rather than copying it. Do not combine superficially similar functions whose business meanings differ.
+Search for an existing implementation before adding a helper. Place a helper by what it is, not by how many callers it has today. A helper with no domain semantics (it only knows a library or a data shape, such as Zod, react-hook-form, or dates) is global and goes in `src/lib` immediately, even with a single consumer; a helper left in a module is invisible to the next developer or agent, who rewrites it months later in another module. Keep a helper local only when it encodes the owning module's rules or vocabulary. Promote a useful existing implementation rather than copying it. Do not combine superficially similar functions whose business meanings differ.
 
 Date formatting should have discoverable shared functions with explicit semantics. A calendar date must not silently acquire a timezone conversion merely to use the same helper as an instant. Locale and timezone are part of the formatting contract, not incidental caller details.
 
@@ -162,13 +163,13 @@ harmless edits and security changes need different verification requirements.
 `twoFactorRequired` is a server-owned user policy field, separate from Better Auth's
 `twoFactorEnabled` enrollment state. The migration marks existing admins and
 moderators as required; ordinary users default to false. Future staff assignment
-must maintain this requirement. The field alone does not restrict any action;
-the enrollment gate and role-assignment integration are deferred to the next flow
-design. A remembered-login window is allowed; an initially unchecked trust-device
-checkbox for admins is planned UI behavior, not server enforcement.
+must maintain this requirement. Role-assignment UI remains future work. Required
+enrollment uses Better Auth at `/auth/enroll`, independently of the initial setup page.
+Accounts with an enrolled factor receive Better Auth login challenges.
+The current sign-in forms do not request trusted-device cookies.
 
 
-Initial enrollment cannot require a factor that does not exist yet. A newly authenticated staff member without the required verification may access only the enrollment/verification flow and sign-out until completion, not panel data, operations, MCP lookup, or presence. Enrollment must prove the selected method using the supported Better Auth flow; changing or disabling an existing factor requires step-up and remains unavailable through MCP.
+For future staff enrollment: initial enrollment cannot require a factor that does not exist yet. A newly authenticated staff member without the required verification may access only the enrollment/verification flow and sign-out until completion, not panel data, operations, MCP lookup, or presence. Enrollment must prove the selected method with Better Auth-compatible verification; changing or disabling an existing factor requires step-up and remains unavailable through MCP.
 
 Forgotten-password and lost-factor recovery cannot require an already authenticated session and the unavailable factor. These are separate, narrowly scoped recovery flows with expiring single-use proofs and the supported provider checks, never a generic step-up bypass or MCP tool. Recovery must not silently grant panel access before required verification is complete. Initial enrollment, ordinary verification, and recovery do not expose unrestricted administrative operations.
 
@@ -194,7 +195,7 @@ R2 failures fail uploads without reporting success. Resend failures do not claim
 
 Database changes that must succeed together use a transaction. For effects outside that transaction, state whether loss is acceptable. Required eventual delivery needs durable retry; best-effort presence does not justify adding a general event bus. R2 and database updates require explicit ordering and cleanup on partial failure, not a claim of cross-service atomicity.
 
-Ordinary non-staff users may opt into 2FA; panel access always requires it. Assign one role per user. Role composition is out of scope; this is a product default, not a Better Auth limitation. Do not expose impersonation, a role editor, bulk operations, or additional plugins merely because a dependency provides them.
+Ordinary users may access the current minimal account page without 2FA. Already enrolled accounts must complete their login challenge. Setup enrolls the initial administrator. Future administration surfaces retain staff verification requirements; ordinary-user enrollment UI remains out of scope. Assign one role per user. Role composition is out of scope; this is a product default, not a Better Auth limitation. Do not expose impersonation, a role editor, bulk operations, or additional plugins merely because a dependency provides them.
 
 ## Agent completion defaults
 
@@ -211,3 +212,54 @@ Architecture is the source for current constraints and defaults; the glossary de
 Hard constraints include policy enforcement, explicit MCP opt-in without step-up, runtime separation, and admin-scope isolation. Current scope constraints include no tenancy and no application REST endpoints. These can change through an explicit scope decision, not an incidental implementation exception.
 
 Defaults include filenames, shared-directory names, internal subdivisions, extraction timing, and the infrastructure choices above. An agent may make a local reversible exception with a concrete reason and appropriate verification. For example, keep an image helper local when its only consumer is one capability, or keep a small definition’s handler as a direct call to its db-service rather than extracting another helper. An exception to a default cannot weaken a hard constraint.
+
+
+## Authentication views and bootstrap
+
+`/auth/sign-in`, `/auth/sign-up`, `/auth/forgot-password`, and `/auth/reset-password`
+are guest-only. `/auth/email-confirmation?token=…` works with or without a session.
+Sign-up sends a confirmation email and creates a session; verification is not
+required to use the minimal `/panel` account page. That page displays only account
+identity, role, email-confirmation status, and sign-out. No navigation shell or
+post-login account-management actions are included. Password reset revokes sessions
+and preserves existing 2FA. Recovery codes replace the second factor, not the password.
+
+`/auth/setup` is available only when the installation table is empty and no users
+exist. After setup, the installation row stores the root user's ID and creation
+time. There are no setup environment flags, recovery passwords, rate limits, or
+second-admin setup paths. Root account replacement is outside the current scope.
+
+Next.js validates this state at server startup and caches it for subsequent
+requests. Before setup completes, only the setup page and its static assets are
+accessible; other pages redirect there and APIs are blocked. An existing user
+without an installation record blocks setup as well as normal application access.
+The setup transaction rechecks both tables to reject duplicate submissions.
+
+The setup flow starts in `app/(AuthModule)/_/operations/setup.ts`:
+`setupRootAdmin` requires a guest and delegates account creation to
+`createRootAdminAccount` in `db/setupService.ts`. The service requires an empty installation table and no users. It binds the existing Better Auth
+configuration to a Drizzle transaction and calls the server-only `createUser` API.
+Better Auth owns IDs, password hashing and credential records. An advisory lock
+serializes competing submissions; account creation and the installation marker
+commit together. No custom TOTP secret, challenge cookie or Redis enrollment
+record exists.
+
+The admin initially has `twoFactorRequired=true` and `twoFactorEnabled=false`.
+Password sign-in creates a Better Auth session restricted by application policy
+to enrollment, sign-out and email confirmation. `/auth/enroll` uses provider
+`twoFactor.enable({ method: "totp" })` and `verifyTotp`; recovery codes appear after
+verification. Interrupted enrollment can restart after sign-in even with
+the initial setup page closed. Subsequent logins use Better Auth's factor challenge and
+single-use recovery codes. Ordinary users have no enrollment UI.
+
+The HTTP auth boundary keeps admin operations and factor settings private.
+Only required, unenrolled accounts can enable TOTP; enabling email OTP cannot
+satisfy this requirement. Provider login challenges and recovery remain available.
+Official shadcn components use Radix primitives and prefixed Tailwind utilities;
+the reset and theme tokens are scoped to `.auth-ui`, preserving the existing
+index page and its styling. Each form has its own component and hook, React Hook
+Form uses shared Zod schemas, and every exported schema has a matching
+capitalized `z.infer` type. Server Actions directly export
+`toServerAction(definition)` with inferred types (for example
+`setupRootAdminAction = toServerAction(setupRootAdmin)`), as
+verified against the installed Next.js compiler.

@@ -13,7 +13,7 @@ const internalOnly = [
   {
     name: "@/src/lib/db",
     message:
-      "Database access belongs in a db-service under src/lib that takes a Ctx. Feature code must go through defineAction.",
+      "Database access belongs in an owning db-service that takes a Ctx. Feature code must go through defineAction.",
   },
   {
     name: "@/src/lib/redis",
@@ -28,7 +28,7 @@ const eslintConfig = defineConfig([
 
   {
     files: ["**/*.{ts,tsx,mts}"],
-    ignores: ["src/lib/**"],
+    ignores: ["src/lib/**", "app/**/_/db/**"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -44,10 +44,28 @@ const eslintConfig = defineConfig([
               ],
             },
             {
-              group: [
-                "**/builders/context",
-                "**/builders/context/**",
-              ],
+              group: ["**/builders/context", "**/builders/context/**"],
+              allowTypeImports: true,
+              message:
+                "Import context types only. Runtime contexts are constructed by defineAction.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    files: ["app/**/_/db/**/*.{ts,tsx,mts}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: internalOnly.filter((entry) => entry.name !== "@/src/lib/db"),
+          patterns: [
+            { group: ["**/lib/redis", "**/lib/redis/*"] },
+            {
+              group: ["**/builders/context", "**/builders/context/**"],
               allowTypeImports: true,
               message:
                 "Import context types only. Runtime contexts are constructed by defineAction.",

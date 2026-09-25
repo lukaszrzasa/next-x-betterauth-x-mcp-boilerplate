@@ -3,9 +3,9 @@ import "server-only";
 import type { ReactNode } from "react";
 import { Resend } from "resend";
 
-import ResetPassword from "./templates/reset-password";
-import TwoFactorOtp from "./templates/two-factor-otp";
-import VerifyEmail from "./templates/verify-email";
+import ResetPassword from "./templates/ResetPassword";
+import TwoFactorOtp from "./templates/TwoFactorOtp";
+import VerifyEmail from "./templates/VerifyEmail";
 
 let client: Resend | undefined;
 
@@ -28,7 +28,7 @@ function resend() {
 }
 
 /**
- * Verified sending domain, e.g. "Acme <no-reply@acme.com>".
+ * Verified sending domain, e.g. "Boilerplate <no-reply@example.com>".
  * `onboarding@resend.dev` is Resend's shared sandbox sender: it only delivers to
  * the email address that owns the Resend account, so it is dev-only.
  */

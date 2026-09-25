@@ -7,4 +7,4 @@
  * later invalidates nothing, but it does rename every already-enrolled entry
  * in users' authenticator apps, so pick it once.
  */
-export const appName = "Acme";
+export const appName = "Boilerplate";

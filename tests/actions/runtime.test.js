@@ -28,7 +28,7 @@ const signal = () => new AbortController().signal;
 
 function runtime(present) {
   return createActionRuntime({
-    present,
+    presentVerification: present,
     sendEmail: async () => ({ ok: true, data: undefined }),
   });
 }
@@ -130,7 +130,7 @@ describe("action lifecycle", () => {
       return "cancelled";
     });
     const rt = createActionRuntime({
-      present,
+      presentVerification: present,
       sendEmail: () => sending.promise,
     });
     const a = rt.execute(async () => required, 1, abort.signal);
@@ -193,7 +193,7 @@ describe("action lifecycle", () => {
     };
     const rt = createActionRuntime({
       sendEmail: async () => limited,
-      present: async (request) => {
+      presentVerification: async (request) => {
         expect(await request.sendEmail()).toEqual(limited);
         await request.submit(proof);
         return "finished";

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { useOperationStatus } from "../hooks/useOperationStatus";
 import { useActionContext } from "./ActionProvider";
 import type { ActionOptions, ActionOutcome, ServerAction } from "./types";
 
@@ -12,8 +13,8 @@ export function useAction<I, O>(
   const { onSuccess, onError } = options;
   const mounted = useRef(true);
   const active = useRef<AbortController | null>(null);
-  const [isPending, setPending] = useState(false);
-  const [result, setResult] = useState<ActionOutcome<O> | null>(null);
+  const { pending, result, start, succeed, reset } =
+    useOperationStatus<ActionOutcome<O>>();
 
   useEffect(() => {
     mounted.current = true;
@@ -29,29 +30,30 @@ export function useAction<I, O>(
       if (active.current) return { status: "busy" };
       const controller = new AbortController();
       active.current = controller;
-      setPending(true);
-      setResult(null);
+      const live = () => mounted.current && !controller.signal.aborted;
+      start();
       try {
         const outcome = await runtime.execute(action, input, controller.signal);
-        if (mounted.current && !controller.signal.aborted) {
-          setResult(outcome);
+        if (live()) {
+          succeed(outcome);
           if (outcome.status === "success") onSuccess?.(outcome.data);
           if (
             outcome.status === "error" &&
             onError?.(outcome.error) !== true &&
-            mounted.current &&
-            !controller.signal.aborted
+            live()
           )
             reportError(outcome.error);
         }
         return outcome;
+      } catch (error) {
+        if (live()) reset();
+        throw error;
       } finally {
         if (active.current === controller) active.current = null;
-        if (mounted.current && !controller.signal.aborted) setPending(false);
       }
     },
-    [action, onSuccess, onError, runtime, reportError],
+    [action, onSuccess, onError, runtime, reportError, start, succeed, reset],
   );
 
-  return { execute, isPending, result };
+  return { execute, isPending: pending, result };
 }
