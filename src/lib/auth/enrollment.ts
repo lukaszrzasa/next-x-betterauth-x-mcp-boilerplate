@@ -1,7 +1,4 @@
-import { hasRole, type RoleName, type UserRole } from "./permissions";
-
-/** Roles that must always sign in with an authenticator app. */
-const ROLES_REQUIRING_TWO_FACTOR: readonly RoleName[] = ["admin", "moderator"];
+import { hasRole, STAFF_ROLES, type UserRole } from "./permissions";
 
 /** Application policy only; Better Auth owns enrollment and verification. */
 export function needsTwoFactorEnrollment(user: {
@@ -10,7 +7,7 @@ export function needsTwoFactorEnrollment(user: {
   twoFactorEnabled?: boolean | null;
 }) {
   return (
-    (hasRole(user.role, ROLES_REQUIRING_TWO_FACTOR) ||
+    (hasRole(user.role, STAFF_ROLES) ||
       user.twoFactorRequired === true) &&
     !user.twoFactorEnabled
   );

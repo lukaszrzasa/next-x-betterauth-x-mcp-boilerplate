@@ -1,20 +1,13 @@
 import Image from "next/image";
+import { AppBrand } from "@/app/_/shell/AppBrand";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { appName } from "@/src/lib/config";
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="auth-ui ui:-m-2 ui:grid ui:min-h-dvh ui:bg-background ui:md:grid-cols-[minmax(350px,48%)_1fr] ui:lg:grid-cols-[minmax(420px,40%)_1fr]">
+    <main className="app-ui ui:grid ui:min-h-dvh ui:bg-background ui:md:grid-cols-[minmax(350px,48%)_1fr] ui:lg:grid-cols-[minmax(420px,40%)_1fr]">
       <section className="ui:flex ui:min-h-dvh ui:min-w-0 ui:flex-col ui:px-6 ui:py-7 ui:md:p-8 ui:lg:px-14 ui:lg:pt-10">
-        <div className="ui:flex ui:items-center ui:gap-2.5 ui:text-xl ui:font-bold ui:tracking-tight">
-          <span
-            aria-hidden="true"
-            className="ui:grid ui:size-8 ui:place-items-center ui:rounded-lg ui:bg-primary ui:text-primary-foreground"
-          >
-            B
-          </span>
-          {appName}
-        </div>
+        <AppBrand className="ui:self-start" />
         <Card className="ui:mx-auto ui:my-auto ui:w-full ui:max-w-[360px] ui:border-0 ui:py-16 ui:shadow-none">
           <CardContent className="ui:px-0">{children}</CardContent>
         </Card>
@@ -27,7 +20,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       </section>
       <aside
         aria-label="Decorative placeholder"
-        className="ui:relative ui:my-3.5 ui:mr-3.5 ui:hidden ui:min-h-[600px] ui:overflow-hidden ui:rounded-xl ui:bg-slate-200 ui:md:block"
+        className="ui:relative ui:my-3.5 ui:mr-3.5 ui:hidden ui:min-h-[600px] ui:overflow-hidden ui:rounded-xl ui:bg-muted ui:md:block"
       >
         <Image
           src="/auth-placeholder.svg"

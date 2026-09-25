@@ -41,9 +41,65 @@ const contextTypesOnly = {
     "Import context types only. Runtime contexts are constructed by defineAction.",
 };
 
+const PAGE_FACTORY_MODULE = "@/app/_/access";
+
+/**
+ * Every page under an `admin` segment is written as
+ * `export default page(route, render)` from `@/app/_/access`, so its
+ * access rule is the declared route's and cannot be left out. Anything else
+ * as the default export is an error.
+ */
+const adminPageRule = {
+  meta: {
+    type: "problem",
+    docs: { description: "Admin pages must be declared through page()." },
+    messages: {
+      notFactory:
+        "Admin pages must be written as `export default page(route, render)` with `page` imported from " +
+        `"${PAGE_FACTORY_MODULE}".`,
+    },
+    schema: [],
+  },
+  create(context) {
+    let factoryName = null;
+
+    return {
+      ImportDeclaration(node) {
+        if (node.source.value !== PAGE_FACTORY_MODULE) return;
+        for (const specifier of node.specifiers) {
+          if (
+            specifier.type === "ImportSpecifier" &&
+            (specifier.imported.name ?? specifier.imported.value) === "page"
+          ) {
+            factoryName = specifier.local.name;
+          }
+        }
+      },
+      ExportDefaultDeclaration(node) {
+        const declaration = node.declaration;
+        const isFactoryCall =
+          factoryName !== null &&
+          declaration.type === "CallExpression" &&
+          declaration.callee.type === "Identifier" &&
+          declaration.callee.name === factoryName;
+
+        if (!isFactoryCall) {
+          context.report({ node, messageId: "notFactory" });
+        }
+      },
+    };
+  },
+};
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+
+  {
+    files: ["app/**/admin/**/page.{ts,tsx}"],
+    plugins: { app: { rules: { "admin-page": adminPageRule } } },
+    rules: { "app/admin-page": "error" },
+  },
 
   // Everything the two blocks below do not narrow further.
   {

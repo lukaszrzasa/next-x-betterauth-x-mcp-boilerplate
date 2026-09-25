@@ -4,7 +4,7 @@ import { authClient } from "@/src/lib/auth/client";
 import { useOperationStatus } from "@/src/lib/hooks/useOperationStatus";
 import { unwrapAuthResult } from "@/app/(AuthModule)/_/utils/unwrapAuthResult";
 import { useSessionRedirect } from "./useSessionRedirect";
-import { authRoutes } from "@/src/lib/auth/routes";
+import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 const signOutFailedMessage = "Unable to sign out. Please try again.";
 
@@ -18,7 +18,7 @@ export function useSignOut() {
     try {
       unwrapAuthResult(await authClient.signOut(), signOutFailedMessage);
       succeed();
-      redirect(authRoutes.signIn);
+      redirect(authRoutes.signIn.href);
     } catch (cause) {
       fail(cause instanceof Error ? cause.message : signOutFailedMessage);
     }

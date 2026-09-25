@@ -2,11 +2,16 @@
 @import "tailwindcss/theme.css" layer(theme) prefix(ui);
 @import "tailwindcss/utilities.css" layer(utilities) prefix(ui);
 
+/* `ui:dark:*` follows the document class that next-themes maintains. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -19,18 +24,29 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Prefixed utilities and a local reset preserve the existing index page. */
-.auth-ui {
+/* Theme tokens live on the document so portaled content (menus, drawers,
+   tooltips rendered under <body>) resolves them without a wrapper. */
+:root {
   --background: #fff;
   --foreground: #0f172a;
   --card: #fff;
   --card-foreground: #0f172a;
+  --popover: #fff;
+  --popover-foreground: #0f172a;
   --primary: #1e293b;
   --primary-foreground: #fff;
   --secondary: #f1f5f9;
@@ -43,29 +59,97 @@
   --border: #e2e8f0;
   --input: #d9dee5;
   --ring: #94a3b8;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #1e293b;
+  --sidebar-primary-foreground: #fff;
+  --sidebar-accent: #e2e8f0;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #94a3b8;
   --radius: 0.625rem;
-  font-family: var(--font-geist-sans), Arial, sans-serif;
-  line-height: 1.5;
-  color: var(--foreground);
+}
+
+.dark {
+  --background: #0b1220;
+  --foreground: #e2e8f0;
+  /* Cards share the page surface, as in light mode; only floating surfaces lift. */
+  --card: #0b1220;
+  --card-foreground: #e2e8f0;
+  --popover: #111a2b;
+  --popover-foreground: #e2e8f0;
+  --primary: #e2e8f0;
+  --primary-foreground: #0f172a;
+  --secondary: #1e293b;
+  --secondary-foreground: #e2e8f0;
+  --muted: #172033;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f1f5f9;
+  --destructive: #f87171;
+  --border: #243044;
+  --input: #2b3850;
+  --ring: #64748b;
+  --sidebar: #0f172a;
+  --sidebar-foreground: #e2e8f0;
+  --sidebar-primary: #e2e8f0;
+  --sidebar-primary-foreground: #0f172a;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f1f5f9;
+  --sidebar-border: #243044;
+  --sidebar-ring: #64748b;
 }
 
 @layer base {
-  .auth-ui *,
-  .auth-ui *::before,
-  .auth-ui *::after {
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-geist-sans), Arial, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Local reset. Applied by the application shell, the auth layout and every
+     portaled surface (menus, drawers, tooltips) instead of a global preflight. */
+  .app-ui *,
+  .app-ui *::before,
+  .app-ui *::after {
     box-sizing: border-box;
     border-width: 0;
     border-style: solid;
+    border-color: var(--border);
   }
 
-  .auth-ui :where(h1, h2, p, ul) {
+  .app-ui :where(h1, h2, h3, p, ul, ol) {
     margin: 0;
   }
-  .auth-ui :where(button, input) {
-    font: inherit;
+  .app-ui :where(ul, ol) {
+    padding: 0;
+    list-style: none;
   }
-  .auth-ui :where(a) {
+  .app-ui :where(button, input) {
+    font: inherit;
+    color: inherit;
+  }
+  .app-ui :where(button) {
+    background: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .app-ui :where(a) {
     color: inherit;
     text-decoration: inherit;
+  }
+  .app-ui :where(svg) {
+    display: block;
   }
 }

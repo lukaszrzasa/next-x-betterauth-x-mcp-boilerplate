@@ -6,7 +6,7 @@ import { emailChallengeSchema } from "@/app/(AuthModule)/_/schema";
 import { unwrapAuthResult } from "@/app/(AuthModule)/_/utils/unwrapAuthResult";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
 import { useSessionRedirect } from "@/app/(AuthModule)/_/hooks/useSessionRedirect";
-import { authRoutes } from "@/src/lib/auth/routes";
+import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 export type EmailCodeDelivery =
   | { status: "sending" }
@@ -59,7 +59,7 @@ export function useEmailChallengeForm({
       await authClient.twoFactor.verifyOtp({ code, trustDevice: false }),
       "Unable to verify this code.",
     );
-    redirect(authRoutes.panel);
+    redirect(authRoutes.panel.href);
   });
 
   return { form, onSubmit, delivery, resendCode: sendCode };

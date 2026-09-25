@@ -6,7 +6,7 @@ import { signInSchema } from "@/app/(AuthModule)/_/schema";
 import { unwrapAuthResult } from "@/app/(AuthModule)/_/utils/unwrapAuthResult";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
 import { useSessionRedirect } from "@/app/(AuthModule)/_/hooks/useSessionRedirect";
-import { authRoutes } from "@/src/lib/auth/routes";
+import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 export function useSignInForm() {
   const redirect = useSessionRedirect();
@@ -27,7 +27,7 @@ export function useSignInForm() {
       return;
     }
 
-    redirect(authRoutes.panel);
+    redirect(authRoutes.panel.href);
   });
 
   function restartSignIn() {

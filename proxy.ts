@@ -3,7 +3,7 @@ import { getCookieCache, getSessionCookie } from "better-auth/cookies";
 import { auth, sessionCookieCache } from "@/src/lib/auth";
 import { needsTwoFactorEnrollment } from "@/src/lib/auth/enrollment";
 import { isInstallationComplete } from "@/src/lib/auth/installation";
-import { authRoutes } from "@/src/lib/auth/routes";
+import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 /** The cached payload carries this app's user fields, e.g. `twoFactorRequired`. */
 type SessionCookieCache = NonNullable<
@@ -13,8 +13,8 @@ type SessionCookieCache = NonNullable<
 
 /** Pages a session that still has to enroll may open. */
 const PAGES_ALLOWED_DURING_ENROLLMENT: readonly string[] = [
-  authRoutes.enroll,
-  authRoutes.emailConfirmation,
+  authRoutes.enroll.href,
+  authRoutes.emailConfirmation.href,
 ];
 
 /**
@@ -57,7 +57,7 @@ export async function proxy(request: NextRequest) {
   // API calls and form posts get a JSON error; page visits get a redirect.
   const expectsJson = path.startsWith("/api/") || request.method !== "GET";
 
-  if (path === authRoutes.setup) {
+  if (path === authRoutes.setup.href) {
     return NextResponse.next();
   }
 
@@ -69,11 +69,11 @@ export async function proxy(request: NextRequest) {
       );
     }
 
-    return NextResponse.redirect(new URL(authRoutes.setup, request.url));
+    return NextResponse.redirect(new URL(authRoutes.setup.href, request.url));
   }
 
   if (
-    !path.startsWith(`${authRoutes.api}/`) &&
+    !path.startsWith(`${authRoutes.api.href}/`) &&
     !PAGES_ALLOWED_DURING_ENROLLMENT.includes(path)
   ) {
     const { user, setCookies } = await getRedirectUser(request);
@@ -90,7 +90,7 @@ export async function proxy(request: NextRequest) {
       }
 
       return withCookies(
-        NextResponse.redirect(new URL(authRoutes.enroll, request.url)),
+        NextResponse.redirect(new URL(authRoutes.enroll.href, request.url)),
         setCookies,
       );
     }

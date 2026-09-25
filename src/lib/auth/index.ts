@@ -14,7 +14,7 @@ import {
   sendTwoFactorOtpEmail,
   sendVerificationEmail,
 } from "@/src/lib/email";
-import { authRoutes } from "./routes";
+import { authRoutes } from "@/app/(AuthModule)/_/routes";
 import { buildRoute } from "@/src/lib/routes";
 
 const TWO_FACTOR_OTP_EXPIRES_IN_MINUTES = 5;
@@ -151,7 +151,7 @@ export const auth = betterAuth({
     sendVerificationEmail: async ({ user, url, token }) => {
       // Better Auth's own `url` targets its API; the app confirms on its own page.
       const confirmation = new URL(
-        buildRoute(authRoutes.emailConfirmation, undefined, { token }),
+        buildRoute(authRoutes.emailConfirmation.href, undefined, { token }),
         url,
       );
       await sendVerificationEmail({ to: user.email, url: confirmation.toString(), name: user.name });

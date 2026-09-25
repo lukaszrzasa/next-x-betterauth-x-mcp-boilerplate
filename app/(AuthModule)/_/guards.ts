@@ -1,24 +1,15 @@
 import "server-only";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { needsTwoFactorEnrollment } from "@/src/lib/auth/enrollment";
-import { auth } from "@/src/lib/auth";
-import { authRoutes } from "@/src/lib/auth/routes";
-
-/** Reads the session store; the cookie cache may be up to `maxAge` stale. */
-async function getFreshSession() {
-  return auth.api.getSession({
-    headers: await headers(),
-    query: { disableCookieCache: true },
-  });
-}
+import { authRoutes } from "@/app/(AuthModule)/_/routes";
+import { getFreshSession } from "@/src/lib/auth/session";
 
 export async function requireGuest() {
   const session = await getFreshSession();
 
   if (session) {
     redirect(
-      needsTwoFactorEnrollment(session.user) ? authRoutes.enroll : authRoutes.panel,
+      needsTwoFactorEnrollment(session.user) ? authRoutes.enroll.href : authRoutes.panel.href,
     );
   }
 }
@@ -28,11 +19,11 @@ export async function requireEnrolledSession() {
   const session = await getFreshSession();
 
   if (!session) {
-    redirect(authRoutes.signIn);
+    redirect(authRoutes.signIn.href);
   }
 
   if (needsTwoFactorEnrollment(session.user)) {
-    redirect(authRoutes.enroll);
+    redirect(authRoutes.enroll.href);
   }
 
   return session;
@@ -43,11 +34,11 @@ export async function requirePendingEnrollment() {
   const session = await getFreshSession();
 
   if (!session) {
-    redirect(authRoutes.signIn);
+    redirect(authRoutes.signIn.href);
   }
 
   if (!needsTwoFactorEnrollment(session.user)) {
-    redirect(authRoutes.panel);
+    redirect(authRoutes.panel.href);
   }
 
   return session;

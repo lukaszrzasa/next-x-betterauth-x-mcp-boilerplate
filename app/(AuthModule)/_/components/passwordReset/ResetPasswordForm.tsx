@@ -7,7 +7,7 @@ import { FieldGroup } from "@/src/components/ui/field";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { FormError } from "@/src/components/forms/FormError";
 import { useResetPasswordForm } from "@/app/(AuthModule)/_/hooks/form/useResetPasswordForm";
-import { authRoutes } from "@/src/lib/auth/routes";
+import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const { form, onSubmit, passwordUpdated } = useResetPasswordForm(token);
@@ -51,7 +51,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         </Button>
         {form.formState.errors.root && (
           <Button asChild variant="link">
-            <Link href={authRoutes.forgotPassword}>Request a new reset link</Link>
+            <Link href={authRoutes.forgotPassword.href}>Request a new reset link</Link>
           </Button>
         )}
       </FieldGroup>

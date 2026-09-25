@@ -8,7 +8,7 @@ export function SignOutButton() {
   const { signOut, pending, error } = useSignOut();
 
   return (
-    <div className="auth-ui ui:space-y-3">
+    <div className="ui:space-y-3">
       <Button onClick={signOut} disabled={pending}>
         {pending ? "Signing out…" : "Sign out"}
       </Button>

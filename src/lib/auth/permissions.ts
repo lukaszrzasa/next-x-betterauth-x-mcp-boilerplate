@@ -42,6 +42,9 @@ export type Permission = {
 /** Role names declared above: `"user" | "moderator" | "admin"`. */
 export type RoleName = keyof typeof roles;
 
+/** Staff: admitted to the dashboard area and required to enroll a second factor. */
+export const STAFF_ROLES: readonly RoleName[] = ["admin", "moderator"];
+
 /**
  * What `session.user.role` holds: a role name, a comma-separated list of them
  * ("admin,moderator"), or nothing. The `string & {}` keeps the known role names in

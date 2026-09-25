@@ -7,7 +7,7 @@ This document defines the application’s constraints, implementation defaults, 
 - Next.js application with SSR, Server Actions, and selected MCP tools. Application REST endpoints are out of scope; adding them requires an explicit scope decision and docs update. Auth and MCP protocol handlers are distinct from an application REST surface.
 - Global users and roles; no tenants or organization membership scaffolding.
 - Better Auth with one auth authority and shared role/permission definitions. Admin receives every declared permission through the shared role evaluator; unknown permissions deny. Authentication, verification and business invariants still apply to admin.
-- Password sign-in with email OTP or authenticator TOTP. Staff must enroll the required second factor. Remembered login verification never grants operation step-up. Auth views require authenticator or recovery-code verification for enrolled accounts; setup enrolls the initial admin. General account enrollment/settings are not exposed. Magic links are out of scope.
+- Password sign-in with email OTP or authenticator TOTP. Staff must enroll the required second factor. Remembered login verification never grants operation step-up. Auth views require authenticator or recovery-code verification for enrolled accounts; setup enrolls the initial admin. General account enrollment/settings are not exposed; the settings pages are empty entry points. Magic links are out of scope.
 - MCP requires explicit operation opt-in and cannot invoke operations requiring step-up, even for admin. Initial MCP use is finding accounts and reading role/status with an explicit safe response shape.
 - MCP user lookup is available to authenticated admins and staff whose roles grant user lookup. A connection uses the connected user's authority; it is not an implicit admin identity.
 - Admin shell, R2 upload/storage integration with a working example, Resend integration, and WebSocket editing presence. Presence covers all staff on form pages, without dirty state, typing indicators, or inferred edit locks. A complete media library is out of scope.
@@ -43,6 +43,17 @@ The MCP adapter must resolve its authenticated caller through the shared guarded
 
 Each module has one module-wide implementation directory, `app/(ModuleName)/_`, and one admin-only implementation directory, `app/(ModuleName)/admin/_`. All module implementation belongs to one of these scopes; route directories hold framework entry files. Do not scatter `_components`, `_actions`, or additional `_` directories throughout individual routes.
 
+Configuration that belongs to a module - its routes above all, and anything whose
+content is about that module even when other code reads it - lives in the module's
+`_`, not in `src/lib`. Only a core capability's infrastructure (Better Auth, the
+permission definitions) is global; a module's routes are never.
+
+The application as a whole has one composition scope, `app/_`, for what belongs to
+no single module and composes several: the shell (`shell/`), the navigation
+(`navigation.ts`), the page factory bound to the app's redirect targets
+(`access.ts`) and the app-level routes (`routes.ts`). It may import any module's
+module-wide `_`; modules do not import it.
+
 - Module-wide `_` is available to both ordinary application code and admin code.
 - `admin/_` is available only to code inside an `admin/` scope. Non-admin code cannot import it, including through re-exports or type-only imports.
 - Admin code can use module-wide code; module-wide code cannot depend on admin code.
@@ -54,6 +65,7 @@ Organize each scope by responsibility so large modules remain navigable:
 app/
   (UsersModule)/
     _/
+      routes.ts                  # route strings and page declarations
       types.ts                   # shared type declarations
       schema.ts
       actions.ts                 # Next.js Server Action exports
@@ -75,8 +87,10 @@ app/
         components/
         hooks/
         utils/
+app/_/                         # application composition: shell, navigation, access binding
 src/
   lib/
+    access/                      # declarative page access: defineRoutes, authorize, page factory
     auth/                        # one global Better Auth configuration
     actions/                     # reusable action runtime/builders
     forms/                       # Zod + react-hook-form helpers (useSchemaForm, schemaDefaults)
@@ -119,11 +133,22 @@ Keep global infrastructure and generic utilities independent of capability-speci
 
 ## Routes
 
-Route strings are declared once per module in a `routes.ts` table (`src/lib/auth/routes.ts`
-for the auth module) and referenced everywhere else: `redirect(authRoutes.signIn)`,
-`<Link href={authRoutes.panel}>`, the proxy's enrollment allow-list, email links. A
-page path never appears as a string literal outside its module's table, so renaming a
-page folder is one edit plus whatever the type checker flags.
+Routes are module data: each module declares its page paths once in
+`app/(ModuleName)/_/routes.ts` and everything else references that table -
+`redirect(authRoutes.signIn)`, `<Link href={authRoutes.panel}>`, the proxy's
+enrollment allow-list, email links, navigation and breadcrumbs. This holds for
+the auth module too: its Better Auth configuration is global infrastructure in
+`src/lib/auth`, but its routes live with the module, and `src/lib/auth` imports
+them from there. Pages the application owns as a whole (the homepage) are in
+`app/_/routes.ts`. A page path never appears as a string literal outside its
+table, so renaming a page folder is one edit plus whatever the type checker flags.
+
+The table is one `defineRoutes` call. An entry is either a plain path (a flow
+page or an API prefix: public, no label) or a full declaration (`href`, `label`,
+`access`, optional `icon`/`match` - see "Application shell and page access");
+both come out as the same shape, so `.href` is always the path
+(`redirect(authRoutes.signIn.href)`) and a full entry is what `page(...)`,
+navigation and breadcrumbs take.
 
 Parameterised paths use the global `buildRoute` helper (`src/lib/routes.ts`). Templates
 use Next's segment syntax so they read like the folder that serves them, and the
@@ -137,6 +162,51 @@ buildRoute("/docs/[...slug]", { slug: ["guide", "setup"] });        // "/docs/gu
 
 `withQuery(path, query)` appends a query string on its own; both skip `null` and
 `undefined` values and encode the rest.
+
+## Application shell and page access
+
+The root layout (`app/layout.tsx`) resolves the request once - the fresh
+session and the `sidebar_state` cookie - and mounts `ViewerProvider` with a
+minimal viewer (`name`, `email`, `image`, `role`, or `null` for guests) above
+the persistent client shell (`app/_/shell/AppShell.tsx`). Nothing is
+passed down as props: the account menu, the sidebar and any client code read
+`useViewer()`, which also exposes `can(access)` bound to the current roles. The
+shell decides its chrome from the pathname alone: authentication views
+(`/auth/*`) keep their own layout; dashboard routes (`/admin`, `/admin/*`)
+receive the collapsible sidebar, the top bar and one `main` landmark; every
+other route receives the top bar only. There is one shell for all modules.
+
+Page access is declared, not coded. A module's route table
+(`app/(ModuleName)/_/routes.ts`) declares each signed-in page with `href`,
+`label`, optional `icon`/`match`, and `access`, which is `"public"`, `"session"`, or
+`{ roles?, perm?, connector? }` - at least one of `roles` and every `perm`
+must hold, evaluated through the shared `hasRole`/`can`, so comma-separated
+roles are honoured everywhere. `authorize(viewer, access)` in
+`src/lib/access/routes.ts` is the only evaluator; navigation
+(`app/_/navigation.ts`, groups composed from the modules' declarations) and
+the page guard both call it, so a link is shown exactly when its page opens.
+
+Pages are written as `export default page(route, render)` from the
+server-only `app/_/access.ts`, which binds the generic factory in
+`src/lib/access/page.tsx` to the application's redirect targets: the factory
+reads the fresh session, enforces the route's `access` and only then renders. Guests go to sign-in;
+refused viewers go to the dashboard if they may open it, otherwise the panel.
+The ESLint rule `app/admin-page` requires this form for every page under an
+`admin` segment, so an admin page without a declared rule fails lint. `guard(route)`
+serves the rare non-page case. Finer checks inside a view use `can(...)`
+directly, server- or client-side; routes are not involved.
+
+The proxy handles installation and enrollment only and does not decide page
+access. Pages own their breadcrumbs explicitly (`AppBreadcrumbs` accepts the
+declared routes as items) and contain nothing else until their feature lands;
+the homepage has no breadcrumb, the settings index redirects to Profile, and
+account settings are reachable by URL only because navigation does not list
+them.
+
+Theme tokens live on `:root` and `.dark`; `next-themes` maintains the document
+class and persists the choice. The local reset applies to `.app-ui`, which the
+shell, the auth layout and every portaled surface carry, instead of a global
+preflight.
 
 ## MCP eligibility and step-up policy
 
@@ -240,9 +310,9 @@ Defaults include filenames, shared-directory names, internal subdivisions, extra
 `/auth/sign-in`, `/auth/sign-up`, `/auth/forgot-password`, and `/auth/reset-password`
 are guest-only. `/auth/email-confirmation?token=…` works with or without a session.
 Sign-up sends a confirmation email and creates a session; verification is not
-required to use the minimal `/panel` account page. That page displays only account
-identity, role, email-confirmation status, and sign-out. No navigation shell or
-post-login account-management actions are included. Password reset revokes sessions
+required to open `/panel`. That page and the settings pages are empty entry points
+carrying only their breadcrumb; account identity and sign-out live in the shell's
+account menu. Password reset revokes sessions
 and preserves existing 2FA. Recovery codes replace the second factor, not the password.
 
 `/auth/setup` is available only when the installation table is empty and no users
@@ -277,8 +347,8 @@ The HTTP auth boundary keeps admin operations and factor settings private.
 Only required, unenrolled accounts can enable TOTP; enabling email OTP cannot
 satisfy this requirement. Provider login challenges and recovery remain available.
 Official shadcn components use Radix primitives and prefixed Tailwind utilities;
-the reset and theme tokens are scoped to `.auth-ui`, preserving the existing
-index page and its styling. Each form has its own component and hook, React Hook
+theme tokens are document-level and the reset is scoped to `.app-ui` (see
+"Application shell and dashboard access"). Each form has its own component and hook, React Hook
 Form uses shared Zod schemas, and every exported schema has a matching
 capitalized `z.infer` type. Server Actions directly export
 `toServerAction(definition)` with inferred types (for example

@@ -7,7 +7,7 @@ import { setupRootAdminAction } from "@/app/(AuthModule)/_/actions";
 import { signUpSchema } from "@/app/(AuthModule)/_/schema";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
 import { useSessionRedirect } from "@/app/(AuthModule)/_/hooks/useSessionRedirect";
-import { authRoutes } from "@/src/lib/auth/routes";
+import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 /** Creates the root administrator, then signs them in and sends them to enrollment. */
 export function useSetupForm() {
@@ -35,7 +35,7 @@ export function useSetupForm() {
     const signIn = await authClient.signIn.email({ email, password });
 
     if (!signIn.error) {
-      redirect(authRoutes.enroll);
+      redirect(authRoutes.enroll.href);
     }
   });
 

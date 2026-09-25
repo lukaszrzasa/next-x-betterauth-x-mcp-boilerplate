@@ -55,11 +55,14 @@ An interrupted enrollment resumes on the next sign-in.
 Setup status is validated when the Next.js server starts and cached for requests.
 Before setup completes, all pages redirect to setup and other APIs are blocked.
 The setup transaction rechecks the database and updates the cached state after
-committing. The homepage source remains unchanged.
+committing.
 
 The auth views cover sign-in, sign-up, confirmation emails, forgot/reset password,
-authenticator challenges and recovery-code login. `/panel` only shows account
-information, email-confirmation status and sign-out. Existing staff without an
+authenticator challenges and recovery-code login. Signed-in pages share one
+application shell: a top bar with theme toggle and account menu (Settings,
+Admin for staff, Sign out), plus a collapsible sidebar on `/admin` routes.
+`/panel`, `/settings/*` and the dashboard pages are empty entry points that
+carry only their breadcrumb. Existing staff without an
 enrolled factor can access only required enrollment, sign-out, and email confirmation.
 Ordinary-user enrollment and post-login account settings remain out of scope.
 

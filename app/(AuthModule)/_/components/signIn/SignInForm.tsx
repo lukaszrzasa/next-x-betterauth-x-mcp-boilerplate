@@ -8,7 +8,7 @@ import { FormInput } from "@/src/components/forms/FormInput";
 import { FormError } from "@/src/components/forms/FormError";
 import { useSignInForm } from "@/app/(AuthModule)/_/hooks/form/useSignInForm";
 import { TwoFactorForm } from "./TwoFactorForm";
-import { authRoutes } from "@/src/lib/auth/routes";
+import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 export function SignInForm() {
   const { form, onSubmit, twoFactorRequired, restartSignIn } = useSignInForm();
@@ -42,7 +42,7 @@ export function SignInForm() {
               asChild
               className="ui:h-auto ui:p-0 ui:text-xs"
             >
-              <Link href={authRoutes.forgotPassword}>Forgot password?</Link>
+              <Link href={authRoutes.forgotPassword.href}>Forgot password?</Link>
             </Button>
           }
         />
