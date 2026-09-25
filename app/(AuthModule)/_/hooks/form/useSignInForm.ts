@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { authClient } from "@/src/lib/auth/client";
-import { signInSchema } from "../../schema";
-import { unwrapAuthResult } from "../../utils/unwrapAuthResult";
+import { signInSchema } from "@/app/(AuthModule)/_/schema";
+import { unwrapAuthResult } from "@/app/(AuthModule)/_/utils/unwrapAuthResult";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
-import { useSessionRedirect } from "../useSessionRedirect";
+import { useSessionRedirect } from "@/app/(AuthModule)/_/hooks/useSessionRedirect";
+import { authRoutes } from "@/src/lib/auth/routes";
 
 export function useSignInForm() {
   const redirect = useSessionRedirect();
@@ -26,7 +27,7 @@ export function useSignInForm() {
       return;
     }
 
-    redirect("/panel");
+    redirect(authRoutes.panel);
   });
 
   function restartSignIn() {

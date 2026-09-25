@@ -4,8 +4,12 @@ import { z } from "zod";
 import type {
   ActionResult,
   ServerAction,
-} from "../auth/builders/adapters/types";
-import type { StepUpProof } from "../auth/stepUp";
+} from "@/src/lib/auth/builders/adapters";
+import {
+  REQUIRED_STEP_UPS,
+  STEP_UP_METHODS,
+  type StepUpProof,
+} from "@/src/lib/auth/stepUpPolicy";
 import type {
   ActionFailure,
   ActionOutcome,
@@ -14,8 +18,8 @@ import type {
 import { VerificationQueue } from "./verificationQueue";
 
 const challengeSchema = z.object({
-  policy: z.enum(["five_minutes", "every_time"]),
-  methods: z.array(z.enum(["totp", "email"])).min(1),
+  policy: z.enum(REQUIRED_STEP_UPS),
+  methods: z.array(z.enum(STEP_UP_METHODS)).min(1),
 });
 
 /** Each server invocation runs in a React action context, including retries. */

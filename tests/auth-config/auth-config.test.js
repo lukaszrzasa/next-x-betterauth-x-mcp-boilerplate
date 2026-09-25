@@ -24,24 +24,20 @@ mock.module("../../src/lib/email/index.tsx", () => ({
 // Import the actual application configuration; replace only external services.
 const { auth } = await import("../../src/lib/auth/index.ts");
 
-test("plugin and application permissions agree, including future declared permissions", async () => {
-  // The shared catalogue grows without requiring a second admin grant list.
-  statement.testResource = ["read", "write"];
-  try {
-    for (const role of ["admin", "moderator", "user", "unknown", "admin,moderator"]) {
-      for (const [resource, actions] of Object.entries(statement)) {
-        for (const action of actions) {
-          const plugin = await auth.api.userHasPermission({ body: { role, permissions: { [resource]: [action] } } });
-          expect(plugin.success).toBe(can(role, `${resource}.${action}`));
-          if (role === "admin") expect(plugin.success).toBe(true);
-        }
+test("plugin and application permissions agree for every declared permission", async () => {
+  // `admin` is built from the whole statement, so anything declared there is
+  // granted without a second list; this walks the catalogue as declared.
+  for (const role of ["admin", "moderator", "user", "unknown", "admin,moderator"]) {
+    for (const [resource, actions] of Object.entries(statement)) {
+      for (const action of actions) {
+        const plugin = await auth.api.userHasPermission({ body: { role, permissions: { [resource]: [action] } } });
+        expect(plugin.success).toBe(can(role, `${resource}.${action}`));
+        if (role === "admin") expect(plugin.success).toBe(true);
       }
     }
-    expect(can("admin", "unknown.read")).toBe(false);
-    expect(can("admin", [])).toBe(false);
-  } finally {
-    delete statement.testResource;
   }
+  expect(can("admin", "unknown.read")).toBe(false);
+  expect(can("admin", [])).toBe(false);
 });
 
 test("2FA requirement is server-owned and independent of enrollment", async () => {
@@ -104,6 +100,30 @@ test("sign-up sends the application confirmation URL and verification works with
   const ctx = await auth.$context;
   expect((await ctx.internalAdapter.findUserById(me.user.id)).emailVerified).toBe(true);
   expect((await authRequest("verify-email?token=invalid")).status).toBe(401);
+});
+
+test("the sign-in email code refuses an unverified address, like step-up does", async () => {
+  const credentials = { email: "otp@example.com", name: "Otp", password: "test-password-12345" };
+  const registered = await authRequest("sign-up/email", credentials);
+  expect(registered.status).toBe(200);
+  const ctx = await auth.$context;
+  const userId = (await registered.json()).user.id;
+  // An enrolled authenticator turns password sign-in into a challenge.
+  await ctx.internalAdapter.updateUser(userId, { twoFactorEnabled: true });
+
+  const challenge = await authRequest("sign-in/email", { email: credentials.email, password: credentials.password });
+  expect((await challenge.json()).twoFactorRedirect).toBe(true);
+  const challengeCookie = responseCookies(challenge);
+  expect(challengeCookie).toContain("two_factor");
+
+  const refused = await authRequest("two-factor/send-otp", {}, challengeCookie);
+  expect(refused.status).toBe(403);
+  expect((await refused.json()).code).toBe("EMAIL_NOT_VERIFIED");
+  expect(mail.sendTwoFactorOtpEmail).not.toHaveBeenCalled();
+
+  await ctx.internalAdapter.updateUser(userId, { emailVerified: true });
+  expect((await authRequest("two-factor/send-otp", {}, challengeCookie)).status).toBe(200);
+  expect(mail.sendTwoFactorOtpEmail).toHaveBeenCalledTimes(1);
 });
 
 test("password reset is single-use, revokes sessions, and preserves enabled 2FA", async () => {

@@ -1,10 +1,8 @@
-import Link from "next/link";
 import {
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/src/components/ui/card";
-import { Button } from "@/src/components/ui/button";
 import { appName } from "@/src/lib/config";
 
 export function AuthHeading({
@@ -28,24 +26,5 @@ export function AuthHeading({
         {children}
       </CardDescription>
     </CardHeader>
-  );
-}
-
-export function AuthFooter({
-  children,
-  href,
-  label,
-}: {
-  children?: React.ReactNode;
-  href: string;
-  label: string;
-}) {
-  return (
-    <p className="ui:mt-6 ui:text-center ui:text-sm ui:text-muted-foreground">
-      {children}
-      <Button variant="link" asChild>
-        <Link href={href}>{label}</Link>
-      </Button>
-    </p>
   );
 }

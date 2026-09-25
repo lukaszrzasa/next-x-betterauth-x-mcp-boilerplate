@@ -1,4 +1,4 @@
-import type { DenialReason } from "../errors";
+import type { DenialReason } from "@/src/lib/auth/errors";
 import type { Logger } from "./context";
 
 export type AuditEvent<TInput, TOutput> =

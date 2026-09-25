@@ -1,7 +1,7 @@
 "use server";
 
 import { defineAction } from "./builders/actionBuilder";
-import { toServerAction } from "./builders/adapters/serverAction";
+import { toServerAction } from "./builders/adapters";
 import { issueEmailChallenge } from "./stepUp";
 
 const sendStepUpEmailAction = toServerAction(

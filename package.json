@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "bun test ./tests/auth/ && bun test ./tests/actions/ && bun test ./tests/auth-http/ && bun test ./tests/auth-config/ && bun test ./tests/redis-client/ && bun test ./tests/auth-setup/ && bun test ./tests/auth-cache/ && bun test ./tests/auth-views/",
+    "test": "bun test ./tests/auth/ && bun test ./tests/routes/ && bun test ./tests/actions/ && bun test ./tests/auth-http/ && bun test ./tests/auth-config/ && bun test ./tests/redis-client/ && bun test ./tests/auth-setup/ && bun test ./tests/auth-cache/ && bun test ./tests/auth-views/",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

@@ -1,9 +1,9 @@
 import type {
   ActionResult,
   ServerAction,
-} from "../auth/builders/adapters/types";
-import type { TwoFactorRequiredData } from "../auth/errors";
-import type { StepUpProof } from "../auth/stepUp";
+} from "@/src/lib/auth/builders/adapters";
+import type { TwoFactorRequiredData } from "@/src/lib/auth/errors";
+import type { StepUpProof } from "@/src/lib/auth/stepUpPolicy";
 
 export type { ServerAction };
 export type ActionFailure =

@@ -4,7 +4,7 @@ import { Button } from "@/src/components/ui/button";
 import { FieldDescription, FieldGroup } from "@/src/components/ui/field";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { FormError } from "@/src/components/forms/FormError";
-import { useRecoveryChallengeForm } from "../../hooks/form/useRecoveryChallengeForm";
+import { useRecoveryChallengeForm } from "@/app/(AuthModule)/_/hooks/form/useRecoveryChallengeForm";
 
 export function RecoveryChallengeForm() {
   const { form, onSubmit } = useRecoveryChallengeForm();

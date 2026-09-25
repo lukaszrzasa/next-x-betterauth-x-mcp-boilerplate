@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { AuthenticatorSetup } from "./useEnrollmentPasswordStep";
-import { useSessionRedirect } from "../useSessionRedirect";
+import { useSessionRedirect } from "@/app/(AuthModule)/_/hooks/useSessionRedirect";
+import { authRoutes } from "@/src/lib/auth/routes";
 
 export type EnrollmentStep =
   | { name: "password" }
@@ -32,7 +33,7 @@ export function useEnrollmentForm() {
   }
 
   function continueToPanel() {
-    redirect("/panel");
+    redirect(authRoutes.panel);
   }
 
   return { step, showVerification, showRecoveryCodes, continueToPanel };

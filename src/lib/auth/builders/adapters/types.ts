@@ -1,5 +1,5 @@
-import type { ActionErrorReason } from "../../errors";
-import type { StepUpProof } from "../../stepUp";
+import type { ActionErrorReason } from "@/src/lib/auth/errors";
+import type { StepUpProof } from "@/src/lib/auth/stepUpPolicy";
 
 export type ClientActionMeta = { stepUp?: StepUpProof };
 

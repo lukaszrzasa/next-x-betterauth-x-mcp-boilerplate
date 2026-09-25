@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { sendStepUpEmail } from "../auth/stepUpActions";
+import { sendStepUpEmail } from "@/src/lib/auth/stepUpActions";
 import { createActionRuntime } from "./actionRuntime";
 import {
   presentVerification,

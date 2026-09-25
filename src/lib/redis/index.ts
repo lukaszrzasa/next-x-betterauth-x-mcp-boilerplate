@@ -50,6 +50,23 @@ export async function incrementWithTtl(key: string, ttlSeconds: number): Promise
 }
 
 /**
+ * Undo one `incrementWithTtl`. A plain DECR on a key that expired in between
+ * would recreate it at -1 with no TTL, and the "set TTL at 1" rule above would
+ * not fire on its way back through 0 - one leaked key per affected session.
+ * Decrementing only while the key exists keeps every counter expiring.
+ */
+const DECREMENT_IF_EXISTS = `
+if redis.call('EXISTS', KEYS[1]) == 1 then
+  return redis.call('DECR', KEYS[1])
+end
+return 0
+`;
+
+export async function decrementIfExists(key: string): Promise<number> {
+  return (await redis.eval(DECREMENT_IF_EXISTS, 1, key)) as number;
+}
+
+/**
  * Better Auth 1.7 widened this interface: on top of the `get`/`set`/`delete`
  * trio most examples show, it now requires `getAndDelete` and `increment`. All
  * five are mandatory - a three-method object no longer type-checks, and

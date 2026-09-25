@@ -1,9 +1,9 @@
 import "server-only";
 
-import { ActionError } from "../../errors";
+import { ActionError } from "@/src/lib/auth/errors";
 import { optionalData } from "./response";
 
-import type { Action, ActionMeta } from "../actionTypes";
+import type { Action, ActionMeta } from "@/src/lib/auth/builders/actionTypes";
 
 /** JSON objects reserve the top-level stepUp field for request metadata. */
 export function toRouteHandler<TInput, TOutput>(

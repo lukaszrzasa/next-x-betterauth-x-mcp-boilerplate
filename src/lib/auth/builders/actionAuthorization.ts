@@ -1,6 +1,6 @@
-import { needsTwoFactorEnrollment } from "../enrollment";
-import { ActionError } from "../errors";
-import { can } from "../permissions";
+import { needsTwoFactorEnrollment } from "@/src/lib/auth/enrollment";
+import { ActionError } from "@/src/lib/auth/errors";
+import { can } from "@/src/lib/auth/permissions";
 import type { AuthedConfig } from "./actionTypes";
 import type { AuthedCtx } from "./context";
 

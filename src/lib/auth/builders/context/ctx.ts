@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { RequiredStepUp } from "../../stepUpPolicy";
+import type { RequiredStepUp } from "@/src/lib/auth/stepUpPolicy";
 import type { CtxInit, Logger, Session, User } from "./types";
 
 /**
@@ -41,6 +41,15 @@ export class Ctx<TUser extends User | null = User> {
   /** @internal */
   static create<TUser extends User | null>(init: CtxInit<TUser>): Ctx<TUser> {
     return new Ctx(init);
+  }
+
+  /**
+   * @internal The builder calls this once step-up has been verified. Contexts
+   * are immutable: anything holding the pre-verification context keeps a
+   * context that claims no step-up.
+   */
+  withStepUp(stepUp: RequiredStepUp): Ctx<TUser> {
+    return new Ctx<TUser>({ ...this, stepUp });
   }
 
   /**

@@ -1,6 +1,6 @@
 import type { ZodType } from "zod";
 
-import { ActionError } from "../errors";
+import { ActionError } from "@/src/lib/auth/errors";
 
 export async function parseInput<TInput>(
   schema: ZodType<TInput> | undefined,

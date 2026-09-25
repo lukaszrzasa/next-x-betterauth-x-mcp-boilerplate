@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { authClient } from "@/src/lib/auth/client";
+import { authRoutes } from "@/src/lib/auth/routes";
 
 export type EmailConfirmationStatus = "verifying" | "confirmed" | "failed";
 
@@ -25,7 +26,7 @@ export function useEmailConfirmation(token?: string): EmailConfirmationStatus {
       .then(({ error }) => {
         setStatus(error ? "failed" : "confirmed");
         // Once consumed, drop the token from the address bar so a refresh cannot resubmit it.
-        window.history.replaceState(null, "", "/auth/email-confirmation");
+        window.history.replaceState(null, "", authRoutes.emailConfirmation);
       })
       .catch(() => setStatus("failed"));
   }, [token]);

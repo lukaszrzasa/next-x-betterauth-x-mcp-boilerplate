@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CODE_PATTERN } from "@/src/lib/auth/stepUpPolicy";
 
 // ---------------------------------------------------------------------------
 // Field schemas
@@ -33,7 +34,12 @@ const currentPasswordSchema = z
 
 const authenticatorCodeSchema = z
   .string()
-  .regex(/^\d{6}$/, "Enter a six-digit authenticator code.")
+  .regex(CODE_PATTERN, "Enter a six-digit authenticator code.")
+  .prefault("");
+
+const emailCodeSchema = z
+  .string()
+  .regex(CODE_PATTERN, "Enter the six-digit code from the email.")
   .prefault("");
 
 const recoveryCodeSchema = z
@@ -72,15 +78,27 @@ export const signInSchema = z.object({
   password: currentPasswordSchema,
 });
 
+/** What the server needs to create an account. */
+const accountFields = {
+  name: nameSchema,
+  email: emailSchema,
+  password: newPasswordSchema,
+};
+
 export const signUpSchema = z
-  .object({
-    name: nameSchema,
-    email: emailSchema,
-    ...newPasswordFields,
-  })
+  .object({ ...accountFields, confirmPassword: newPasswordFields.confirmPassword })
   .refine(passwordsMatch, passwordMismatchError);
 
-export const setupRootAdminSchema = signUpSchema;
+// ---------------------------------------------------------------------------
+// Action schemas
+//
+// The server contract, not the form: the confirmation field is a UI concern
+// and never reaches the server. The field schemas are shared, so their
+// `.prefault("")` still applies; a missing field becomes "" and fails the
+// length checks, which is the intended outcome.
+// ---------------------------------------------------------------------------
+
+export const setupRootAdminSchema = z.object(accountFields);
 
 export const forgotPasswordSchema = z.object({ email: emailSchema });
 
@@ -93,6 +111,8 @@ export const authenticatorChallengeSchema = z.object({
 });
 
 export const recoveryChallengeSchema = z.object({ code: recoveryCodeSchema });
+
+export const emailChallengeSchema = z.object({ code: emailCodeSchema });
 
 export const enrollmentPasswordSchema = z.object({
   password: currentPasswordSchema,
@@ -111,4 +131,5 @@ export type AuthenticatorChallengeSchema = z.infer<
   typeof authenticatorChallengeSchema
 >;
 export type RecoveryChallengeSchema = z.infer<typeof recoveryChallengeSchema>;
+export type EmailChallengeSchema = z.infer<typeof emailChallengeSchema>;
 export type EnrollmentPasswordSchema = z.infer<typeof enrollmentPasswordSchema>;

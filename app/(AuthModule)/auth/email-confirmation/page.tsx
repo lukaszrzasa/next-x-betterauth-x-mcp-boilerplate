@@ -1,5 +1,5 @@
-import { AuthHeading } from "../../_/components/layout/AuthHeading";
-import { EmailConfirmation } from "../../_/components/signUp/EmailConfirmation";
+import { AuthHeading } from "@/app/(AuthModule)/_/components/layout/AuthHeading";
+import { EmailConfirmation } from "@/app/(AuthModule)/_/components/signUp/EmailConfirmation";
 
 export default async function EmailConfirmationPage({
   searchParams,

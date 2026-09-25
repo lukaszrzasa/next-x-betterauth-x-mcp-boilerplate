@@ -36,7 +36,7 @@ export type TwoFactorRequiredData = {
 };
 
 /**
- * Thrown by the action core and by db-services. Surfaces that carry a status
+ * Thrown by the action core and by services. Surfaces that carry a status
  * line render it as a real 4xx; the server-action adapter converts it to a
  * result object, because Next replaces a thrown error's message with an opaque
  * digest in production and the payload above would not survive the trip.

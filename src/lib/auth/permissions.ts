@@ -53,6 +53,27 @@ export type UserRole = RoleName | (string & {}) | null | undefined;
 export type Connector = "AND" | "OR";
 
 /* ---------------------------------------------------------------------------
+ * Role names
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Better Auth stores `user.role` as a comma-separated list ("admin,moderator").
+ * Every role check goes through here so no caller compares the raw string.
+ */
+export function roleNames(role: UserRole): string[] {
+  return (role ?? "user")
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
+/** True when any of the user's roles is one of `names`. */
+export function hasRole(role: UserRole, names: RoleName | readonly RoleName[]): boolean {
+  const wanted: readonly string[] = typeof names === "string" ? [names] : names;
+  return roleNames(role).some((name) => wanted.includes(name));
+}
+
+/* ---------------------------------------------------------------------------
  * can()
  * ------------------------------------------------------------------------- */
 
@@ -109,13 +130,10 @@ export function can(
     return false;
   }
 
-  // Better Auth stores roles as a comma-separated list.
-  const names = (role ?? "user").split(",");
-
   const request = toRequest(requested, connector);
 
   // A user is allowed as soon as one of their roles grants the request.
-  return names.some(
+  return roleNames(role).some(
     (name) => roles[name as RoleName]?.authorize(request, connector).success === true,
   );
 }

@@ -4,7 +4,7 @@ import { Button } from "@/src/components/ui/button";
 import { FieldDescription, FieldGroup } from "@/src/components/ui/field";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { FormError } from "@/src/components/forms/FormError";
-import { useAuthenticatorChallengeForm } from "../../hooks/form/useAuthenticatorChallengeForm";
+import { useAuthenticatorChallengeForm } from "@/app/(AuthModule)/_/hooks/form/useAuthenticatorChallengeForm";
 
 export function AuthenticatorChallengeForm() {
   const { form, onSubmit } = useAuthenticatorChallengeForm();

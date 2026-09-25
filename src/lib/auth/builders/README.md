@@ -1,5 +1,26 @@
 # Auth action builders
 
+## Vocabulary
+
+One concept, three words in the wild - here is which means what:
+
+| Term | Meaning | Where |
+| --- | --- | --- |
+| **Operation** | A `defineAction` definition: name, schema, policy, handler. Transport-agnostic and server-only. | `<module>/_/operations/` |
+| **Action** | A transport adapter around an operation. A *Server Action* is `toServerAction(operation)`; a route handler or MCP tool are the other adapters. | `<module>/_/actions.ts`, `mcp.ts` |
+| **Service** | A data function `service(ctx, input)` that owns one transaction. It takes the builder's context and never constructs one. | `<module>/_/db/` |
+
+`defineAction` returns an operation; the adapters turn it into actions. Only the
+adapters, the runtime pipeline and the `ActionError` type carry "action" in their
+names, and always in this transport sense.
+
+Import paths follow the same split: `defineAction` from `builders/actionBuilder`,
+the config and operation types from `builders/actionTypes`, adapters and their
+wire types from the `builders/adapters` barrel, contexts from `builders/context`.
+Nothing is re-exported from a second place.
+
+## Pipeline
+
 `defineAction` is the entry point for server-side work. Its pipeline is:
 
 1. Resolve and require a session (skipped for `auth: "public"`).
@@ -57,7 +78,7 @@ its caller independently and set `entryPoint: "mcp"` in server-owned metadata.
 It must not invoke browser-facing exports or forward caller metadata. Runtime
 MCP denial remains in the shared pipeline even if registration filtering is missed.
 
-Keep related writes inside one db-service transaction. Services can import
+Keep related writes inside one service transaction. Services can import
 `AuthedCtx` or `PublicCtx` as types from `builders/context`; feature code must not
 construct contexts. A handler's context has passed every configured gate. A
 **denial audit hook has not**: it must not use its context to perform the refused

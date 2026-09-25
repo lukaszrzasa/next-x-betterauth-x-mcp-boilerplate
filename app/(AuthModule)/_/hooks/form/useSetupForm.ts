@@ -3,16 +3,17 @@
 import { useState } from "react";
 import { useAction } from "@/src/lib/actions";
 import { authClient } from "@/src/lib/auth/client";
-import { setupRootAdminAction } from "../../actions";
-import { setupRootAdminSchema } from "../../schema";
+import { setupRootAdminAction } from "@/app/(AuthModule)/_/actions";
+import { signUpSchema } from "@/app/(AuthModule)/_/schema";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
-import { useSessionRedirect } from "../useSessionRedirect";
+import { useSessionRedirect } from "@/app/(AuthModule)/_/hooks/useSessionRedirect";
+import { authRoutes } from "@/src/lib/auth/routes";
 
 /** Creates the root administrator, then signs them in and sends them to enrollment. */
 export function useSetupForm() {
   const redirect = useSessionRedirect();
   const [rootAdminCreated, setRootAdminCreated] = useState(false);
-  const { form, createSubmitHandler } = useSchemaForm(setupRootAdminSchema);
+  const { form, createSubmitHandler } = useSchemaForm(signUpSchema);
   const setupRootAdmin = useAction(setupRootAdminAction, {
     // Returning true marks the error handled, so it stays on the form instead of the global reporter.
     onError: (error) => {
@@ -21,8 +22,8 @@ export function useSetupForm() {
     },
   });
 
-  const onSubmit = createSubmitHandler(async (input) => {
-    const result = await setupRootAdmin.execute(input);
+  const onSubmit = createSubmitHandler(async ({ name, email, password }) => {
+    const result = await setupRootAdmin.execute({ name, email, password });
 
     if (result.status !== "success") {
       return;
@@ -31,13 +32,10 @@ export function useSetupForm() {
     setRootAdminCreated(true);
 
     // Best effort: the account exists either way, and the created view links to manual sign-in.
-    const signIn = await authClient.signIn.email({
-      email: input.email,
-      password: input.password,
-    });
+    const signIn = await authClient.signIn.email({ email, password });
 
     if (!signIn.error) {
-      redirect("/auth/enroll");
+      redirect(authRoutes.enroll);
     }
   });
 

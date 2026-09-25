@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/src/components/ui/card";
 import { FieldDescription, FieldGroup } from "@/src/components/ui/field";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { FormError } from "@/src/components/forms/FormError";
-import { useEnrollmentVerifyStep } from "../../hooks/form/useEnrollmentVerifyStep";
+import { useEnrollmentVerifyStep } from "@/app/(AuthModule)/_/hooks/form/useEnrollmentVerifyStep";
 
 export function EnrollmentVerifyStep({
   totpURI,

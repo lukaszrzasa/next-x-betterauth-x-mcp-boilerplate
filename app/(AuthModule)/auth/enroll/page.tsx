@@ -1,7 +1,7 @@
-import { requirePendingEnrollment } from "../../_/guards";
-import { AuthHeading } from "../../_/components/layout/AuthHeading";
-import { EnrollmentForm } from "../../_/components/enrollment/EnrollmentForm";
-import { SignOutButton } from "../../_/components/session/SignOutButton";
+import { requirePendingEnrollment } from "@/app/(AuthModule)/_/guards";
+import { AuthHeading } from "@/app/(AuthModule)/_/components/layout/AuthHeading";
+import { EnrollmentForm } from "@/app/(AuthModule)/_/components/enrollment/EnrollmentForm";
+import { SignOutButton } from "@/app/(AuthModule)/_/components/session/SignOutButton";
 
 export default async function EnrollmentPage() {
   await requirePendingEnrollment();

@@ -6,7 +6,8 @@ import { Button } from "@/src/components/ui/button";
 import { FieldGroup } from "@/src/components/ui/field";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { FormError } from "@/src/components/forms/FormError";
-import { useSetupForm } from "../../hooks/form/useSetupForm";
+import { useSetupForm } from "@/app/(AuthModule)/_/hooks/form/useSetupForm";
+import { authRoutes } from "@/src/lib/auth/routes";
 
 export function SetupForm() {
   const { form, onSubmit, rootAdminCreated } = useSetupForm();
@@ -22,7 +23,7 @@ export function SetupForm() {
           </AlertDescription>
         </Alert>
         <Button asChild className="ui:h-11">
-          <Link href="/auth/sign-in">Continue to sign in</Link>
+          <Link href={authRoutes.signIn}>Continue to sign in</Link>
         </Button>
       </FieldGroup>
     );

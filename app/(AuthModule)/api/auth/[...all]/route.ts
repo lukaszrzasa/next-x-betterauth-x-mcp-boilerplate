@@ -1,5 +1,6 @@
 import { needsTwoFactorEnrollment } from "@/src/lib/auth/enrollment";
 import { auth } from "@/src/lib/auth";
+import { getSessionCookie } from "better-auth/cookies";
 import { toNextJsHandler } from "better-auth/next-js";
 
 const handlers = toNextJsHandler(auth);
@@ -9,6 +10,20 @@ const HIDDEN_TWO_FACTOR_PATHS = [
   "two-factor/disable",
   "two-factor/generate-backup-codes",
   "two-factor/get-totp-uri",
+];
+
+/**
+ * Email codes are a sign-in challenge only. Better Auth serves these two
+ * endpoints to signed-in sessions as well, where a successful `verify-otp`
+ * doubles as the confirmation step of enrollment: it sets `twoFactorEnabled`
+ * and rotates the session even though no authenticator was ever enrolled. The
+ * app treats that flag as "has an authenticator", so mid-session use would
+ * corrupt the account's factor state. Mid-session email codes are issued by
+ * the step-up runtime instead.
+ */
+const SIGN_IN_ONLY_TWO_FACTOR_PATHS = [
+  "two-factor/send-otp",
+  "two-factor/verify-otp",
 ];
 
 /** The only endpoints a session that still has to enroll may call. */
@@ -40,11 +55,20 @@ async function handle(
     return notFound();
   }
 
-  const session = await auth.api.getSession({
-    headers: request.headers,
-    query: { disableCookieCache: true },
-  });
+  // Anonymous traffic (sign-in, sign-up, password reset) carries no session
+  // cookie, so it skips the store lookup. The cookie cache is bypassed for
+  // callers that do have one: enrollment state must not be up to five minutes stale.
+  const session = getSessionCookie(request)
+    ? await auth.api.getSession({
+        headers: request.headers,
+        query: { disableCookieCache: true },
+      })
+    : null;
   const enrollmentRequired = session && needsTwoFactorEnrollment(session.user);
+
+  if (session && SIGN_IN_ONLY_TWO_FACTOR_PATHS.includes(path)) {
+    return notFound();
+  }
 
   // Enrollment is available only to accounts required to enroll. Never allow
   // enabling email OTP to satisfy the authenticator requirement.

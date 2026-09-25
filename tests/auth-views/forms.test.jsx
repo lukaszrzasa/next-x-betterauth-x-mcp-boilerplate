@@ -36,6 +36,8 @@ const enable = mock(async () => ({
   error: null,
 }));
 const recovery = mock(async () => ({ data: { user: {} }, error: null }));
+const sendOtp = mock(async () => ({ data: { status: true }, error: null }));
+const verifyOtp = mock(async () => ({ data: { user: {} }, error: null }));
 
 mock.module("next/navigation", () => ({
   useRouter: () => ({ replace, refresh }),
@@ -44,7 +46,13 @@ mock.module("../../src/lib/auth/client.ts", () => ({
   authClient: {
     signUp: { email: signUp },
     signIn: { email: signIn },
-    twoFactor: { enable, verifyTotp: totp, verifyBackupCode: recovery },
+    twoFactor: {
+      enable,
+      verifyTotp: totp,
+      verifyBackupCode: recovery,
+      sendOtp,
+      verifyOtp,
+    },
   },
 }));
 
@@ -59,7 +67,7 @@ const { RecoveryCodes } =
 
 afterEach(() => {
   cleanup();
-  for (const fn of [replace, refresh, signUp, signIn, totp, recovery, enable])
+  for (const fn of [replace, refresh, signUp, signIn, totp, recovery, enable, sendOtp, verifyOtp])
     fn.mockClear();
 });
 
@@ -117,6 +125,55 @@ test("password sign-in cannot navigate before its second factor; recovery is a s
   await waitFor(() => expect(recovery).toHaveBeenCalledTimes(1));
   expect(totp).not.toHaveBeenCalled();
   expect(replace).toHaveBeenCalledWith("/panel");
+});
+
+test("an emailed code is requested once when chosen and completes sign-in", async () => {
+  signIn.mockResolvedValueOnce({
+    data: { twoFactorRedirect: true },
+    error: null,
+  });
+  render(<SignInForm />);
+  fill("Email address", "test@example.com");
+  fill("Password", "password-12345");
+  fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+  await screen.findByLabelText("Authenticator code");
+  expect(sendOtp).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Email me a code instead" }));
+  await screen.findByText(/We emailed you a six-digit code/);
+  expect(sendOtp).toHaveBeenCalledTimes(1);
+
+  // Switching away and back must not mail another code on its own.
+  fireEvent.click(screen.getByRole("button", { name: "Use an authenticator code" }));
+  await screen.findByLabelText("Authenticator code");
+  fireEvent.click(screen.getByRole("button", { name: "Email me a code instead" }));
+  await screen.findByText(/We emailed you a six-digit code/);
+  expect(sendOtp).toHaveBeenCalledTimes(1);
+
+  fireEvent.click(screen.getByRole("button", { name: "Send a new code" }));
+  await waitFor(() => expect(sendOtp).toHaveBeenCalledTimes(2));
+
+  fill("Email code", "123456");
+  fireEvent.click(screen.getByRole("button", { name: "Verify and sign in" }));
+  await waitFor(() => expect(verifyOtp).toHaveBeenCalledTimes(1));
+  expect(verifyOtp).toHaveBeenCalledWith({ code: "123456", trustDevice: false });
+  expect(totp).not.toHaveBeenCalled();
+  expect(replace).toHaveBeenCalledWith("/panel");
+});
+
+test("a refused email code shows the server's reason", async () => {
+  signIn.mockResolvedValueOnce({ data: { twoFactorRedirect: true }, error: null });
+  sendOtp.mockResolvedValueOnce({
+    data: null,
+    error: { code: "EMAIL_NOT_VERIFIED", message: "Verify your email address before signing in with an email code." },
+  });
+  render(<SignInForm />);
+  fill("Email address", "test@example.com");
+  fill("Password", "password-12345");
+  fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+  await screen.findByLabelText("Authenticator code");
+  fireEvent.click(screen.getByRole("button", { name: "Email me a code instead" }));
+  await screen.findByText(/Verify your email address before signing in/);
 });
 
 test("the Radix recovery-code acknowledgement gates continuation", async () => {

@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { needsTwoFactorEnrollment } from "@/src/lib/auth/enrollment";
 import { auth } from "@/src/lib/auth";
+import { authRoutes } from "@/src/lib/auth/routes";
 
 /** Reads the session store; the cookie cache may be up to `maxAge` stale. */
 async function getFreshSession() {
@@ -17,7 +18,7 @@ export async function requireGuest() {
 
   if (session) {
     redirect(
-      needsTwoFactorEnrollment(session.user) ? "/auth/enroll" : "/panel",
+      needsTwoFactorEnrollment(session.user) ? authRoutes.enroll : authRoutes.panel,
     );
   }
 }
@@ -27,11 +28,11 @@ export async function requireEnrolledSession() {
   const session = await getFreshSession();
 
   if (!session) {
-    redirect("/auth/sign-in");
+    redirect(authRoutes.signIn);
   }
 
   if (needsTwoFactorEnrollment(session.user)) {
-    redirect("/auth/enroll");
+    redirect(authRoutes.enroll);
   }
 
   return session;
@@ -42,11 +43,11 @@ export async function requirePendingEnrollment() {
   const session = await getFreshSession();
 
   if (!session) {
-    redirect("/auth/sign-in");
+    redirect(authRoutes.signIn);
   }
 
   if (!needsTwoFactorEnrollment(session.user)) {
-    redirect("/panel");
+    redirect(authRoutes.panel);
   }
 
   return session;

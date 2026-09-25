@@ -2,10 +2,10 @@ import "server-only";
 
 import { headers } from "next/headers";
 
-import { ActionError } from "../../errors";
+import { ActionError } from "@/src/lib/auth/errors";
 import { optionalData } from "./response";
 
-import type { Action } from "../actionTypes";
+import type { Action } from "@/src/lib/auth/builders/actionTypes";
 
 import type { ServerAction } from "./types";
 
@@ -18,7 +18,7 @@ export function toServerAction<TInput, TOutput>(
       const requestHeaders = await headers();
 
       const data = await action(input, {
-        stepUp: meta?.stepUp,
+        stepUp: meta.stepUp,
         entryPoint: "server-action",
         headers: requestHeaders,
       });

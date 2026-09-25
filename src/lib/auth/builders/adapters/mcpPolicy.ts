@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Action } from "../actionTypes";
+import type { Action } from "@/src/lib/auth/builders/actionTypes";
 
 /** Call before registering a selected definition as an MCP tool. */
 export function assertMcpEligible<TInput, TOutput>(action: Action<TInput, TOutput>): void {

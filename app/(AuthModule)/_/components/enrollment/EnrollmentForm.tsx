@@ -1,6 +1,6 @@
 "use client";
 
-import { useEnrollmentForm } from "../../hooks/form/useEnrollmentForm";
+import { useEnrollmentForm } from "@/app/(AuthModule)/_/hooks/form/useEnrollmentForm";
 import { EnrollmentPasswordStep } from "./EnrollmentPasswordStep";
 import { EnrollmentVerifyStep } from "./EnrollmentVerifyStep";
 import { RecoveryCodes } from "./RecoveryCodes";

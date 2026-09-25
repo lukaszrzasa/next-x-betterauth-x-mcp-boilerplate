@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AuthShell } from "../_/components/layout/AuthShell";
+import { AuthShell } from "@/app/(AuthModule)/_/components/layout/AuthShell";
 
 export const metadata: Metadata = {
   title: "Account",

@@ -5,7 +5,7 @@ import { Button } from "@/src/components/ui/button";
 import { FieldGroup } from "@/src/components/ui/field";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { FormError } from "@/src/components/forms/FormError";
-import { useForgotPasswordForm } from "../../hooks/form/useForgotPasswordForm";
+import { useForgotPasswordForm } from "@/app/(AuthModule)/_/hooks/form/useForgotPasswordForm";
 
 export function ForgotPasswordForm() {
   const { form, onSubmit, resetLinkSent } = useForgotPasswordForm();

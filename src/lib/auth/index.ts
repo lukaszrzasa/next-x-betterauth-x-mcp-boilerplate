@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { admin, twoFactor } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
@@ -13,6 +14,8 @@ import {
   sendTwoFactorOtpEmail,
   sendVerificationEmail,
 } from "@/src/lib/email";
+import { authRoutes } from "./routes";
+import { buildRoute } from "@/src/lib/routes";
 
 const TWO_FACTOR_OTP_EXPIRES_IN_MINUTES = 5;
 
@@ -28,8 +31,34 @@ export const sessionCookieCache = {
   strategy: "jwe",
 } as const;
 
+/**
+ * Better Auth's email code checks nothing about the address it mails to. The
+ * step-up path already refuses email as a factor for an unverified address
+ * (it may be attacker-supplied); the sign-in challenge must agree, or the root
+ * admin - enrolled before ever confirming their email - would be offered a
+ * code at exactly that address. The challenge user is resolved the way the
+ * plugin does it: a signed `two_factor` cookie pointing at a verification row.
+ */
+const requireVerifiedEmailForOtp = createAuthMiddleware(async (ctx) => {
+  if (ctx.path !== "/two-factor/send-otp") return;
+
+  const cookie = ctx.context.createAuthCookie("two_factor");
+  const challenge = await ctx.getSignedCookie(cookie.name, ctx.context.secret);
+  if (!challenge) return; // The plugin answers with its own cookie error.
+
+  const pending = await ctx.context.internalAdapter.findVerificationValue(challenge);
+  const user = pending && (await ctx.context.internalAdapter.findUserById(pending.value));
+  if (user && !user.emailVerified) {
+    throw new APIError("FORBIDDEN", {
+      code: "EMAIL_NOT_VERIFIED",
+      message: "Verify your email address before signing in with an email code.",
+    });
+  }
+});
+
 export const auth = betterAuth({
   appName,
+  hooks: { before: requireVerifiedEmailForOtp },
   user: {
     additionalFields: {
       // Server-owned enrollment policy, enforced before protected access.
@@ -73,8 +102,10 @@ export const auth = betterAuth({
         period: TOTP_PERIOD_SECONDS,
       },
 
-      // Email code (OTP). Configuring `sendOTP` is what makes "otp" show up in
-      // the `twoFactorMethods` list returned on sign-in.
+      // Email code (OTP) as a sign-in fallback when the authenticator is not at
+      // hand. Sign-in only: the route handler hides `send-otp`/`verify-otp`
+      // from signed-in sessions, and mid-session codes come from the step-up
+      // runtime (`stepUp.ts`), which owns its own challenge and attempt budget.
       otpOptions: {
         period: TWO_FACTOR_OTP_EXPIRES_IN_MINUTES,
         digits: 6,
@@ -118,8 +149,11 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: false,
     sendVerificationEmail: async ({ user, url, token }) => {
-      const confirmation = new URL("/auth/email-confirmation", url);
-      confirmation.searchParams.set("token", token);
+      // Better Auth's own `url` targets its API; the app confirms on its own page.
+      const confirmation = new URL(
+        buildRoute(authRoutes.emailConfirmation, undefined, { token }),
+        url,
+      );
       await sendVerificationEmail({ to: user.email, url: confirmation.toString(), name: user.name });
     },
   },

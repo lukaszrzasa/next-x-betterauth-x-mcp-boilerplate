@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Button } from "@/src/components/ui/button";
-import { requireGuest } from "../../_/guards";
-import { AuthHeading, AuthFooter } from "../../_/components/layout/AuthHeading";
-import { ResetPasswordForm } from "../../_/components/passwordReset/ResetPasswordForm";
+import { requireGuest } from "@/app/(AuthModule)/_/guards";
+import { AuthHeading } from "@/app/(AuthModule)/_/components/layout/AuthHeading";
+import { AuthFooter } from "@/app/(AuthModule)/_/components/layout/AuthFooter";
+import { ResetPasswordForm } from "@/app/(AuthModule)/_/components/passwordReset/ResetPasswordForm";
+import { authRoutes } from "@/src/lib/auth/routes";
 
 export default async function ResetPasswordPage({
   searchParams,
@@ -19,9 +21,9 @@ export default async function ResetPasswordPage({
           This reset link is missing, invalid, or expired.
         </AuthHeading>
         <Button asChild>
-          <Link href="/auth/forgot-password">Request a new link</Link>
+          <Link href={authRoutes.forgotPassword}>Request a new link</Link>
         </Button>
-        <AuthFooter href="/auth/sign-in" label="Back to sign in" />
+        <AuthFooter href={authRoutes.signIn} label="Back to sign in" />
       </>
     );
   }
@@ -32,7 +34,7 @@ export default async function ResetPasswordPage({
         Choose a new password for your account.
       </AuthHeading>
       <ResetPasswordForm token={token} />
-      <AuthFooter href="/auth/sign-in" label="Back to sign in" />
+      <AuthFooter href={authRoutes.signIn} label="Back to sign in" />
     </>
   );
 }

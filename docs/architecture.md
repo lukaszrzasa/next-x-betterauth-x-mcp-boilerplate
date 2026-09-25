@@ -24,7 +24,7 @@ MCP eligibility checks apply in the shared operation path as well as MCP registr
 
 Shared action definitions live in `operations/`. Each definition uses `defineAction` to declare its input schema, permissions, verification requirements, and handler. The definition is the guarded operation; do not add a separate business-operation wrapper around it just to satisfy a layer diagram. Database queries and writes live in the owning scope's `db/` services.
 
-Every application db-service entry function requires the appropriate branded context as its first argument: `service(ctx, input)`. This applies to reads and writes even when the query does not use any context fields. Context must not be optional, defaulted, replaced with a plain user ID, fabricated, or supplied through a type assertion. Builders resolve identity and run the configured validation, permission, and verification checks before handing context to the handler, which passes it to the db-service. Feature code must not construct contexts; restrict access to the context factory to trusted infrastructure. This is an intentional safeguard against accidental direct database-service calls, not proof that any arbitrary context has passed every possible permission check.
+Every application service entry function requires the appropriate branded context as its first argument: `service(ctx, input)`. This applies to reads and writes even when the query does not use any context fields. Context must not be optional, defaulted, replaced with a plain user ID, fabricated, or supplied through a type assertion. Builders resolve identity and run the configured validation, permission, and verification checks before handing context to the handler, which passes it to the service. Feature code must not construct contexts; restrict access to the context factory to trusted infrastructure. This is an intentional safeguard against accidental direct service calls, not proof that any arbitrary context has passed every possible permission check.
 
 A small definition can use `handler: (ctx, input) => service(ctx, input)`. Several cohesive steps can also stay in the handler. Extract additional helpers only for meaningful reuse or complexity. Pure calculations and private query helpers within a guarded service do not need artificial context parameters; they must not become exported context-free database entry points.
 
@@ -116,6 +116,27 @@ Modules can import functions, components, schemas, and types directly from other
 The admin scope rule still applies: admin code can use module-wide code, while non-admin code cannot import `admin/_`, including through types or re-exports. Server-only code must also stay out of browser bundles. These restrictions concern scope and runtime, not module encapsulation.
 
 Keep global infrastructure and generic utilities independent of capability-specific behavior. Put business coordination with its owning capability rather than moving it into a global helper merely to share it.
+
+## Routes
+
+Route strings are declared once per module in a `routes.ts` table (`src/lib/auth/routes.ts`
+for the auth module) and referenced everywhere else: `redirect(authRoutes.signIn)`,
+`<Link href={authRoutes.panel}>`, the proxy's enrollment allow-list, email links. A
+page path never appears as a string literal outside its module's table, so renaming a
+page folder is one edit plus whatever the type checker flags.
+
+Parameterised paths use the global `buildRoute` helper (`src/lib/routes.ts`). Templates
+use Next's segment syntax so they read like the folder that serves them, and the
+required parameters are derived from the template type:
+
+```ts
+buildRoute("/users/[id]", { id });                                   // "/users/42"
+buildRoute(authRoutes.emailConfirmation, undefined, { token });     // "…?token=…"
+buildRoute("/docs/[...slug]", { slug: ["guide", "setup"] });        // "/docs/guide/setup"
+```
+
+`withQuery(path, query)` appends a query string on its own; both skip `null` and
+`undefined` values and encode the rest.
 
 ## MCP eligibility and step-up policy
 
@@ -211,7 +232,7 @@ Architecture is the source for current constraints and defaults; the glossary de
 
 Hard constraints include policy enforcement, explicit MCP opt-in without step-up, runtime separation, and admin-scope isolation. Current scope constraints include no tenancy and no application REST endpoints. These can change through an explicit scope decision, not an incidental implementation exception.
 
-Defaults include filenames, shared-directory names, internal subdivisions, extraction timing, and the infrastructure choices above. An agent may make a local reversible exception with a concrete reason and appropriate verification. For example, keep an image helper local when its only consumer is one capability, or keep a small definition’s handler as a direct call to its db-service rather than extracting another helper. An exception to a default cannot weaken a hard constraint.
+Defaults include filenames, shared-directory names, internal subdivisions, extraction timing, and the infrastructure choices above. An agent may make a local reversible exception with a concrete reason and appropriate verification. For example, keep an image helper local when its only consumer is one capability, or keep a small definition’s handler as a direct call to its service rather than extracting another helper. An exception to a default cannot weaken a hard constraint.
 
 
 ## Authentication views and bootstrap

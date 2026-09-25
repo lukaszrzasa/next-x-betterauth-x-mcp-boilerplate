@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getInstallationState } from "@/src/lib/auth/installation";
-import { AuthHeading } from "../../_/components/layout/AuthHeading";
-import { SetupForm } from "../../_/components/setup/SetupForm";
+import { AuthHeading } from "@/app/(AuthModule)/_/components/layout/AuthHeading";
+import { SetupForm } from "@/app/(AuthModule)/_/components/setup/SetupForm";
 
 // Setup availability changes once at runtime, after account creation.
 export const dynamic = "force-dynamic";

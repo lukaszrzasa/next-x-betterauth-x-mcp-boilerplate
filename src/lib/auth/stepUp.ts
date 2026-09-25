@@ -5,11 +5,18 @@ import { APIError } from "better-auth/api";
 import { z } from "zod";
 
 import { auth } from "./index";
-import { STEP_UP_WINDOW_SECONDS, TOTP_PERIOD_SECONDS, type StepUpMethod } from "./stepUpPolicy";
+import {
+  CODE_PATTERN,
+  STEP_UP_METHODS,
+  STEP_UP_WINDOW_SECONDS,
+  TOTP_PERIOD_SECONDS,
+  type StepUpMethod,
+  type StepUpProof,
+} from "./stepUpPolicy";
 import { ActionError } from "./errors";
 import { VERIFY_EMAIL_CHALLENGE } from "./emailChallenge";
 import { sendTwoFactorOtpEmail } from "@/src/lib/email";
-import { incrementWithTtl, redis } from "@/src/lib/redis";
+import { decrementIfExists, incrementWithTtl, redis } from "@/src/lib/redis";
 
 type SessionUser = (typeof auth.$Infer.Session)["user"];
 
@@ -43,19 +50,34 @@ const failureKey = (scope: Scope) => `stepup:fail:${scopeOf(scope)}`;
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_SECONDS = 15 * 60;
 
-/** Per session rather than per user, so a stolen session cannot lock the owner out. */
+const lockedError = () =>
+  new ActionError("STEP_UP_LOCKED", {
+    message: "Too many failed verification attempts. Try again later.",
+  });
+
+/**
+ * Read-only pre-check for paths whose own verification is atomic (the email
+ * Lua script) or that only issue a challenge. Per session rather than per
+ * user, so a stolen session cannot lock the owner out.
+ */
 async function assertNotLocked(scope: Scope) {
   const failures = Number(await redis.get(failureKey(scope))) || 0;
-
-  if (failures >= MAX_FAILED_ATTEMPTS) {
-    throw new ActionError("STEP_UP_LOCKED", {
-      message: "Too many failed verification attempts. Try again later.",
-    });
-  }
+  if (failures >= MAX_FAILED_ATTEMPTS) throw lockedError();
 }
 
-async function recordFailure(scope: Scope) {
-  await incrementWithTtl(failureKey(scope), LOCK_DURATION_SECONDS);
+/**
+ * Charges the budget *before* the code is checked, in one Redis command, so a
+ * burst of concurrent guesses cannot all pass a read-then-increment check. A
+ * correct code refunds the whole budget; a wrong one keeps the charge.
+ */
+async function reserveAttempt(scope: Scope) {
+  const attempts = await incrementWithTtl(failureKey(scope), LOCK_DURATION_SECONDS);
+  if (attempts > MAX_FAILED_ATTEMPTS) throw lockedError();
+}
+
+/** Infrastructure failures are not wrong guesses; hand the reservation back. */
+async function refundAttempt(scope: Scope) {
+  await decrementIfExists(failureKey(scope));
 }
 
 async function clearFailures(scope: Scope) {
@@ -175,11 +197,7 @@ async function verifyEmailChallenge(
     MAX_FAILED_ATTEMPTS,
     LOCK_DURATION_SECONDS,
   );
-  if (result === -1) {
-    throw new ActionError("STEP_UP_LOCKED", {
-      message: "Too many failed verification attempts. Try again later.",
-    });
-  }
+  if (result === -1) throw lockedError();
   return result === 1;
 }
 
@@ -187,14 +205,9 @@ async function verifyEmailChallenge(
  * Verification
  * ------------------------------------------------------------------------- */
 
-export type StepUpProof = {
-  method: StepUpMethod;
-  code: string;
-};
-
 const stepUpProofSchema = z.object({
-  method: z.enum(["totp", "email"]),
-  code: z.string().regex(/^\d{6}$/),
+  method: z.enum(STEP_UP_METHODS),
+  code: z.string().regex(CODE_PATTERN),
 });
 
 /**
@@ -232,7 +245,6 @@ export async function verifyStepUp({
     });
   }
   const proof = parsedProof.data;
-  await assertNotLocked(scope);
 
   if (!availableMethods(user).includes(proof.method)) {
     throw new ActionError("TWO_FACTOR_ENROLLMENT_REQUIRED", {
@@ -242,11 +254,10 @@ export async function verifyStepUp({
 
   const codeValid =
     proof.method === "totp"
-      ? await verifyTotp(headers, proof.code)
+      ? await verifyTotpAttempt(scope, headers, proof.code)
       : await verifyEmailChallenge(scope, proof.code);
 
   if (!codeValid) {
-    if (proof.method === "totp") await recordFailure(scope);
     throw new ActionError("STEP_UP_INVALID_CODE", {
       message: "That verification code is not valid.",
     });
@@ -274,7 +285,16 @@ export async function verifyStepUp({
   if (persistGrant) await writeGrant(scope);
 }
 
-async function verifyTotp(headers: Headers, code: string): Promise<boolean> {
+/**
+ * The email path counts attempts inside its Lua script; TOTP verification
+ * lives in Better Auth, so the budget is charged here around the call.
+ */
+async function verifyTotpAttempt(
+  scope: Scope,
+  headers: Headers,
+  code: string,
+): Promise<boolean> {
+  await reserveAttempt(scope);
   try {
     await auth.api.verifyTOTP({ body: { code }, headers });
     return true;
@@ -282,6 +302,7 @@ async function verifyTotp(headers: Headers, code: string): Promise<boolean> {
     if (error instanceof APIError && error.body?.code === "INVALID_CODE")
       return false;
     // Database/network failures must not spend the user's wrong-code budget.
+    await refundAttempt(scope);
     throw error;
   }
 }

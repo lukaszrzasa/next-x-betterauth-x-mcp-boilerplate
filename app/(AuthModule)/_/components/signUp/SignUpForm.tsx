@@ -4,7 +4,7 @@ import { Button } from "@/src/components/ui/button";
 import { FieldDescription, FieldGroup } from "@/src/components/ui/field";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { FormError } from "@/src/components/forms/FormError";
-import { useSignUpForm } from "../../hooks/form/useSignUpForm";
+import { useSignUpForm } from "@/app/(AuthModule)/_/hooks/form/useSignUpForm";
 
 export function SignUpForm() {
   const { form, onSubmit } = useSignUpForm();

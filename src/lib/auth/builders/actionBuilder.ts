@@ -3,22 +3,15 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { unstable_rethrow } from "next/navigation";
 
-import { auth } from "../index";
-import { ActionError } from "../errors";
-import { Ctx, createLogger, type User } from "./context";
+import { auth } from "@/src/lib/auth/index";
+import { ActionError } from "@/src/lib/auth/errors";
+import { STEP_UP_POLICIES, type StepUpPolicy } from "@/src/lib/auth/stepUpPolicy";
+import { Ctx, createLogger, type Session, type User } from "./context";
 import { parseInput } from "./actionInput";
 import { checkAuthorization } from "./actionAuthorization";
 import { ensureStepUp } from "./actionStepUp";
 import { writeAudit, type AuditDescription } from "./actionAudit";
 import type { Action, ActionMeta, AuthedConfig, PublicConfig } from "./actionTypes";
-
-export type {
-  Action,
-  ActionMeta,
-  AuthedConfig,
-  PublicConfig,
-} from "./actionTypes";
-export type { AuditEvent } from "./actionAudit";
 
 export function defineAction<
   TInput = undefined,
@@ -33,7 +26,7 @@ export function defineAction<
 
 /**
  * Session → input → authorization → step-up → handler.
- * Each handler should delegate related writes to one transactional db-service.
+ * Each handler should delegate related writes to one transactional service.
  * Expected refusals throw ActionError; adapters choose the client response.
  */
 export function defineAction<TInput, TOutput, TRawInput>(
@@ -41,19 +34,15 @@ export function defineAction<TInput, TOutput, TRawInput>(
     | AuthedConfig<TInput, TOutput, TRawInput>
     | PublicConfig<TInput, TOutput, TRawInput>,
 ): Action<TRawInput, TOutput> {
-  // Snapshot policy at definition time; fail loudly on obsolete or invalid config.
-  if ("sensitive" in config || "twoFactorPool" in config) {
-    throw new Error("Use mcpAllowed and stepUp instead of sensitive or twoFactorPool.");
-  }
+  // Snapshot policy at definition time; fail loudly on invalid config.
   const mcpAllowed = config.mcpAllowed === undefined ? false : config.mcpAllowed;
   const stepUp = config.stepUp === undefined ? "none" : config.stepUp;
-  if (typeof mcpAllowed !== "boolean" || !["none", "five_minutes", "every_time"].includes(stepUp)) {
+  if (typeof mcpAllowed !== "boolean" || !STEP_UP_POLICIES.includes(stepUp as StepUpPolicy)) {
     throw new Error("Invalid operation policy.");
   }
   if (stepUp !== "none" && (mcpAllowed || config.auth === "public")) {
     throw new Error("Step-up requires an authenticated operation with MCP disabled.");
   }
-  config = { ...config };
   const runAction = async (rawInput: TRawInput, meta: ActionMeta) => {
     const startedAt = Date.now();
     const requestId = randomUUID();
@@ -83,17 +72,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
     };
 
     try {
-      // Public actions do not depend on the session store.
-      const authSession =
-        config.auth === "public"
-          ? null
-          : await auth.api.getSession({
-              headers: meta.headers,
-              query: { disableCookieCache: true },
-            });
-      if (config.auth !== "public" && !authSession) {
-        throw new ActionError("UNAUTHENTICATED");
-      }
+      const resolved = await resolveSession(config, meta.headers);
 
       // Reject bad input before prompting for 2FA or consuming a one-time grant.
       const input = await parseInput(config.schema, rawInput);
@@ -107,7 +86,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
       };
       let output: TOutput;
 
-      if (config.auth === "public") {
+      if (resolved.kind === "public") {
         const publicCtx = Ctx.create<null>({
           ...baseCtx,
           user: null,
@@ -115,36 +94,39 @@ export function defineAction<TInput, TOutput, TRawInput>(
         });
         ctx = publicCtx;
         // Narrow the hook together with its config, without casting contexts.
-        const publicAudit = config.auditLog;
+        const publicAudit = resolved.config.auditLog;
         if (publicAudit)
           describeAudit = (event) => publicAudit(publicCtx, event);
         checkEntryPoint(meta, mcpAllowed);
-        output = await config.handler(publicCtx, input);
+        output = await resolved.config.handler(publicCtx, input);
       } else {
-        // Config and authSession are separate values; TypeScript needs this guard
-        // even though the session was required before parsing input above.
-        if (!authSession) throw new ActionError("UNAUTHENTICATED");
-        const { user, session } = authSession;
+        const { config: authedConfig, user, session } = resolved;
+        // The audit hook sees whichever context is current when it runs: a
+        // denial before step-up gets a context that claims none; success gets
+        // the verified one the handler received.
         let authedCtx = Ctx.create<User>({ ...baseCtx, user, session });
         ctx = authedCtx;
-        const authedAudit = config.auditLog;
+        const authedAudit = authedConfig.auditLog;
         if (authedAudit)
           describeAudit = (event) => authedAudit(authedCtx, event);
 
-        // Keep a context for denial auditing; it claims no step-up yet.
         checkEntryPoint(meta, mcpAllowed);
-        checkAuthorization({ ...config, stepUp }, authedCtx);
+        checkAuthorization(
+          {
+            permissions: authedConfig.permissions,
+            permissionsConnector: authedConfig.permissionsConnector,
+            requireVerifiedEmail: authedConfig.requireVerifiedEmail,
+            stepUp,
+          },
+          authedCtx,
+        );
+
         if (stepUp !== "none") {
           await ensureStepUp(authedCtx, meta, stepUp);
-          authedCtx = Ctx.create<User>({
-            ...baseCtx,
-            user,
-            session,
-            stepUp,
-          });
+          authedCtx = authedCtx.withStepUp(stepUp);
           ctx = authedCtx;
         }
-        output = await config.handler(authedCtx, input);
+        output = await authedConfig.handler(authedCtx, input);
       }
 
       logOutcome("success");
@@ -170,9 +152,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
         throw error;
       }
 
-      logOutcome("failed", {
-        error: error instanceof Error ? error.stack : String(error),
-      });
+      logOutcome("failed", { error: describeError(error) });
       if (parsed) {
         await writeAudit(describeAudit, log, {
           outcome: "failed",
@@ -184,6 +164,52 @@ export function defineAction<TInput, TOutput, TRawInput>(
     }
   };
   return Object.freeze(Object.assign(runAction, { mcpAllowed }));
+}
+
+type ResolvedSession<TInput, TOutput, TRawInput> =
+  | { kind: "public"; config: PublicConfig<TInput, TOutput, TRawInput> }
+  | {
+      kind: "authed";
+      config: AuthedConfig<TInput, TOutput, TRawInput>;
+      user: User;
+      session: Session;
+    };
+
+/**
+ * Public operations never touch the session store, even for a signed-in
+ * caller. Everything else reads the store (the cookie cache may be stale)
+ * and refuses anonymous callers before any input is parsed.
+ */
+async function resolveSession<TInput, TOutput, TRawInput>(
+  config:
+    | AuthedConfig<TInput, TOutput, TRawInput>
+    | PublicConfig<TInput, TOutput, TRawInput>,
+  headers: Headers,
+): Promise<ResolvedSession<TInput, TOutput, TRawInput>> {
+  if (config.auth === "public") return { kind: "public", config };
+
+  const authSession = await auth.api.getSession({
+    headers,
+    query: { disableCookieCache: true },
+  });
+  if (!authSession) throw new ActionError("UNAUTHENTICATED");
+
+  return { kind: "authed", config, ...authSession };
+}
+
+/**
+ * Stack of the error and of every `cause` beneath it. Services wrap driver
+ * errors to add context; without the chain the log would show only the wrapper.
+ */
+function describeError(error: unknown): string {
+  const parts: string[] = [];
+  const seen = new Set<unknown>();
+  for (let current = error; current !== undefined && !seen.has(current); ) {
+    seen.add(current);
+    parts.push(current instanceof Error ? (current.stack ?? current.message) : String(current));
+    current = current instanceof Error ? current.cause : undefined;
+  }
+  return parts.join("\nCaused by: ");
 }
 
 /** Proxy-provided IPs are audit metadata, never authorization evidence. */

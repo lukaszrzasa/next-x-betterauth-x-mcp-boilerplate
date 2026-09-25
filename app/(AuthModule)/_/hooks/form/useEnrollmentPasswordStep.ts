@@ -1,8 +1,8 @@
 "use client";
 
 import { authClient } from "@/src/lib/auth/client";
-import { enrollmentPasswordSchema } from "../../schema";
-import { unwrapAuthResult } from "../../utils/unwrapAuthResult";
+import { enrollmentPasswordSchema } from "@/app/(AuthModule)/_/schema";
+import { unwrapAuthResult } from "@/app/(AuthModule)/_/utils/unwrapAuthResult";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
 
 /** What Better Auth hands back once a TOTP authenticator has been enabled. */

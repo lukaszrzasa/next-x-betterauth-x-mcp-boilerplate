@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { authClient } from "@/src/lib/auth/client";
-import { forgotPasswordSchema } from "../../schema";
-import { unwrapAuthResult } from "../../utils/unwrapAuthResult";
+import { forgotPasswordSchema } from "@/app/(AuthModule)/_/schema";
+import { unwrapAuthResult } from "@/app/(AuthModule)/_/utils/unwrapAuthResult";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
+import { authRoutes } from "@/src/lib/auth/routes";
 
 export function useForgotPasswordForm() {
   const [resetLinkSent, setResetLinkSent] = useState(false);
@@ -14,7 +15,7 @@ export function useForgotPasswordForm() {
     unwrapAuthResult(
       await authClient.requestPasswordReset({
         email,
-        redirectTo: "/auth/reset-password",
+        redirectTo: authRoutes.resetPassword,
       }),
       "Unable to request a reset. Try again later.",
     );

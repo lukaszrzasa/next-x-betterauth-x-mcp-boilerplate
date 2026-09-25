@@ -60,6 +60,12 @@ const redis = {
   }),
   del: mock(async (key) => Number(stored.delete(key))),
 };
+const decrementIfExists = mock(async (key) => {
+  if (!stored.has(key)) return 0;
+  const value = Number(stored.get(key)) - 1;
+  stored.set(key, String(value));
+  return value;
+});
 const incrementWithTtl = mock(async (key) => {
   const count = Number(stored.get(key) ?? 0) + 1;
   stored.set(key, String(count));
@@ -72,6 +78,7 @@ mock.module("../../src/lib/auth/index.ts", () => ({
 mock.module("../../src/lib/redis/index.ts", () => ({
   redis,
   incrementWithTtl,
+  decrementIfExists,
 }));
 const sendTwoFactorOtpEmail = mock(async () => {});
 mock.module("../../src/lib/email/index.tsx", () => ({ sendTwoFactorOtpEmail }));
@@ -104,6 +111,7 @@ beforeEach(() => {
     sendTwoFactorOtpEmail,
     verifyTOTP,
     incrementWithTtl,
+    decrementIfExists,
     ...Object.values(redis),
   ])
     fn.mockClear();
@@ -152,11 +160,9 @@ describe("action pipeline", () => {
     { mcpAllowed: true, stepUp: "five_minutes" },
     { mcpAllowed: true, stepUp: "every_time" },
     { auth: "public", stepUp: "every_time" },
-    { twoFactorPool: "default" },
-    { sensitive: true },
     { stepUp: "invalid" },
     { mcpAllowed: "true" },
-  ])("invalid and obsolete operation policy fails at definition time: %j", (config) => {
+  ])("invalid operation policy fails at definition time: %j", (config) => {
     expect(() => action(config)).toThrow();
   });
 
@@ -365,6 +371,17 @@ describe("action pipeline", () => {
     expect(await action({ permissions: [] })(undefined, meta)).toBe("done");
   });
 
+  test("comma-separated roles are honoured by permissions and enrollment alike", async () => {
+    resolved.user.role = "user,moderator";
+    expect(await action({ permissions: "user.ban" })(undefined, meta)).toBe("done");
+
+    // A multi-role staff account must still enroll an authenticator.
+    resolved.user.twoFactorEnabled = false;
+    await denied(action()(undefined, meta), "TWO_FACTOR_ENROLLMENT_REQUIRED");
+    resolved.user.role = "user";
+    expect(await action()(undefined, meta)).toBe("done");
+  });
+
   test("a missing grant returns policy and available methods", async () => {
     await expect(
       action({ stepUp: "five_minutes" })(undefined, meta),
@@ -514,8 +531,25 @@ describe("action pipeline", () => {
       }),
       "INTERNAL",
     );
-    expect(incrementWithTtl).not.toHaveBeenCalled();
+    expect(Number(stored.get(failureKey) ?? 0)).toBe(0);
     expect(redis.set).not.toHaveBeenCalled();
+  });
+
+  test("a TOTP attempt is charged before Better Auth is asked, so concurrent guesses cannot outrun the budget", async () => {
+    let chargedWhenAsked;
+    verifyTOTP.mockImplementation(async () => {
+      chargedWhenAsked = Number(stored.get(failureKey));
+      throw new APIError("UNAUTHORIZED", { code: "INVALID_CODE" });
+    });
+    await denied(
+      action({ stepUp: "five_minutes" })(undefined, {
+        ...meta,
+        stepUp: { method: "totp", code: "123456" },
+      }),
+      "STEP_UP_INVALID_CODE",
+    );
+    expect(chargedWhenAsked).toBe(1);
+    expect(stored.get(failureKey)).toBe("1");
   });
 
   test("locked sessions never verify a proof", async () => {
@@ -556,7 +590,9 @@ describe("action pipeline", () => {
         schema: z.unknown(),
         auditLog,
         handler: () => {
-          throw new Error("secret database details");
+          throw new Error("service context", {
+            cause: new Error("secret database details"),
+          });
         },
       });
       await expect(run(input, meta)).rejects.toMatchObject({
@@ -564,11 +600,12 @@ describe("action pipeline", () => {
         message: "INTERNAL",
       });
       expect(auditLog.mock.calls[0][1]).toEqual({ outcome: "failed", input });
-      expect(
-        logs.some(
-          (entry) => entry.outcome === "failed" && entry.level === "error",
-        ),
-      ).toBe(true);
+      const failure = logs.find(
+        (entry) => entry.outcome === "failed" && entry.level === "error",
+      );
+      // The log keeps the whole cause chain; the client response keeps none of it.
+      expect(failure.error).toContain("service context");
+      expect(failure.error).toContain("Caused by: Error: secret database details");
     },
   );
 

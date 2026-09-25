@@ -6,7 +6,6 @@ import type { z } from "zod";
 import { schemaDefaults } from "./schemaDefaults";
 
 /** A react-hook-form instance validated by a Zod schema, with defaults read from the schema. */
-/** A react-hook-form instance validated by a Zod schema, with defaults read from the schema. */
 export function useSchemaForm<TInput extends FieldValues, TOutput>(
   schema: z.ZodObject & z.ZodType<TOutput, TInput>,
   defaultValues: DefaultValues<TInput> = schemaDefaults<TInput>(schema),

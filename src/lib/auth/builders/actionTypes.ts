@@ -1,8 +1,7 @@
 import type { ZodType } from "zod";
 
-import type { Connector, Permission } from "../permissions";
-import type { StepUpPolicy } from "../stepUpPolicy";
-import type { StepUpProof } from "../stepUp";
+import type { Connector, Permission } from "@/src/lib/auth/permissions";
+import type { StepUpPolicy, StepUpProof } from "@/src/lib/auth/stepUpPolicy";
 import type { AuditEvent } from "./actionAudit";
 import type { AuthedCtx, PublicCtx } from "./context";
 
@@ -54,8 +53,11 @@ export type PublicConfig<TInput, TOutput, TRawInput = TInput> = BaseConfig<
   stepUp?: "none";
 };
 
-/** TInput is the schema's raw input, which may differ from its parsed output. */
-export type Action<TInput, TOutput> = {
-  (input: TInput, meta: ActionMeta): Promise<TOutput>;
+/**
+ * A defined operation. Callers pass the schema's *raw* input; the parsed
+ * output type is what the handler saw, not what the caller sends.
+ */
+export type Action<TRawInput, TOutput> = {
+  (input: TRawInput, meta: ActionMeta): Promise<TOutput>;
   readonly mcpAllowed: boolean;
 };

@@ -1,31 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { AuthenticatorChallengeForm } from "./AuthenticatorChallengeForm";
+import { EmailChallengeForm } from "./EmailChallengeForm";
 import { RecoveryChallengeForm } from "./RecoveryChallengeForm";
 
-/** Second sign-in step: the authenticator challenge, or a recovery code when the device is lost. */
+type ChallengeMethod = "authenticator" | "recovery" | "email";
+
+const METHODS: readonly ChallengeMethod[] = ["authenticator", "recovery", "email"];
+
+const SWITCH_LABELS: Record<ChallengeMethod, string> = {
+  authenticator: "Use an authenticator code",
+  recovery: "Use a recovery code",
+  email: "Email me a code instead",
+};
+
+/**
+ * Second sign-in step. The authenticator is the default; a recovery code or an
+ * emailed code covers a lost device. Switching methods discards the current
+ * form, but an email code is requested automatically only once per sign-in.
+ */
 export function TwoFactorForm({ onRestart }: { onRestart: () => void }) {
-  const [usingRecoveryCode, setUsingRecoveryCode] = useState(false);
+  const [method, setMethod] = useState<ChallengeMethod>("authenticator");
+  const [emailCodeSent, setEmailCodeSent] = useState(false);
+  const markEmailCodeSent = useCallback(() => setEmailCodeSent(true), []);
 
   return (
     <>
-      {usingRecoveryCode ? (
-        <RecoveryChallengeForm />
-      ) : (
-        <AuthenticatorChallengeForm />
+      {method === "authenticator" && <AuthenticatorChallengeForm />}
+      {method === "recovery" && <RecoveryChallengeForm />}
+      {method === "email" && (
+        <EmailChallengeForm
+          autoRequest={!emailCodeSent}
+          onRequested={markEmailCodeSent}
+        />
       )}
       <div className="ui:mt-7 ui:flex ui:flex-col ui:gap-7">
-        <Button
-          type="button"
-          variant="link"
-          onClick={() => setUsingRecoveryCode((current) => !current)}
-        >
-          {usingRecoveryCode
-            ? "Use an authenticator code"
-            : "Use a recovery code"}
-        </Button>
+        {METHODS.filter((candidate) => candidate !== method).map((candidate) => (
+          <Button
+            key={candidate}
+            type="button"
+            variant="link"
+            onClick={() => setMethod(candidate)}
+          >
+            {SWITCH_LABELS[candidate]}
+          </Button>
+        ))}
         <Button type="button" variant="link" onClick={onRestart}>
           Start sign-in again
         </Button>

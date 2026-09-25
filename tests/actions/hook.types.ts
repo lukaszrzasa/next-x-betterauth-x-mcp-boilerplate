@@ -1,5 +1,5 @@
-import { useAction } from "../../src/lib/actions";
-import type { ServerAction } from "../../src/lib/auth/builders/adapters/types";
+import { useAction } from "@/src/lib/actions";
+import type { ServerAction } from "@/src/lib/auth/builders/adapters";
 
 declare const save: ServerAction<{ name: string }, { id: number }>;
 

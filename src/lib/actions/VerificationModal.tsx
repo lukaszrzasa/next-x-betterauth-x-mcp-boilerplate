@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createCallable } from "react-call";
 import { useMutationFlow } from "react-call/mutation-flow";
 import { useForm, useWatch } from "react-hook-form";
-import type { StepUpProof } from "../auth/stepUp";
+import { CODE_PATTERN, type StepUpProof } from "@/src/lib/auth/stepUpPolicy";
 import type { VerificationPresenter, VerificationRequest } from "./types";
 
 type Submission = { kind: "send" } | { kind: "verify"; proof: StepUpProof };
@@ -108,7 +108,7 @@ const VerificationModal = createCallable<
               {...register("code", {
                 required: "Enter your six-digit code.",
                 pattern: {
-                  value: /^\d{6}$/,
+                  value: CODE_PATTERN,
                   message: "Enter exactly six digits.",
                 },
               })}

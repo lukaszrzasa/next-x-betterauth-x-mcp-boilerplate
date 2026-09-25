@@ -1,5 +1,5 @@
-import { requireEnrolledSession } from "../_/guards";
-import { SignOutButton } from "../_/components/session/SignOutButton";
+import { requireEnrolledSession } from "@/app/(AuthModule)/_/guards";
+import { SignOutButton } from "@/app/(AuthModule)/_/components/session/SignOutButton";
 
 export default async function PanelPage() {
   const { user } = await requireEnrolledSession();

@@ -1,6 +1,6 @@
-import { type RequiredStepUp } from "../stepUpPolicy";
-import { ActionError } from "../errors";
-import { availableMethods, hasGrant, verifyStepUp } from "../stepUp";
+import { type RequiredStepUp } from "@/src/lib/auth/stepUpPolicy";
+import { ActionError } from "@/src/lib/auth/errors";
+import { availableMethods, hasGrant, verifyStepUp } from "@/src/lib/auth/stepUp";
 import type { ActionMeta } from "./actionTypes";
 import type { AuthedCtx } from "./context";
 

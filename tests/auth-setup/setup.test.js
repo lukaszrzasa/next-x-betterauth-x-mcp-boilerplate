@@ -77,7 +77,6 @@ const input = {
   name: "Test Admin",
   email: "admin@example.com",
   password: "test-password-12345",
-  confirmPassword: "test-password-12345",
 };
 let adminCodes;
 let enrolledSecret;
@@ -157,7 +156,7 @@ describe.skipIf(!process.env.DATABASE_URL)("setup integration", () => {
     ).rejects.toMatchObject({ reason: "FORBIDDEN" });
     await expect(
       browser.run(freshBrowser(), () =>
-        setupRootAdmin({ ...input, confirmPassword: "wrong" }, meta),
+        setupRootAdmin({ ...input, password: "short" }, meta),
       ),
     ).rejects.toMatchObject({ reason: "INVALID_INPUT" });
     expect((await pool.query('select * from "user"')).rowCount).toBe(0);

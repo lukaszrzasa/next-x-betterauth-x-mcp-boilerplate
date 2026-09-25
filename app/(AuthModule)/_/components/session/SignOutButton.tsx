@@ -2,7 +2,7 @@
 
 import { Button } from "@/src/components/ui/button";
 import { FormError } from "@/src/components/forms/FormError";
-import { useSignOut } from "../../hooks/useSignOut";
+import { useSignOut } from "@/app/(AuthModule)/_/hooks/useSignOut";
 
 export function SignOutButton() {
   const { signOut, pending, error } = useSignOut();

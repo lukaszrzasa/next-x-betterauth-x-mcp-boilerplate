@@ -7,7 +7,7 @@ import { FormError } from "@/src/components/forms/FormError";
 import {
   useEnrollmentPasswordStep,
   type AuthenticatorSetup,
-} from "../../hooks/form/useEnrollmentPasswordStep";
+} from "@/app/(AuthModule)/_/hooks/form/useEnrollmentPasswordStep";
 
 export function EnrollmentPasswordStep({
   onStarted,

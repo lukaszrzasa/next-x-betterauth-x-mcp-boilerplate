@@ -7,7 +7,8 @@ import { FieldGroup } from "@/src/components/ui/field";
 import {
   useEmailConfirmation,
   type EmailConfirmationStatus,
-} from "../../hooks/useEmailConfirmation";
+} from "@/app/(AuthModule)/_/hooks/useEmailConfirmation";
+import { authRoutes } from "@/src/lib/auth/routes";
 
 const statusMessages: Record<
   EmailConfirmationStatus,
@@ -40,7 +41,7 @@ export function EmailConfirmation({ token }: { token?: string }) {
       </Alert>
       {status !== "verifying" && (
         <Button asChild className="ui:h-11">
-          <Link href="/panel">Continue</Link>
+          <Link href={authRoutes.panel}>Continue</Link>
         </Button>
       )}
     </FieldGroup>

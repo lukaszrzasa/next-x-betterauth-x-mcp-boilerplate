@@ -1,7 +1,7 @@
 import { beforeAll, expect, mock, test } from "bun:test";
 import { betterAuth } from "better-auth";
 import { memoryAdapter } from "better-auth/adapters/memory";
-import { admin } from "better-auth/plugins";
+import { admin, twoFactor } from "better-auth/plugins";
 import { ac, roles } from "../../src/lib/auth/permissions";
 
 const baseURL = "http://localhost:3000";
@@ -10,7 +10,10 @@ const auth = betterAuth({
   secret: "test-only-secret-with-at-least-thirty-two-characters",
   database: memoryAdapter({ user: [], session: [], account: [], verification: [] }),
   emailAndPassword: { enabled: true },
-  plugins: [admin({ ac, roles })],
+  plugins: [
+    admin({ ac, roles }),
+    twoFactor({ otpOptions: { sendOTP: async () => {} } }),
+  ],
 });
 
 // Run in a separate process from builder tests, which mock this same module.
@@ -84,6 +87,21 @@ test("ordinary session lookup still reaches Better Auth", async () => {
   expect((await response.json()).user.role).toBe("admin");
 });
 
+
+test("email codes serve the sign-in challenge only, never a signed-in session", async () => {
+  for (const path of ["two-factor/send-otp", "two-factor/verify-otp"]) {
+    // Mid-session, Better Auth would enable 2FA without an authenticator; hidden.
+    // (The "user" session was banned by an earlier test, so it is anonymous here.)
+    for (const cookie of [cookies.admin, cookies.moderator]) {
+      expect((await request(path, "POST", cookie, { code: "000000" })).status).toBe(404);
+    }
+    // The sign-in challenge (no session) still reaches Better Auth, which
+    // rejects it on its own terms because no challenge cookie is present.
+    const response = await request(path, "POST", undefined, { code: "000000" });
+    expect(response.status).toBe(401);
+    expect((await response.json()).code).toBe("INVALID_TWO_FACTOR_COOKIE");
+  }
+});
 
 test("enrollment and factor settings cannot be changed through public HTTP", async () => {
   for (const path of ["two-factor/disable", "two-factor/generate-backup-codes", "two-factor/get-totp-uri", "two-factor%2Fdisable"]) {
