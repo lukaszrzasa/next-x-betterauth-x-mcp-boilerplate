@@ -26,7 +26,8 @@ Nothing is re-exported from a second place.
 1. Resolve and require a session (skipped for `auth: "public"`).
 2. Parse the input with Zod, including async refinements and transforms.
 3. Reject operations without MCP opt-in from MCP, and reject unknown entry points, then check
-   impersonation, verified email and permissions, in that order.
+   impersonation, verified email, role admission (`roles`, answered NOT_FOUND) and
+   permissions, in that order.
 4. Satisfy the declared step-up policy.
 5. Call the handler and record its outcome.
 
@@ -53,6 +54,12 @@ and `session: null`, even when the caller is signed in. Omitting the schema mean
 no input: caller-supplied values are discarded and the handler receives
 `undefined`. Callers use the schema's raw input type; handlers and audit hooks
 receive its parsed output type.
+
+`roles` admits actors the way a route's `access.roles` does: an account outside
+the list is answered with NOT_FOUND before permissions are considered, so a
+staff-only operation does not reveal itself to other accounts. `permissions`
+then decide what an admitted role may do; the two are independent, and an
+operation may declare either, both or neither.
 
 Declare MCP eligibility and step-up independently:
 
@@ -86,12 +93,26 @@ operation. Its `stepUp` remains null until verification succeeds.
 
 ## Adapters
 
+`toServerQuery(action)` is the trusted SSR read path: a server-only function a
+page calls while rendering. It reads the current request's `headers()` itself,
+runs the operation with `entryPoint: "server-render"` and returns its data,
+propagating `ActionError` for the page to translate (redirect, `notFound()`,
+error boundary). It takes no caller metadata and no step-up proof, so it fits
+reads only; it is neither a `"use server"` export nor an HTTP endpoint.
+
+Every context carries a private copy of the acting request's headers, exposed
+only through `ctx.getRequestHeaders()` (a fresh copy per call, preserved by
+`withStepUp`). Services use it solely to call provider APIs that authenticate
+the actor, such as `auth.api.adminUpdateUser`; never serialize a context or its
+headers, put them in a DTO, or write them to logs or audit data.
+
 `toServerAction(action)` returns `{ ok: true, data }` or
 `{ ok: false, reason, status, message, data? }`. Call it from an exported async
 function in a `"use server"` file. Headers are read from the current request;
 clients can supply only optional step-up metadata. The adapter copies only
 `stepUp` and sets `entryPoint: "server-action"` itself. The route adapter sets
-`entryPoint: "route-handler"`; neither trusts a client-supplied entry point.
+`entryPoint: "route-handler"` and the SSR adapter `entryPoint: "server-render"`;
+none of them trusts a client-supplied entry point.
 Direct server callers must also provide an explicit entry point. All
 operations reject missing or unknown values at runtime.
 

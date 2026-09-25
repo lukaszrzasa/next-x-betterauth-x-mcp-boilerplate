@@ -28,6 +28,14 @@ export class Ctx<TUser extends User | null = User> {
   readonly userAgent: string | null;
   readonly log: Logger;
 
+  /**
+   * The acting request's headers, kept private so a context serialized by
+   * mistake (a DTO spread, a log line) never carries cookies. Services read
+   * them only through `getRequestHeaders()`, and only to call provider APIs
+   * that authenticate the actor (`auth.api.adminUpdateUser`, `banUser`, ...).
+   */
+  readonly #requestHeaders: Headers;
+
   private constructor(init: CtxInit<TUser>) {
     this.user = init.user;
     this.session = init.session;
@@ -35,7 +43,13 @@ export class Ctx<TUser extends User | null = User> {
     this.requestId = init.requestId;
     this.ip = init.ip;
     this.userAgent = init.userAgent;
+    this.#requestHeaders = new Headers(init.requestHeaders);
     this.log = init.log;
+  }
+
+  /** A fresh copy each call: callers cannot mutate what later callers see. */
+  getRequestHeaders(): Headers {
+    return new Headers(this.#requestHeaders);
   }
 
   /** @internal */
@@ -49,7 +63,7 @@ export class Ctx<TUser extends User | null = User> {
    * context that claims no step-up.
    */
   withStepUp(stepUp: RequiredStepUp): Ctx<TUser> {
-    return new Ctx<TUser>({ ...this, stepUp });
+    return new Ctx<TUser>({ ...this, requestHeaders: this.#requestHeaders, stepUp });
   }
 
   /**

@@ -54,5 +54,14 @@ export function createPageFactory({ signIn, denied }: PageFactoryOptions) {
     };
   }
 
-  return { guard, page };
+  /**
+   * The redirect a page applies when a read it performs after the guard is
+   * refused (an operation checks more than the route rule): guests to sign-in,
+   * everyone else to the denied target. Same policy, same destinations.
+   */
+  function redirectRefused(session: FreshSession | null): never {
+    redirect(session ? denied(session) : signIn);
+  }
+
+  return { guard, page, redirectRefused };
 }

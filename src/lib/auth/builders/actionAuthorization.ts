@@ -1,11 +1,12 @@
 import { needsTwoFactorEnrollment } from "@/src/lib/auth/enrollment";
 import { ActionError } from "@/src/lib/auth/errors";
-import { can } from "@/src/lib/auth/permissions";
+import { can, hasRole } from "@/src/lib/auth/permissions";
 import type { AuthedConfig } from "./actionTypes";
 import type { AuthedCtx } from "./context";
 
 type AuthorizationConfig = Pick<
   AuthedConfig<unknown, unknown>,
+  | "roles"
   | "permissions"
   | "permissionsConnector"
   | "stepUp"
@@ -37,6 +38,12 @@ export function checkAuthorization(
     !user.emailVerified
   ) {
     throw new ActionError("EMAIL_VERIFICATION_REQUIRED");
+  }
+
+  // Role admission first: to an account outside the declared roles the
+  // operation does not exist, whatever permissions it may otherwise hold.
+  if (config.roles && !hasRole(user.role, config.roles)) {
+    throw new ActionError("NOT_FOUND", { message: "Not found." });
   }
 
   const permissions = config.permissions ?? [];

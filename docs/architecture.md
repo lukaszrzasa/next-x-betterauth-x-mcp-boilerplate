@@ -22,7 +22,7 @@ The current auth views and shared operation pipeline use Better Auth sessions di
 
 MCP eligibility checks apply in the shared operation path as well as MCP registration. Omitting a tool alone is insufficient: a generic tool must not expose the operation indirectly. Admin permission bypass never turns into a bypass of this restriction.
 
-Shared action definitions live in `operations/`. Each definition uses `defineAction` to declare its input schema, permissions, verification requirements, and handler. The definition is the guarded operation; do not add a separate business-operation wrapper around it just to satisfy a layer diagram. Database queries and writes live in the owning scope's `db/` services.
+Shared action definitions live in `operations/`. Each definition uses `defineAction` to declare its input schema, role admission (`roles`, answered NOT_FOUND to everyone else), permissions, verification requirements, and handler. The definition is the guarded operation; do not add a separate business-operation wrapper around it just to satisfy a layer diagram. Database queries and writes live in the owning scope's `db/` services.
 
 Every application service entry function requires the appropriate branded context as its first argument: `service(ctx, input)`. This applies to reads and writes even when the query does not use any context fields. Context must not be optional, defaulted, replaced with a plain user ID, fabricated, or supplied through a type assertion. Builders resolve identity and run the configured validation, permission, and verification checks before handing context to the handler, which passes it to the service. Feature code must not construct contexts; restrict access to the context factory to trusted infrastructure. This is an intentional safeguard against accidental direct service calls, not proof that any arbitrary context has passed every possible permission check.
 
@@ -37,7 +37,9 @@ A small definition can use `handler: (ctx, input) => service(ctx, input)`. Sever
 
 Prefer inferred adapter input/output types instead of repeating them at the export. The desired Server Action export is `export const updateDisplayNameAction = toServerAction(updateDisplayName)`. Verify this factory-produced export with the installed Next.js compiler before adopting it. If the compiler requires an explicit async export, keep that wrapper minimal and retain inferred types. This is an implementation compatibility check, not a reason to add another business layer.
 
-The MCP adapter must resolve its authenticated caller through the shared guarded pipeline; it must not invoke a definition's handler directly or manufacture context. SSR reads retain their trusted read entry path and shared permission policy without invoking a browser Server Action.
+The MCP adapter must resolve its authenticated caller through the shared guarded pipeline; it must not invoke a definition's handler directly or manufacture context. SSR reads retain their trusted read entry path and shared permission policy without invoking a browser Server Action: `toServerQuery(definition)` runs a read definition with the trusted `server-render` entry point from a page's own request headers, takes no caller metadata or step-up proof, and propagates typed refusals for the page to translate. A scope exposes these in a `queries.ts` beside its `actions.ts`.
+
+Contexts carry a private copy of the acting request's headers, readable only through `ctx.getRequestHeaders()`, for provider APIs that authenticate the actor (Better Auth's admin endpoints called server-side). Headers are never serialized, placed in a DTO or logged.
 
 ## Module layout and scope
 
@@ -215,8 +217,10 @@ boundary, including administrative reads and impersonation endpoints. The
 plugin remains available server-side; expose only explicitly required operations
 through guarded `defineAction` definitions with permissions, required verification,
 audit descriptions, and named safe response shapes. Do not forward its admin
-endpoints directly from another transport. No application admin operations are
-currently exposed.
+endpoints directly from another transport. User administration
+(`app/(AuthModule)/admin/_`, see its README) exposes list, detail, name and email
+changes, verification and reset emails, session revocation and bans this way;
+none of them is MCP-eligible.
 
 Operations declare `mcpAllowed` (default false) separately from `stepUp`
 (default `"none"`). `mcpAllowed: true` permits selected tool registration; it does
@@ -227,10 +231,12 @@ by types and at runtime. Browser-only operations may have no step-up requirement
 | Operation | MCP allowed? | Step-up |
 | --- | --- | --- |
 | Grant/revoke roles or permissions | No | Five minutes |
-| Delete an account, ban/unban an account | No | Five minutes |
+| Delete an account (not added to scope), apply or replace a ban | No | Five minutes |
+| Remove a ban | No | None; explicit confirmation in the UI |
 | Start impersonation (not added to scope) | No | Five minutes |
 | Change credentials, sign-in email, or existing 2FA/recovery settings | No | Five minutes |
-| Revoke another user's sessions | No | Five minutes |
+| Revoke another user's sessions | No | None; explicit confirmation in the UI (sign-in is still possible afterwards) |
+| Send a verification or password-reset email to a user | No | None; permission and a server-side throttle apply |
 | Read permitted account identity, role, and status | Explicit opt-in for selected lookup tools | None; permissions and safe output still apply |
 | Edit ordinary display name/avatar/preferences | No by default | None |
 | Ordinary sign-out or leave impersonation | No | None; ending elevated access must remain easy |
@@ -275,6 +281,47 @@ Return a named response shape for account identity, role and status, never an au
 The protocol implementation must use supported library facilities, and prove cookie/token/verification behavior in integration tests. The MCP adapter must resolve authenticated caller identity explicitly; an HTTP session wrapper alone does not establish that identity. Human account verification for a connection does not authorize operations without MCP opt-in.
 
 Register tools explicitly. Never derive the tool registry from all public module exports or all actions. A module's integration note names its intended agent workflow and selected operations; if it has no MCP workflow, it needs no MCP file.
+
+## User administration
+
+The auth module's admin scope owns `/admin/users` and `/admin/users/[userId]`.
+Its contracts, in brief; the scope's README holds the details:
+
+- Permissions extend Better Auth's `user` resource with `send-verification`,
+  `send-password-reset` and `manage-staff`. Every operation declares
+  `roles: STAFF_ROLES` (a non-staff account is answered NOT_FOUND, as if the
+  operation did not exist) plus `user.get` and its own permission (AND);
+  admin holds all of them through the shared role, moderators hold list, get,
+  update, ban and send-verification. Session revocation is the built-in
+  `session.revoke`.
+- Root is `installation.rootUserId`. Nobody else may act on root; root may only
+  rename themselves, resend their own verification, request their own reset
+  email and revoke their own sessions. Non-root actors cannot administer their
+  own account. Staff targets need `user.manage-staff`. The last effectively
+  unbanned admin cannot be banned. All of this is decided from fresh rows on
+  every invocation; the detail page's capabilities are presentation only.
+- Reads project explicit DTOs (never auth rows) with ISO 8601 UTC dates, using
+  one repeatable-read transaction per page with a statement timeout. Effective
+  ban status is computed at the read instant in SQL and never rewritten by a
+  read. The list needs the `pg_trgm` extension and the `user_admin_*` indexes
+  from migration 0004.
+- Provider writes use the global `auth` instance under a PostgreSQL advisory
+  lock (`withUserAccountLock`) that serializes short actions on one account and
+  guards the last-admin count; session effects are performed and observed
+  through `src/lib/auth/userSessionEffects.ts`. Outcomes are `unchanged`,
+  `completed` or `partial` (with `committed` and `failedEffects`), recovered
+  through dedicated retry operations. No cross-store atomicity is claimed.
+- An administrative email change also writes the server-owned
+  `passwordResetInvalidBefore` cutoff; `resetTokenPolicy` refuses reset links
+  issued at or before it.
+- Scope exception: these user detail forms ship without editing presence,
+  stale-edit detection or optimistic concurrency. Name and email are separate
+  saves; the last committed write wins. Presence for form pages remains future
+  work and is not implied by this feature.
+- Not included: user creation, hard or soft deletion, a role editor, avatar
+  editing, impersonation, factor resets, session listings, bulk operations and
+  exports. Future entities model deletion as an explicit soft delete with query
+  exclusions rather than the physical delete of dependency examples.
 
 ## Infrastructure and effects
 

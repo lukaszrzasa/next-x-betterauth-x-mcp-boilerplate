@@ -2,6 +2,7 @@
 
 export { ActionProvider } from "./ActionProvider";
 export { useAction } from "./useAction";
+export { describeFailure, readRetryAfter, type FailureDescription } from "./describeFailure";
 export type {
   ActionFailure,
   ActionOptions,

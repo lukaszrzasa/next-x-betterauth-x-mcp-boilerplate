@@ -4,6 +4,7 @@
  */
 export { toServerAction } from "./serverAction";
 export { toRouteHandler } from "./routeHandler";
+export { toServerQuery } from "./serverQuery";
 export { assertMcpEligible } from "./mcpPolicy";
 
 export type { ActionResult, ClientActionMeta, ServerAction } from "./types";

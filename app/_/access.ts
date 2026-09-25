@@ -9,7 +9,7 @@ import { authorize } from "@/src/lib/access/routes";
  * `app/admin-page` requires `export default page(route, render)` from here
  * for every page under an `admin` segment.
  */
-export const { page, guard } = createPageFactory({
+export const { page, guard, redirectRefused } = createPageFactory({
   signIn: authRoutes.signIn.href,
   // The dashboard if the viewer may open it, otherwise the panel.
   denied: (session) =>

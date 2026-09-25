@@ -9,6 +9,7 @@ import {
   readSidebarState,
 } from "@/app/_/shell/sidebarState";
 import { ViewerProvider } from "@/app/_/shell/ViewerProvider";
+import { ConfirmDialogRoot } from "@/src/components/feedback/ConfirmDialog";
 import { ThemeProvider } from "@/src/components/theme/ThemeProvider";
 import { ActionProvider } from "@/src/lib/actions";
 import { getFreshSession } from "@/src/lib/auth/session";
@@ -58,6 +59,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               >
                 {children}
               </AppShell>
+              <ConfirmDialogRoot />
             </ActionProvider>
           </ViewerProvider>
         </ThemeProvider>

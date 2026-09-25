@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { admin, twoFactor } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { ac, roles } from "./permissions";
+import { rejectSupersededResetTokens } from "./resetTokenPolicy";
 import { TOTP_PERIOD_SECONDS } from "./stepUpPolicy";
 
 import { appName } from "@/src/lib/config";
@@ -56,13 +57,32 @@ const requireVerifiedEmailForOtp = createAuthMiddleware(async (ctx) => {
   }
 });
 
+/**
+ * Better Auth takes one `before` hook. Each guard filters on its own path and
+ * returns nothing, so running them in sequence composes them; the first one
+ * to throw ends the request.
+ */
+const beforeHooks = [requireVerifiedEmailForOtp, rejectSupersededResetTokens] as const;
+const runBeforeHooks = createAuthMiddleware(async (ctx) => {
+  for (const hook of beforeHooks) await hook(ctx);
+});
+
 export const auth = betterAuth({
   appName,
-  hooks: { before: requireVerifiedEmailForOtp },
+  hooks: { before: runBeforeHooks },
   user: {
     additionalFields: {
       // Server-owned enrollment policy, enforced before protected access.
       twoFactorRequired: { type: "boolean", defaultValue: false, input: false },
+      // Server-owned security metadata: reset links issued at or before this
+      // instant are refused (see `resetTokenPolicy.ts`). Written together with
+      // an administrative email change; never a profile field or a UI value.
+      passwordResetInvalidBefore: {
+        type: "date",
+        required: false,
+        input: false,
+        returned: false,
+      },
     },
   },
   database: drizzleAdapter(db, {

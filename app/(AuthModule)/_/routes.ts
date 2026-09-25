@@ -39,4 +39,14 @@ export const authRoutes = defineRoutes({
     icon: "users",
     access: { roles: STAFF_ROLES, perm: "user.list" },
   },
+  /**
+   * One account's detail page: `buildRoute(authRoutes.adminUser.href, { userId })`.
+   * Not a navigation item; the Users section highlights it as a descendant.
+   * Listing and inspecting are separate grants, so this rule is `user.get` alone.
+   */
+  adminUser: {
+    href: "/admin/users/[userId]",
+    label: "User details",
+    access: { roles: STAFF_ROLES, perm: "user.get" },
+  },
 });

@@ -81,6 +81,8 @@ export function defineAction<TInput, TOutput, TRawInput>(
         requestId,
         ip: clientIp(meta.headers),
         userAgent: meta.headers.get("user-agent"),
+        // A copy: the context must not observe later mutation of the request headers.
+        requestHeaders: new Headers(meta.headers),
         log,
         stepUp: null,
       };
@@ -113,6 +115,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
         checkEntryPoint(meta, mcpAllowed);
         checkAuthorization(
           {
+            roles: authedConfig.roles,
             permissions: authedConfig.permissions,
             permissionsConnector: authedConfig.permissionsConnector,
             requireVerifiedEmail: authedConfig.requireVerifiedEmail,
@@ -220,9 +223,18 @@ function clientIp(headers: Headers): string | null {
   );
 }
 
-/** Only trusted adapters supply provenance; unknown values always deny. */
+/**
+ * Only trusted adapters supply provenance; unknown values always deny. The
+ * allowlist is explicit rather than `ENTRY_POINTS.includes(...)` so adding a
+ * transport is a deliberate edit here, not a side effect of widening the type.
+ */
 function checkEntryPoint(meta: ActionMeta, mcpAllowed: boolean): void {
-  if (meta.entryPoint === "server-action" || meta.entryPoint === "route-handler") return;
+  if (
+    meta.entryPoint === "server-action" ||
+    meta.entryPoint === "route-handler" ||
+    meta.entryPoint === "server-render"
+  )
+    return;
   if (meta.entryPoint === "mcp" && mcpAllowed) return;
   throw new ActionError("FORBIDDEN", { message: "Operation unavailable through this entry point." });
 }

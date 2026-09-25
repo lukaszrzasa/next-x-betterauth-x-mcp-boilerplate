@@ -1,0 +1,241 @@
+                                                                 version                                                                  
+------------------------------------------------------------------------------------------------------------------------------------------
+ PostgreSQL 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit
+
+ users  
+--------
+ 100000
+
+=== A. default first page (created_at desc), count
+                                                    QUERY PLAN                                                     
+-------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=2878.00..2878.01 rows=1 width=8) (actual time=10.626..10.628 rows=1 loops=1)
+   Buffers: shared hit=1628
+   ->  Seq Scan on "user"  (cost=0.00..2628.00 rows=100000 width=0) (actual time=0.002..6.366 rows=100000 loops=1)
+         Buffers: shared hit=1628
+ Planning:
+   Buffers: shared hit=2
+ Planning Time: 0.067 ms
+ Execution Time: 10.645 ms
+
+=== A. default first page (created_at desc), rows
+                                                                          QUERY PLAN                                                                           
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.42..2.82 rows=25 width=121) (actual time=0.014..0.022 rows=25 loops=1)
+   Buffers: shared hit=6
+   ->  Index Scan Backward using user_admin_created_at_id_idx on "user"  (cost=0.42..9598.85 rows=100000 width=121) (actual time=0.013..0.019 rows=25 loops=1)
+         Buffers: shared hit=6
+ Planning:
+   Buffers: shared hit=44
+ Planning Time: 0.160 ms
+ Execution Time: 0.039 ms
+
+=== B. selective substring search "lovelace 4242", count
+                                                                   QUERY PLAN                                                                    
+-------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=305.93..305.94 rows=1 width=8) (actual time=0.681..0.682 rows=1 loops=1)
+   Buffers: shared hit=70
+   ->  Bitmap Heap Scan on "user"  (cost=228.56..305.87 rows=21 width=0) (actual time=0.680..0.680 rows=0 loops=1)
+         Recheck Cond: ((lower(name) ~~ '%lovelace 4242%'::text) OR (lower(email) ~~ '%lovelace 4242%'::text) OR (id = 'lovelace 4242'::text))
+         Buffers: shared hit=70
+         ->  BitmapOr  (cost=228.56..228.56 rows=21 width=0) (actual time=0.678..0.678 rows=0 loops=1)
+               Buffers: shared hit=70
+               ->  Bitmap Index Scan on user_admin_name_trgm_idx  (cost=0.00..112.06 rows=10 width=0) (actual time=0.609..0.609 rows=0 loops=1)
+                     Index Cond: (lower(name) ~~ '%lovelace 4242%'::text)
+                     Buffers: shared hit=44
+               ->  Bitmap Index Scan on user_admin_email_trgm_idx  (cost=0.00..112.06 rows=10 width=0) (actual time=0.056..0.056 rows=0 loops=1)
+                     Index Cond: (lower(email) ~~ '%lovelace 4242%'::text)
+                     Buffers: shared hit=23
+               ->  Bitmap Index Scan on user_pkey  (cost=0.00..4.43 rows=1 width=0) (actual time=0.011..0.011 rows=0 loops=1)
+                     Index Cond: (id = 'lovelace 4242'::text)
+                     Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=19
+ Planning Time: 0.643 ms
+ Execution Time: 0.776 ms
+
+=== B. selective substring search "lovelace 4242", rows
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=306.33..306.39 rows=21 width=121) (actual time=0.493..0.493 rows=0 loops=1)
+   Buffers: shared hit=76
+   ->  Sort  (cost=306.33..306.39 rows=21 width=121) (actual time=0.492..0.492 rows=0 loops=1)
+         Sort Key: created_at DESC, id DESC
+         Sort Method: quicksort  Memory: 25kB
+         Buffers: shared hit=76
+         ->  Bitmap Heap Scan on "user"  (cost=228.56..305.87 rows=21 width=121) (actual time=0.476..0.477 rows=0 loops=1)
+               Recheck Cond: ((lower(name) ~~ '%lovelace 4242%'::text) OR (lower(email) ~~ '%lovelace 4242%'::text) OR (id = 'lovelace 4242'::text))
+               Buffers: shared hit=70
+               ->  BitmapOr  (cost=228.56..228.56 rows=21 width=0) (actual time=0.475..0.476 rows=0 loops=1)
+                     Buffers: shared hit=70
+                     ->  Bitmap Index Scan on user_admin_name_trgm_idx  (cost=0.00..112.06 rows=10 width=0) (actual time=0.453..0.453 rows=0 loops=1)
+                           Index Cond: (lower(name) ~~ '%lovelace 4242%'::text)
+                           Buffers: shared hit=44
+                     ->  Bitmap Index Scan on user_admin_email_trgm_idx  (cost=0.00..112.06 rows=10 width=0) (actual time=0.016..0.016 rows=0 loops=1)
+                           Index Cond: (lower(email) ~~ '%lovelace 4242%'::text)
+                           Buffers: shared hit=23
+                     ->  Bitmap Index Scan on user_pkey  (cost=0.00..4.43 rows=1 width=0) (actual time=0.005..0.005 rows=0 loops=1)
+                           Index Cond: (id = 'lovelace 4242'::text)
+                           Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=2
+ Planning Time: 0.102 ms
+ Execution Time: 0.528 ms
+
+=== C. short search "ab", count
+                                                 QUERY PLAN                                                 
+------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=3878.05..3878.06 rows=1 width=8) (actual time=71.831..71.833 rows=1 loops=1)
+   Buffers: shared hit=1628
+   ->  Seq Scan on "user"  (cost=0.00..3878.00 rows=21 width=0) (actual time=71.805..71.806 rows=0 loops=1)
+         Filter: ((lower(name) ~~ '%ab%'::text) OR (lower(email) ~~ '%ab%'::text) OR (id = 'ab'::text))
+         Rows Removed by Filter: 100000
+         Buffers: shared hit=1628
+ Planning:
+   Buffers: shared hit=2
+ Planning Time: 0.079 ms
+ Execution Time: 71.848 ms
+
+=== C. short search "ab", rows
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=3878.46..3878.51 rows=21 width=121) (actual time=72.197..72.198 rows=0 loops=1)
+   Buffers: shared hit=1628
+   ->  Sort  (cost=3878.46..3878.51 rows=21 width=121) (actual time=72.195..72.196 rows=0 loops=1)
+         Sort Key: created_at DESC, id DESC
+         Sort Method: quicksort  Memory: 25kB
+         Buffers: shared hit=1628
+         ->  Seq Scan on "user"  (cost=0.00..3878.00 rows=21 width=121) (actual time=72.189..72.190 rows=0 loops=1)
+               Filter: ((lower(name) ~~ '%ab%'::text) OR (lower(email) ~~ '%ab%'::text) OR (id = 'ab'::text))
+               Rows Removed by Filter: 100000
+               Buffers: shared hit=1628
+ Planning:
+   Buffers: shared hit=2
+ Planning Time: 0.155 ms
+ Execution Time: 72.216 ms
+
+=== D. combined filters role=moderator, verified=no, status=banned, count
+                                                                           QUERY PLAN                                                                            
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=11629.03..11629.04 rows=1 width=8) (actual time=13.824..13.826 rows=1 loops=1)
+   Buffers: shared hit=1628
+   ->  Seq Scan on "user"  (cost=0.00..11628.00 rows=411 width=0) (actual time=0.021..13.665 rows=1900 loops=1)
+         Filter: ((NOT email_verified) AND (banned IS TRUE) AND ((ban_expires IS NULL) OR (ban_expires > (now())::timestamp without time zone)) AND (SubPlan 1))
+         Rows Removed by Filter: 98100
+         Buffers: shared hit=1628
+         SubPlan 1
+           ->  Function Scan on unnest token  (cost=0.01..0.13 rows=10 width=32) (actual time=0.001..0.001 rows=1 loops=3333)
+ Planning Time: 0.118 ms
+ Execution Time: 13.847 ms
+
+=== D. combined filters, rows
+                                                                           QUERY PLAN                                                                            
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.42..1131.71 rows=25 width=121) (actual time=0.039..0.728 rows=25 loops=1)
+   Buffers: shared hit=52
+   ->  Index Scan Backward using user_admin_created_at_id_idx on "user"  (cost=0.42..18598.85 rows=411 width=121) (actual time=0.038..0.723 rows=25 loops=1)
+         Filter: ((NOT email_verified) AND (banned IS TRUE) AND ((ban_expires IS NULL) OR (ban_expires > (now())::timestamp without time zone)) AND (SubPlan 1))
+         Rows Removed by Filter: 1275
+         Buffers: shared hit=52
+         SubPlan 1
+           ->  Function Scan on unnest token  (cost=0.01..0.13 rows=10 width=32) (actual time=0.003..0.003 rows=1 loops=43)
+ Planning Time: 0.186 ms
+ Execution Time: 0.772 ms
+
+=== E. sort by name asc, first page
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.42..3.71 rows=25 width=153) (actual time=0.011..0.045 rows=25 loops=1)
+   Buffers: shared hit=28
+   ->  Index Scan using user_admin_lower_name_id_idx on "user"  (cost=0.42..13174.38 rows=100000 width=153) (actual time=0.011..0.043 rows=25 loops=1)
+         Buffers: shared hit=28
+ Planning:
+   Buffers: shared hit=5
+ Planning Time: 0.066 ms
+ Execution Time: 0.055 ms
+
+=== F. sort by email desc, first page
+                                                                           QUERY PLAN                                                                            
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.42..3.40 rows=25 width=153) (actual time=0.010..0.025 rows=25 loops=1)
+   Buffers: shared hit=10
+   ->  Index Scan Backward using user_admin_lower_email_id_idx on "user"  (cost=0.42..11933.89 rows=100000 width=153) (actual time=0.009..0.023 rows=25 loops=1)
+         Buffers: shared hit=10
+ Planning Time: 0.037 ms
+ Execution Time: 0.033 ms
+
+=== G. deep page: email desc, page 3000 of 4000 (offset 74975)
+                                                                             QUERY PLAN                                                                              
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=8947.54..8950.52 rows=25 width=153) (actual time=44.387..44.402 rows=25 loops=1)
+   Buffers: shared hit=17285
+   ->  Index Scan Backward using user_admin_lower_email_id_idx on "user"  (cost=0.42..11933.89 rows=100000 width=153) (actual time=0.007..42.278 rows=75000 loops=1)
+         Buffers: shared hit=17285
+ Planning Time: 0.035 ms
+ Execution Time: 44.417 ms
+
+=== H. deep page: created_at desc, last page (offset 99975)
+                                                                             QUERY PLAN                                                                             
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=9596.46..9598.85 rows=25 width=121) (actual time=21.435..21.442 rows=25 loops=1)
+   Buffers: shared hit=3793
+   ->  Index Scan Backward using user_admin_created_at_id_idx on "user"  (cost=0.42..9598.85 rows=100000 width=121) (actual time=0.009..18.755 rows=100000 loops=1)
+         Buffers: shared hit=3793
+ Planning Time: 0.084 ms
+ Execution Time: 21.457 ms
+
+=== I. search with wildcard characters treated literally: "%_" matches nothing
+                                                 QUERY PLAN                                                 
+------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=3878.05..3878.06 rows=1 width=8) (actual time=67.989..67.991 rows=1 loops=1)
+   Buffers: shared hit=1628
+   ->  Seq Scan on "user"  (cost=0.00..3878.00 rows=21 width=0) (actual time=67.984..67.984 rows=0 loops=1)
+         Filter: ((lower(name) ~~ '%\%\_%'::text) OR (lower(email) ~~ '%\%\_%'::text) OR (id = '%_'::text))
+         Rows Removed by Filter: 100000
+         Buffers: shared hit=1628
+ Planning:
+   Buffers: shared hit=2
+ Planning Time: 0.138 ms
+ Execution Time: 68.013 ms
+
+=== J. exact ID match
+                                                                   QUERY PLAN                                                                   
+------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=490.40..490.41 rows=1 width=8) (actual time=3.254..3.256 rows=1 loops=1)
+   Buffers: shared hit=715
+   InitPlan 1 (returns $0)
+     ->  Limit  (cost=0.00..287.80 rows=1 width=21) (actual time=3.172..3.172 rows=1 loops=1)
+           Buffers: shared hit=685
+           ->  Seq Scan on "user" user_1  (cost=0.00..2878.00 rows=10 width=21) (actual time=3.170..3.170 rows=1 loops=1)
+                 Filter: (name ~~ 'Ada Lovelace 42%'::text)
+                 Rows Removed by Filter: 42139
+                 Buffers: shared hit=685
+   ->  Bitmap Heap Scan on "user"  (cost=125.23..202.55 rows=21 width=0) (actual time=3.249..3.251 rows=1 loops=1)
+         Recheck Cond: ((lower(name) ~~ '%usr_0004242_%'::text) OR (lower(email) ~~ '%usr_0004242_%'::text) OR (id = $0))
+         Heap Blocks: exact=1
+         Buffers: shared hit=715
+         ->  BitmapOr  (cost=125.23..125.23 rows=21 width=0) (actual time=3.245..3.246 rows=0 loops=1)
+               Buffers: shared hit=714
+               ->  Bitmap Index Scan on user_admin_name_trgm_idx  (cost=0.00..60.39 rows=10 width=0) (actual time=0.034..0.034 rows=0 loops=1)
+                     Index Cond: (lower(name) ~~ '%usr_0004242_%'::text)
+                     Buffers: shared hit=13
+               ->  Bitmap Index Scan on user_admin_email_trgm_idx  (cost=0.00..60.39 rows=10 width=0) (actual time=0.021..0.021 rows=0 loops=1)
+                     Index Cond: (lower(email) ~~ '%usr_0004242_%'::text)
+                     Buffers: shared hit=13
+               ->  Bitmap Index Scan on user_pkey  (cost=0.00..4.43 rows=1 width=0) (actual time=3.190..3.190 rows=1 loops=1)
+                     Index Cond: (id = $0)
+                     Buffers: shared hit=688
+ Planning:
+   Buffers: shared hit=2
+ Planning Time: 0.175 ms
+ Execution Time: 3.309 ms
+
+=== indexes
+           indexname           |                                           indexdef                                            
+-------------------------------+-----------------------------------------------------------------------------------------------
+ user_admin_created_at_id_idx  | CREATE INDEX user_admin_created_at_id_idx ON public."user" USING btree (created_at, id)
+ user_admin_email_trgm_idx     | CREATE INDEX user_admin_email_trgm_idx ON public."user" USING gin (lower(email) gin_trgm_ops)
+ user_admin_lower_email_id_idx | CREATE INDEX user_admin_lower_email_id_idx ON public."user" USING btree (lower(email), id)
+ user_admin_lower_name_id_idx  | CREATE INDEX user_admin_lower_name_id_idx ON public."user" USING btree (lower(name), id)
+ user_admin_name_trgm_idx      | CREATE INDEX user_admin_name_trgm_idx ON public."user" USING gin (lower(name) gin_trgm_ops)
+

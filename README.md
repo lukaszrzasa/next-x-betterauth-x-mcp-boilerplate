@@ -66,9 +66,19 @@ carry only their breadcrumb. Existing staff without an
 enrolled factor can access only required enrollment, sign-out, and email confirmation.
 Ordinary-user enrollment and post-login account settings remain out of scope.
 
+Migration `0004_user_admin_search_indexes.sql` needs the `pg_trgm` extension
+(installed by the migration when the role may create extensions). It creates
+the user-administration search indexes transactionally; on an already-large
+live `user` table apply it in a maintenance window or replace it with a
+reviewed `CREATE INDEX CONCURRENTLY` script.
+
 Validation: `bun run test`, `bun run lint`, `bun run typecheck`, and `bun run build`.
 `bun run test` also runs the setup integration suite when `DATABASE_URL` is set.
 It creates and drops an isolated PostgreSQL schema to test atomic bootstrap,
 concurrent submissions and provider 2FA compatibility; no accounts are created
 in the application tables. Environments without `DATABASE_URL` explicitly skip
 that suite. Form and initialization-cache checks use the same test command.
+The user-administration integration suite (part of `bun run test`) runs against
+isolated services when `TEST_DATABASE_URL` and `TEST_REDIS_URL` name test-only
+PostgreSQL and Redis databases distinct from `DATABASE_URL` and `REDIS_URL`; it
+skips itself otherwise.

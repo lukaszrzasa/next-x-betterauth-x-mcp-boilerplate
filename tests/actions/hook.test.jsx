@@ -1,21 +1,46 @@
 import { afterEach, expect, mock, test } from "bun:test";
 import { Window } from "happy-dom";
 
+// The verification modal is a Radix dialog, which needs the same DOM globals
+// as the shell suite (focus scope, dismissable layer, scroll lock).
 const browser = new Window({ url: "http://localhost" });
 for (const key of [
   "window",
   "document",
   "navigator",
   "HTMLElement",
+  "HTMLInputElement",
   "HTMLDialogElement",
-  "MutationObserver",
+  "HTMLButtonElement",
+  "HTMLSelectElement",
+  "SVGElement",
+  "Element",
+  "Node",
+  "NodeFilter",
+  "Text",
+  "DocumentFragment",
+  "DOMRect",
   "Event",
+  "CustomEvent",
   "MouseEvent",
+  "KeyboardEvent",
+  "FocusEvent",
+  "PointerEvent",
+  "MutationObserver",
+  "ResizeObserver",
+  "getComputedStyle",
+  "requestAnimationFrame",
+  "cancelAnimationFrame",
 ])
   Object.defineProperty(globalThis, key, {
     configurable: true,
     writable: true,
-    value: key === "window" ? browser : browser[key],
+    value:
+      key === "window"
+        ? browser
+        : typeof browser[key] === "function" && key.includes("AnimationFrame")
+          ? browser[key].bind(browser)
+          : browser[key],
   });
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 

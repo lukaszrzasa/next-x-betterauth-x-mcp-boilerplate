@@ -2,8 +2,20 @@ import { createAccessControl } from "better-auth/plugins/access";
 import type { RoleAuthorizeRequest } from "better-auth/plugins/access";
 import { defaultStatements, userAc } from "better-auth/plugins/admin/access";
 
+/**
+ * Better Auth's built-in `user`/`session` statements plus the application's
+ * administrative email actions and the staff-target gate. The built-ins stay
+ * intact so the admin plugin's own endpoint checks keep their meaning; session
+ * revocation is the built-in `session.revoke` (there is no `user.revoke-session`).
+ */
 export const statement = {
   ...defaultStatements,
+  user: [
+    ...defaultStatements.user,
+    "send-verification",
+    "send-password-reset",
+    "manage-staff",
+  ],
 } as const;
 
 export const ac = createAccessControl(statement);
@@ -14,7 +26,7 @@ export const roles = {
   }),
 
   moderator: ac.newRole({
-    user: ["list", "update", "ban"],
+    user: ["list", "get", "update", "ban", "send-verification"],
   }),
 
   // All declared permissions, including future additions, without a second grant list.
@@ -41,6 +53,9 @@ export type Permission = {
 
 /** Role names declared above: `"user" | "moderator" | "admin"`. */
 export type RoleName = keyof typeof roles;
+
+/** The declared role names as a value, in declaration order, for filters and labels. */
+export const ROLE_NAMES = Object.keys(roles) as readonly RoleName[];
 
 /** Staff: admitted to the dashboard area and required to enroll a second factor. */
 export const STAFF_ROLES: readonly RoleName[] = ["admin", "moderator"];

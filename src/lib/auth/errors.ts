@@ -12,6 +12,10 @@ export const ACTION_ERROR_STATUS = {
   FORBIDDEN: 403,
   EMAIL_VERIFICATION_REQUIRED: 403,
   IMPERSONATION_FORBIDDEN: 403,
+  /** The target of the operation no longer exists. */
+  NOT_FOUND: 404,
+  /** The requested value is already taken (an email in use by another account). */
+  CONFLICT: 409,
   TWO_FACTOR_REQUIRED: 428,
   TWO_FACTOR_ENROLLMENT_REQUIRED: 428,
   STEP_UP_INVALID_CODE: 401,

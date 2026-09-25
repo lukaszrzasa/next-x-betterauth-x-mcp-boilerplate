@@ -42,6 +42,12 @@ mock.module("../../src/lib/redis/index.ts", () => ({
     stored.set(key, String(value));
     return value;
   },
+  decrementIfExists: async (key) => {
+    if (!stored.has(key)) return 0;
+    const value = Number(stored.get(key)) - 1;
+    stored.set(key, String(value));
+    return value;
+  },
   redisSecondaryStorage: {
     get: redis.get,
     set: redis.set,
@@ -103,6 +109,7 @@ describe.skipIf(!process.env.DATABASE_URL)("setup integration", () => {
       "0000_lame_richard_fisk.sql",
       "0001_require_user_two_factor.sql",
       "0002_installation_root_account.sql",
+      "0003_user_password_reset_cutoff.sql",
     ]) {
       await pool.query(
         (

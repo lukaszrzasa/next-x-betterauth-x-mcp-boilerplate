@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { defineAction } from "@/src/lib/auth/builders/actionBuilder";
-import { toServerAction } from "@/src/lib/auth/builders/adapters";
+import { toServerAction, toServerQuery } from "@/src/lib/auth/builders/adapters";
 import type { AuthedCtx, PublicCtx } from "@/src/lib/auth/builders/context";
 
 // Compile-only checks: callers use raw input; handlers and audits use parsed input.
@@ -41,6 +41,14 @@ export function checkActionTypes(headers: Headers) {
   void transformed(42, { headers, entryPoint: "server-action" });
   // @ts-expect-error Adapters preserve the action's raw input type.
   void adapted(42);
+  // The trusted SSR entry point is part of the provenance vocabulary; unknown values are not.
+  void transformed("42", { headers, entryPoint: "server-render" });
+  // @ts-expect-error Unknown provenance is rejected at the type level as well as at runtime.
+  void transformed("42", { headers, entryPoint: "browser" });
+  const queried: Promise<{ userId: string; number: number }> = toServerQuery(transformed)("42");
+  void queried;
+  // @ts-expect-error The SSR adapter accepts no caller metadata or step-up proof.
+  void toServerQuery(transformed)("42", { stepUp: { method: "totp", code: "000000" } });
 
   const publicAction = defineAction({
     name: "typed.public",

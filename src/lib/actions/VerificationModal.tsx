@@ -1,19 +1,50 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { createCallable } from "react-call";
 import { useMutationFlow } from "react-call/mutation-flow";
-import { useForm, useWatch } from "react-hook-form";
-import { CODE_PATTERN, type StepUpProof } from "@/src/lib/auth/stepUpPolicy";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { MailIcon, ShieldCheckIcon } from "lucide-react";
+import { Button } from "@/src/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/src/components/ui/dialog";
+import { Field, FieldGroup, FieldLabel } from "@/src/components/ui/field";
+import { Input } from "@/src/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/src/components/ui/native-select";
+import { cn } from "@/src/lib/utils";
+import {
+  CODE_LENGTH,
+  CODE_PATTERN,
+  type StepUpMethod,
+  type StepUpProof,
+} from "@/src/lib/auth/stepUpPolicy";
 import type { VerificationPresenter, VerificationRequest } from "./types";
 
 type Submission = { kind: "send" } | { kind: "verify"; proof: StepUpProof };
 
+const METHOD_LABELS: Record<StepUpMethod, string> = {
+  totp: "Authenticator app",
+  email: "Email code",
+};
+
+/**
+ * The step-up prompt the action runtime opens after `TWO_FACTOR_REQUIRED`.
+ * Its boundary with the runtime is `VerificationRequest`; the runtime owns
+ * which methods are offered (in the server's order, first one default),
+ * retries with the stored input, invalid-code presentation, lockout, email
+ * dispatch and abort. This component only collects a six-digit code.
+ */
 const VerificationModal = createCallable<
   VerificationRequest,
   "finished" | "cancelled"
 >(function VerificationModal({ call, challenge, signal, submit, sendEmail }) {
-  const dialog = useRef<HTMLDialogElement>(null);
+  const ids = { method: useId(), code: useId(), feedback: useId() };
   const [notice, setNotice] = useState("");
   const {
     register,
@@ -56,82 +87,123 @@ const VerificationModal = createCallable<
     },
   );
 
-  useEffect(() => {
-    const element = dialog.current;
-    element?.showModal();
-    return () => element?.close();
-  }, []);
+  const cancel = () => {
+    if (!runSubmission.pending) call.end("cancelled");
+  };
+  const feedback = runSubmission.pending
+    ? "Please wait…"
+    : (errors.code?.message ?? errors.root?.send?.message ?? notice);
 
   return (
-    <dialog
-      ref={dialog}
-      aria-label="Verify your identity"
-      onCancel={(event) => {
-        event.preventDefault();
-        if (!runSubmission.pending) call.end("cancelled");
-      }}
-    >
-      <form
-        noValidate
-        onSubmit={handleSubmit((proof) => runSubmission({ kind: "verify", proof }))}
+    <Dialog open onOpenChange={(open) => !open && cancel()}>
+      <DialogContent
+        showCloseButton={false}
+        className="ui:sm:max-w-md"
+        onInteractOutside={(event) => event.preventDefault()}
       >
-        <h2>Verify your identity</h2>
-        <fieldset disabled={runSubmission.pending}>
-          {challenge.methods.length > 1 && (
-            <label>
-              Verification method
-              <select
-                {...register("method", {
-                  onChange: () => {
-                    resetField("code");
-                    clearErrors();
-                    setNotice("");
-                  },
-                })}
-              >
-                {challenge.methods.map((available) => (
-                  <option key={available} value={available}>
-                    {available === "totp" ? "Authenticator app" : "Email"}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {method === "email" && (
-            <button type="button" onClick={() => runSubmission({ kind: "send" })}>
-              Send email code
-            </button>
-          )}
-          <label>
-            Six-digit code
-            <input
-              {...register("code", {
-                required: "Enter your six-digit code.",
-                pattern: {
-                  value: CODE_PATTERN,
-                  message: "Enter exactly six digits.",
-                },
-              })}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              aria-invalid={!!errors.code}
-              aria-describedby="verification-feedback"
-              autoFocus
-            />
-          </label>
-          <button type="submit">Verify and continue</button>
-          <button type="button" onClick={() => call.end("cancelled")}>
-            Cancel
-          </button>
-        </fieldset>
-        <p id="verification-feedback" role="status">
-          {runSubmission.pending
-            ? "Please wait…"
-            : (errors.code?.message ?? errors.root?.send?.message ?? notice)}
-        </p>
-      </form>
-    </dialog>
+        <form
+          noValidate
+          onSubmit={handleSubmit((proof) => runSubmission({ kind: "verify", proof }))}
+          className="ui:flex ui:flex-col ui:gap-5"
+        >
+          <DialogHeader>
+            <DialogTitle className="ui:flex ui:items-center ui:gap-2">
+              <ShieldCheckIcon aria-hidden="true" className="ui:size-5 ui:text-muted-foreground" />
+              Verify your identity
+            </DialogTitle>
+            <DialogDescription>
+              This action needs a second factor. Enter the six-digit code
+              {challenge.methods.length > 1
+                ? " from your chosen method"
+                : method === "totp"
+                  ? " from your authenticator app"
+                  : " sent to your email address"}
+              .
+            </DialogDescription>
+          </DialogHeader>
+          <fieldset disabled={runSubmission.pending} className="ui:contents">
+            <FieldGroup className="ui:gap-4">
+              {challenge.methods.length > 1 && (
+                <Field>
+                  <FieldLabel htmlFor={ids.method}>Verification method</FieldLabel>
+                  <NativeSelect
+                    id={ids.method}
+                    className="ui:w-full"
+                    {...register("method", {
+                      onChange: () => {
+                        resetField("code");
+                        clearErrors();
+                        setNotice("");
+                      },
+                    })}
+                  >
+                    {challenge.methods.map((available) => (
+                      <NativeSelectOption key={available} value={available}>
+                        {METHOD_LABELS[available]}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                </Field>
+              )}
+              {method === "email" && (
+                <div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => runSubmission({ kind: "send" })}
+                  >
+                    <MailIcon aria-hidden="true" />
+                    Send email code
+                  </Button>
+                </div>
+              )}
+              <Controller
+                control={control}
+                name="code"
+                rules={{
+                  required: "Enter your six-digit code.",
+                  pattern: { value: CODE_PATTERN, message: "Enter exactly six digits." },
+                }}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={ids.code}>Six-digit code</FieldLabel>
+                    <Input
+                      {...field}
+                      id={ids.code}
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={CODE_LENGTH}
+                      className="ui:h-11 ui:font-mono ui:text-lg ui:tracking-[0.3em]"
+                      aria-invalid={fieldState.invalid}
+                      aria-describedby={ids.feedback}
+                      autoFocus
+                    />
+                  </Field>
+                )}
+              />
+            </FieldGroup>
+            <p
+              id={ids.feedback}
+              role="status"
+              aria-live="polite"
+              className={cn(
+                "ui:min-h-5 ui:text-sm",
+                errors.code || errors.root?.send ? "ui:text-destructive" : "ui:text-muted-foreground",
+              )}
+            >
+              {feedback}
+            </p>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={cancel}>
+                Cancel
+              </Button>
+              <Button type="submit">Verify and continue</Button>
+            </DialogFooter>
+          </fieldset>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 });
 

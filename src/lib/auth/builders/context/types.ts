@@ -17,5 +17,7 @@ export type CtxInit<TUser extends User | null> = {
   requestId: string;
   ip: string | null;
   userAgent: string | null;
+  /** The acting request's headers; the builder passes a copy of `meta.headers`. */
+  requestHeaders: Headers;
   log: Logger;
 };

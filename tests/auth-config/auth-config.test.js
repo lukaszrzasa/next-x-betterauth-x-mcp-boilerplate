@@ -150,3 +150,31 @@ test("password reset is single-use, revokes sessions, and preserves enabled 2FA"
   const login = await authRequest("sign-in/email", { email: credentials.email, password: "new-test-password-456" });
   expect(await login.json()).toMatchObject({ twoFactorRedirect: true });
 });
+
+test("the password-reset cutoff is server-owned, never client-set and never returned", async () => {
+  const signUp = (body) => auth.handler(new Request("http://localhost:3000/api/auth/sign-up/email", {
+    method: "POST",
+    headers: { origin: "http://localhost:3000", "content-type": "application/json" },
+    body: JSON.stringify({ email: "cutoff@example.com", name: "Cut", password: "test-password-12345", ...body }),
+  }));
+  const refused = await signUp({ passwordResetInvalidBefore: "2020-01-01T00:00:00.000Z" });
+  expect(refused.status).toBe(400);
+  expect((await refused.json()).code).toBe("FIELD_NOT_ALLOWED");
+  const response = await signUp({});
+  expect(response.status).toBe(200);
+  const { user } = await response.json();
+  expect(user).not.toHaveProperty("passwordResetInvalidBefore");
+  const ctx = await auth.$context;
+  expect((await ctx.internalAdapter.findUserById(user.id)).passwordResetInvalidBefore ?? null).toBeNull();
+  await ctx.internalAdapter.updateUser(user.id, { passwordResetInvalidBefore: new Date("2026-01-01T00:00:00.000Z") });
+  const session = await auth.api.getSession({ headers: new Headers({ cookie: response.headers.get("set-cookie").split(";")[0] }), query: { disableCookieCache: true } });
+  expect(session.user).not.toHaveProperty("passwordResetInvalidBefore");
+});
+
+test("the admin plugin applies no default ban expiry: a permanent ban stores no expiry", () => {
+  const plugin = auth.options.plugins.find((entry) => entry.id === "admin");
+  expect(plugin).toBeTruthy();
+  const options = auth.options.plugins.find((entry) => entry.id === "admin")?.options ?? {};
+  expect(options.defaultBanExpiresIn).toBeUndefined();
+  expect(options.defaultBanReason).toBeUndefined();
+});
