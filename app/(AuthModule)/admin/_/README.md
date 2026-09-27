@@ -69,10 +69,12 @@ read-only transaction with a 5-second statement timeout.
   `useUnbanUser`, the `useRetry*` recoveries, ...), each a thin binding of
   its Server Action to the shared `useUserMutation`, which owns feedback,
   refresh and root's self-sign-out redirect. `hooks/form/` holds the three
-  form controllers; `useActionFeedback` is the per-section feedback state.
+  form controllers; `useFeedback` (src/lib/hooks) is the per-section feedback state, rendered by the shared `ActionFeedback`.
 - `components/users/`: `list/` (table, columns, filters), `detail/` (header,
   feedback, `sections/`, `forms/`) and the shared `UserBadges`. Each section
   calls the hooks it needs and owns its flow; nothing is aggregated above it.
+  Every form (name, email, ban) opens in a modal (`FormDialog` /
+  `UserBanDialog`); the sections only show read-only values and buttons.
 - Confirmations (sign out everywhere, remove ban, change email) go through
   the imperative `confirm()` of `src/components/feedback/ConfirmDialog`, a
   `react-call` callable mounted once at the app root, so no component keeps
@@ -102,7 +104,14 @@ atomicity is claimed.
 An administrative email change writes `email`, `emailVerified: false` and the
 server-owned `passwordResetInvalidBefore` in one provider update; the
 `resetTokenPolicy` before-hook then refuses reset links issued at or before
-that instant.
+that instant. Before that write, and before a ban's, the target's pending
+account-settings state is retired under the same lock
+(`retirePendingSecurityState` in the module-wide settings services: pending
+email change/correction requests, staged authenticator setups, and a
+security-version increment that invalidates the target's step-up grants); a
+failure there blocks the mutation. The session authority now refuses an
+effectively banned account outright, so a banned admin's session cannot act
+at all.
 
 The two email actions are throttled in Redis (60 seconds per target and action,
 20 attempts per actor per 10 minutes) and fail closed when Redis is down.

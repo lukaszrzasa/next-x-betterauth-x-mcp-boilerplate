@@ -6,15 +6,16 @@ import { DetailRow, DetailSection } from "@/src/components/detail/DetailSection"
 import { confirm } from "@/src/components/feedback/ConfirmDialog";
 import { Button } from "@/src/components/ui/button";
 import { formatUtcDateTime, toIsoInstant } from "@/src/lib/date/format";
+import { ActionFeedback } from "@/src/components/feedback/ActionFeedback";
+import { useFeedback } from "@/src/lib/hooks/useFeedback";
 import { useRetryBanSessions } from "@/app/(AuthModule)/admin/_/hooks/actions/useRetryBanSessions";
 import { useRetryUnbanSessionRefresh } from "@/app/(AuthModule)/admin/_/hooks/actions/useRetryUnbanSessionRefresh";
 import { useUnbanUser } from "@/app/(AuthModule)/admin/_/hooks/actions/useUnbanUser";
-import { useActionFeedback } from "@/app/(AuthModule)/admin/_/hooks/useActionFeedback";
+import type { Feedback } from "@/app/(AuthModule)/admin/_/hooks/feedback";
 import type { UserDetail } from "@/app/(AuthModule)/admin/_/types";
 import { AccessBadge, RoleBadges } from "@/app/(AuthModule)/admin/_/components/users/UserBadges";
 import { UserBanDialog } from "@/app/(AuthModule)/admin/_/components/users/detail/forms/UserBanDialog";
 import { policyNote } from "@/app/(AuthModule)/admin/_/components/users/detail/policyNote";
-import { UserActionFeedback } from "@/app/(AuthModule)/admin/_/components/users/detail/UserActionFeedback";
 
 /**
  * Roles (read-only), effective access and the ban controls. A banned
@@ -24,7 +25,7 @@ import { UserActionFeedback } from "@/app/(AuthModule)/admin/_/components/users/
  */
 export function UserAccessSection({ user }: { user: UserDetail }) {
   const [banOpen, setBanOpen] = useState(false);
-  const { feedback, setFeedback, dismiss } = useActionFeedback();
+  const { feedback, setFeedback, dismiss } = useFeedback<Feedback>();
   const unban = useUnbanUser(user.id, { onSettled: setFeedback });
   const retryBanSessions = useRetryBanSessions(user.id, { onSettled: setFeedback });
   const retryUnbanSessionRefresh = useRetryUnbanSessionRefresh(user.id, { onSettled: setFeedback });
@@ -57,7 +58,8 @@ export function UserAccessSection({ user }: { user: UserDetail }) {
       description="Roles and whether the account may sign in."
       icon={KeyRoundIcon}
     >
-      <UserActionFeedback
+      <ActionFeedback
+        retryVerb="send again"
         feedback={feedback}
         onDismiss={dismiss}
         recovery={

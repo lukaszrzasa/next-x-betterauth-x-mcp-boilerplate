@@ -1,4 +1,5 @@
 import type { DenialReason } from "@/src/lib/auth/errors";
+import { errorMessage } from "@/src/lib/errorMessage";
 import type { AuthedCtx, Logger } from "./context";
 
 export type AuditEvent<TInput, TOutput> =
@@ -24,7 +25,7 @@ export async function writeAudit<TInput, TOutput>(
   } catch (error) {
     // An optional description cannot fail an action that already succeeded.
     log.error("audit hook threw", {
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage(error),
     });
   }
 }

@@ -10,6 +10,7 @@ import { cn } from "@/src/lib/utils";
  */
 export function DetailSection({
   title,
+  titleAddon,
   description,
   icon: Icon,
   actions,
@@ -17,6 +18,8 @@ export function DetailSection({
   className,
 }: {
   title: string;
+  /** Rendered beside the heading text (a badge, a status), outside the `<h2>`. */
+  titleAddon?: ReactNode;
   description?: string;
   icon: LucideIcon;
   actions?: ReactNode;
@@ -44,9 +47,12 @@ export function DetailSection({
             <Icon className="ui:size-4" />
           </span>
           <div className="ui:min-w-0">
-            <h2 id={headingId} className="ui:text-base ui:leading-9 ui:font-semibold">
-              {title}
-            </h2>
+            <div className="ui:flex ui:flex-wrap ui:items-center ui:gap-2">
+              <h2 id={headingId} className="ui:text-base ui:leading-9 ui:font-semibold">
+                {title}
+              </h2>
+              {titleAddon}
+            </div>
             {description && (
               <p id={descriptionId} className="ui:-mt-1 ui:text-sm ui:text-muted-foreground">
                 {description}

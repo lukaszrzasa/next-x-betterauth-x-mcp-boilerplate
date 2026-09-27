@@ -4,14 +4,15 @@ import { KeySquareIcon, LogOutIcon, MailCheckIcon, ShieldCheckIcon } from "lucid
 import { DetailRow, DetailSection } from "@/src/components/detail/DetailSection";
 import { confirm } from "@/src/components/feedback/ConfirmDialog";
 import { Button } from "@/src/components/ui/button";
+import { ActionFeedback } from "@/src/components/feedback/ActionFeedback";
+import { useFeedback } from "@/src/lib/hooks/useFeedback";
 import { useRevokeSessions } from "@/app/(AuthModule)/admin/_/hooks/actions/useRevokeSessions";
 import { useSendPasswordReset } from "@/app/(AuthModule)/admin/_/hooks/actions/useSendPasswordReset";
 import { useSendVerification } from "@/app/(AuthModule)/admin/_/hooks/actions/useSendVerification";
-import { useActionFeedback } from "@/app/(AuthModule)/admin/_/hooks/useActionFeedback";
+import type { Feedback } from "@/app/(AuthModule)/admin/_/hooks/feedback";
 import type { UserDetail } from "@/app/(AuthModule)/admin/_/types";
 import { VerificationBadge } from "@/app/(AuthModule)/admin/_/components/users/UserBadges";
 import { policyNote } from "@/app/(AuthModule)/admin/_/components/users/detail/policyNote";
-import { UserActionFeedback } from "@/app/(AuthModule)/admin/_/components/users/detail/UserActionFeedback";
 
 /**
  * Verification and factor state, plus the account actions that touch them.
@@ -20,7 +21,7 @@ import { UserActionFeedback } from "@/app/(AuthModule)/admin/_/components/users/
  * asks for confirmation first; the emails send directly.
  */
 export function UserSecuritySection({ user }: { user: UserDetail }) {
-  const { feedback, setFeedback, dismiss } = useActionFeedback();
+  const { feedback, setFeedback, dismiss } = useFeedback<Feedback>();
   const sendVerification = useSendVerification(user.id, { onSettled: setFeedback });
   const sendPasswordReset = useSendPasswordReset(user.id, { onSettled: setFeedback });
   const revokeSessions = useRevokeSessions(user.id, { onSettled: setFeedback });
@@ -52,7 +53,8 @@ export function UserSecuritySection({ user }: { user: UserDetail }) {
       description="Email verification, second factor and session controls."
       icon={ShieldCheckIcon}
     >
-      <UserActionFeedback
+      <ActionFeedback
+        retryVerb="send again"
         feedback={feedback}
         onDismiss={dismiss}
         recovery={

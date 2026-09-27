@@ -1,6 +1,13 @@
 import { afterEach, expect, mock, test } from "bun:test";
 import { Window } from "happy-dom";
 
+/** The value installed as `globalThis[key]`: animation-frame functions stay bound to the window. */
+function browserGlobal(browser, key) {
+  if (key === "window") return browser;
+  const value = browser[key];
+  return typeof value === "function" && key.includes("AnimationFrame") ? value.bind(browser) : value;
+}
+
 // The verification modal is a Radix dialog, which needs the same DOM globals
 // as the shell suite (focus scope, dismissable layer, scroll lock).
 const browser = new Window({ url: "http://localhost" });
@@ -35,12 +42,7 @@ for (const key of [
   Object.defineProperty(globalThis, key, {
     configurable: true,
     writable: true,
-    value:
-      key === "window"
-        ? browser
-        : typeof browser[key] === "function" && key.includes("AnimationFrame")
-          ? browser[key].bind(browser)
-          : browser[key],
+    value: browserGlobal(browser, key),
   });
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -149,18 +151,16 @@ test("unmount during an in-flight request suppresses callbacks", async () => {
 });
 
 test("real react-call modal supports sending, typo correction and successful execution", async () => {
-  const action = mock(async (_, meta) =>
-    !meta
-      ? required
-      : meta.stepUp.code === "123456"
-        ? success
-        : {
-            ok: false,
-            reason: "STEP_UP_INVALID_CODE",
-            status: 401,
-            message: "Incorrect code",
-          },
-  );
+  const action = mock(async (_, meta) => {
+    if (!meta) return required;
+    if (meta.stepUp.code === "123456") return success;
+    return {
+      ok: false,
+      reason: "STEP_UP_INVALID_CODE",
+      status: 401,
+      message: "Incorrect code",
+    };
+  });
   let hook;
   function Consumer() {
     hook = useAction(action);

@@ -20,6 +20,8 @@ export const authRoutes = defineRoutes({
   signUp: "/auth/sign-up",
   enroll: "/auth/enroll",
   emailConfirmation: "/auth/email-confirmation",
+  /** Public, link-only proof page of the settings email change: `?token=…`, confirmed by an explicit submit. */
+  emailChangeConfirmation: "/auth/email-change/confirm",
   forgotPassword: "/auth/forgot-password",
   resetPassword: "/auth/reset-password",
   /** Better Auth's HTTP surface; everything under it is a Better Auth endpoint. */
@@ -29,8 +31,9 @@ export const authRoutes = defineRoutes({
   panel: { href: "/panel", label: "Panel", access: "session" },
   /** Index only: redirects to `settingsProfile`. */
   settings: { href: "/settings", label: "Settings", access: "session" },
+  /** Display name. Listed by the settings navigation; pages also require completed enrollment. */
   settingsProfile: { href: "/settings/profile", label: "Profile", access: "session" },
-  /** Reachable by URL only for now; absent from navigation. */
+  /** Sign-in email, password, authenticator, recovery codes and sessions. */
   settingsAccount: { href: "/settings/account", label: "Account", access: "session" },
   /** Dashboard user management, served by this module's admin scope. */
   adminUsers: {

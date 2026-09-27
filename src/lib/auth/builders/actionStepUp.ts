@@ -1,5 +1,6 @@
 import { type RequiredStepUp } from "@/src/lib/auth/stepUpPolicy";
 import { ActionError } from "@/src/lib/auth/errors";
+import { securityVersionOf } from "@/src/lib/auth/securityVersion";
 import { availableMethods, hasGrant, verifyStepUp } from "@/src/lib/auth/stepUp";
 import type { ActionMeta } from "./actionTypes";
 import type { AuthedCtx } from "./context";
@@ -24,7 +25,7 @@ export async function ensureStepUp(
     return;
   }
 
-  if (policy === "five_minutes" && await hasGrant(scope)) return;
+  if (policy === "five_minutes" && (await hasGrant(scope, securityVersionOf(ctx.user)))) return;
 
   const methods = availableMethods(ctx.user);
   if (methods.length === 0) {

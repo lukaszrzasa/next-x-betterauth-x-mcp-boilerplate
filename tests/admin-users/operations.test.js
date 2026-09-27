@@ -51,7 +51,23 @@ const services = {
   retryUnbanSessionRefresh: mock(async (ctx, input) => ({ status: "completed", userId: input.userId })),
 };
 
+/** The session authority reads the current user row; this chain answers from the mock session. */
+const fakeDb = {
+  select: () => ({
+    from: () => ({
+      where: () => ({
+        limit: async () =>
+          resolved ? [{ ...resolved.user, securityVersion: 0, sessionRevocationPending: false }] : [],
+      }),
+    }),
+  }),
+};
 mock.module("server-only", () => ({}));
+mock.module("../../src/lib/db/index.ts", () => ({
+  db: fakeDb,
+  user: { name: "user" },
+  emailChangeRequest: { name: "email_change_request" },
+}));
 mock.module("../../src/lib/auth/index.ts", () => ({ auth: { api: { getSession } } }));
 mock.module("../../src/lib/redis/index.ts", () => ({
   redis,
@@ -219,7 +235,7 @@ describe("step-up", () => {
     expect(services.updateUserEmail).not.toHaveBeenCalled();
     expect(services.banUser).not.toHaveBeenCalled();
     // A reusable grant satisfies them without a new proof.
-    stored.set(`stepup:grant:${admin.id}:${session.id}`, `${Date.now()}`);
+    stored.set(`stepup:grant:${admin.id}:${session.id}`, JSON.stringify({ verifiedAt: Date.now(), securityVersion: 0 }));
     for (const name of STEP_UP) {
       const [operation, input] = operations[name];
       expect((await operation(input, meta)).status).toBe("completed");
@@ -261,7 +277,7 @@ describe("input", () => {
     expect(named.status).toBe("completed");
     for (const email of ["", "not-an-email", `${"x".repeat(250)}@example.com`])
       await denied(mutations.updateUserEmailOperation({ userId: "u1", email }, meta), "INVALID_INPUT");
-    stored.set(`stepup:grant:${admin.id}:${session.id}`, `${Date.now()}`);
+    stored.set(`stepup:grant:${admin.id}:${session.id}`, JSON.stringify({ verifiedAt: Date.now(), securityVersion: 0 }));
     await mutations.updateUserEmailOperation({ userId: "u1", email: " Ada@Example.COM " }, meta);
     expect(services.updateUserEmail.mock.calls[0][1]).toEqual({ userId: "u1", email: "ada@example.com" });
     for (const reason of ["", "ab", "x".repeat(1001), "bad\u0000reason"])

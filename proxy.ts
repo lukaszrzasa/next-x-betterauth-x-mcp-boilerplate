@@ -11,10 +11,15 @@ type SessionCookieCache = NonNullable<
 > &
   typeof auth.$Infer.Session;
 
-/** Pages a session that still has to enroll may open. */
+/**
+ * Pages a session that still has to enroll may open. The email-change
+ * confirmation is a public proof page: confirming a mailbox grants no
+ * settings access, so it stays reachable during required enrollment.
+ */
 const PAGES_ALLOWED_DURING_ENROLLMENT: readonly string[] = [
   authRoutes.enroll.href,
   authRoutes.emailConfirmation.href,
+  authRoutes.emailChangeConfirmation.href,
 ];
 
 /**

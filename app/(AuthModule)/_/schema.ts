@@ -3,36 +3,47 @@ import { CODE_PATTERN } from "@/src/lib/auth/stepUpPolicy";
 
 // ---------------------------------------------------------------------------
 // Field schemas
+//
+// Shared by the authentication forms and the settings forms/operations
+// (`schemas/settings.ts`), so there is exactly one password policy, one
+// email normalization and one display-name rule in the module.
 // ---------------------------------------------------------------------------
 
-const emailSchema = z
-  .email("Enter a valid email address.")
-  .max(254)
+const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F]/;
+
+/** Trimmed and lowercased before the format check; at most 254 characters. */
+export const emailSchema = z
+  .string()
+  .trim()
   .toLowerCase()
+  .max(254, "Use at most 254 characters.")
+  .pipe(z.email("Enter a valid email address."))
   .prefault("");
 
-const nameSchema = z
+/** A display name: trimmed, 1-100 characters, any script, no control characters. */
+export const nameSchema = z
   .string()
   .trim()
   .min(1, "Enter your name.")
-  .max(100)
+  .max(100, "Use at most 100 characters.")
+  .refine((value) => !CONTROL_CHARACTERS.test(value), "Names cannot contain control characters.")
   .prefault("");
 
-/** A password being set: enforces the password policy. */
-const newPasswordSchema = z
+/** A password being set: enforces the password policy. Never trimmed. */
+export const newPasswordSchema = z
   .string()
   .min(8, "Use at least 8 characters.")
-  .max(128)
+  .max(128, "Use at most 128 characters.")
   .prefault("");
 
-/** A password being confirmed: the server compares the hash, so only "not empty" applies. */
-const currentPasswordSchema = z
+/** A password being confirmed: the server compares the hash, so only "not empty" applies. Never trimmed. */
+export const currentPasswordSchema = z
   .string()
   .min(1, "Enter your password.")
-  .max(128)
+  .max(128, "Use at most 128 characters.")
   .prefault("");
 
-const authenticatorCodeSchema = z
+export const authenticatorCodeSchema = z
   .string()
   .regex(CODE_PATTERN, "Enter a six-digit authenticator code.")
   .prefault("");

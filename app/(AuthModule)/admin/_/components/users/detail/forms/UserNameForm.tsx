@@ -33,10 +33,7 @@ export function UserNameForm({
           disabled={pending}
         />
       </FieldGroup>
-      <div className="ui:flex ui:flex-wrap ui:gap-2">
-        <Button type="submit" size="sm" disabled={unchanged || pending}>
-          {pending ? "Saving…" : "Save name"}
-        </Button>
+      <div className="ui:flex ui:flex-wrap ui:justify-end ui:gap-2">
         <Button
           type="button"
           size="sm"
@@ -48,6 +45,9 @@ export function UserNameForm({
           }}
         >
           Cancel
+        </Button>
+        <Button type="submit" size="sm" disabled={unchanged || pending}>
+          {pending ? "Saving…" : "Save name"}
         </Button>
       </div>
     </form>

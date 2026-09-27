@@ -6,6 +6,7 @@ import {
   refreshCommittedUserSessions,
   revokeCurrentUserSessions,
 } from "@/src/lib/auth/userSessionEffects";
+import { retirePendingSecurityState } from "@/app/(AuthModule)/_/db/settings/shared/retirePendingSecurityState";
 import { withUserAccountLock } from "@/app/(AuthModule)/_/db/userAccountLock";
 import type {
   UpdateUserEmailSchema,
@@ -104,6 +105,11 @@ export async function updateUserEmail(
     if (target.email === input.email) return null;
 
     const now = new Date();
+    // Before the credential-bearing write, under the lock already held:
+    // retire the target's pending email requests and staged factor setups
+    // and move its security generation on. A failure here blocks the change
+    // rather than leaving an old request able to complete afterwards.
+    await retirePendingSecurityState(ctx, target.id, "admin_change");
     try {
       // One provider write carries every related column: the address, the
       // verification reset and the cutoff that retires older reset links.

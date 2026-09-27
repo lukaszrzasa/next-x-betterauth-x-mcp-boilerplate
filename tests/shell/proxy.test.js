@@ -80,3 +80,10 @@ test("an expired cache is re-issued from the store and the cookies survive", asy
   expect(response.headers.getSetCookie()).toEqual(storeSetCookies);
   expect(getSession).toHaveBeenCalledTimes(1);
 });
+
+test("the email-change confirmation page stays reachable while enrollment is required", async () => {
+  cachedUser = { role: "admin", twoFactorRequired: true, twoFactorEnabled: false };
+  const response = await proxy(request("/auth/email-change/confirm?token=abc"));
+  expect(response.headers.get("x-middleware-next")).toBe("1");
+  expect(location(await proxy(request("/settings/account")))).toBe("/auth/enroll");
+});

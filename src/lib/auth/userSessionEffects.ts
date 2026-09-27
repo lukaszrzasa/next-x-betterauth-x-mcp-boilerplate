@@ -13,7 +13,10 @@ import { auth } from "./index";
  * Provider-version coupling is contained here: the functions use the
  * installed internal adapter's own methods (`refreshUserSessions`,
  * `listSessions`, `deleteSessions`, `deleteUserSessions`, `findSessions`)
- * and never rebuild Redis key names. Session tokens never leave this module.
+ * and never rebuild Redis key names. Session tokens never leave the server:
+ * the owned-session listing below carries them only so the settings service
+ * can map a public session ID to the token it revokes, and that service
+ * projects them away before anything is returned.
  */
 
 async function internalAdapter() {
@@ -62,5 +65,55 @@ export async function revokeCurrentUserSessions(userId: string): Promise<Revocat
     }
   }
 
+  return { revoked: tokens.length };
+}
+
+/** One of the user's own active sessions, as the store holds it. Never serialized as-is. */
+export type OwnedSession = {
+  id: string;
+  /** Server-side only: the revocation handle. */
+  token: string;
+  createdAt: Date;
+  expiresAt: Date;
+  ipAddress: string | null;
+  userAgent: string | null;
+};
+
+function toInstant(value: unknown): Date {
+  const date = value instanceof Date ? value : new Date(typeof value === "string" || typeof value === "number" ? value : NaN);
+  return Number.isFinite(date.getTime()) ? date : new Date(0);
+}
+
+/** The user's active sessions at execution time; other users are never enumerated. */
+export async function listActiveUserSessions(userId: string): Promise<OwnedSession[]> {
+  const adapter = await internalAdapter();
+  const active = await adapter.listSessions(userId, { onlyActiveSessions: true });
+  const now = Date.now();
+  return active
+    .filter((session) => session.userId === userId)
+    .map((session) => ({
+      id: session.id,
+      token: session.token,
+      createdAt: toInstant(session.createdAt),
+      expiresAt: toInstant(session.expiresAt),
+      ipAddress: session.ipAddress || null,
+      userAgent: session.userAgent || null,
+    }))
+    .filter((session) => session.expiresAt.getTime() > now);
+}
+
+/**
+ * Removes exactly the given sessions (already resolved from owned rows by
+ * the caller) and verifies none of them is still readable. Idempotent for
+ * tokens that are already gone.
+ */
+export async function revokeSessionsByToken(tokens: readonly string[]): Promise<RevocationResult> {
+  if (tokens.length === 0) return { revoked: 0 };
+  const adapter = await internalAdapter();
+  await adapter.deleteSessions([...tokens]);
+  const remaining = await adapter.findSessions([...tokens]);
+  if (remaining.length > 0) {
+    throw new Error(`${remaining.length} of ${tokens.length} sessions are still valid after revocation.`);
+  }
   return { revoked: tokens.length };
 }

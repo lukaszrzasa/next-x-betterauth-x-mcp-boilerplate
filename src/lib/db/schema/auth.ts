@@ -28,6 +28,18 @@ export const user = pgTable("user", {
   twoFactorRequired: boolean("two_factor_required").default(false).notNull(),
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
   passwordResetInvalidBefore: timestamp("password_reset_invalid_before"),
+  /**
+   * Server-owned security generation. Incremented by credential, factor,
+   * recovery-code and sign-in email changes; operation step-up grants record
+   * the version they were issued for and are refused once it moves on.
+   */
+  securityVersion: integer("security_version").default(0).notNull(),
+  /**
+   * Authentication barrier: set with a committed sign-in email change whose
+   * session revocation has not been confirmed yet. `sessionAuthority` revokes
+   * and clears it before any session of this account is honoured again.
+   */
+  sessionRevocationPending: boolean("session_revocation_pending").default(false).notNull(),
 });
 
 export const session = pgTable(

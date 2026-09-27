@@ -3,6 +3,9 @@ import "server-only";
 import type { ReactNode } from "react";
 import { Resend } from "resend";
 
+import EmailChangeConfirmation, {
+  type EmailChangePurpose,
+} from "./templates/EmailChangeConfirmation";
 import ResetPassword from "./templates/ResetPassword";
 import TwoFactorOtp from "./templates/TwoFactorOtp";
 import VerifyEmail from "./templates/VerifyEmail";
@@ -102,6 +105,34 @@ export function sendTwoFactorOtpEmail({
     to,
     react: (
       <TwoFactorOtp code={code} expiresInMinutes={expiresInMinutes} name={name} />
+    ),
+  });
+}
+
+export type { EmailChangePurpose };
+
+/** A link-only confirmation for one stage of a sign-in email change; never a code. */
+export function sendEmailChangeConfirmationEmail({
+  to,
+  url,
+  purpose,
+  expiresAtLabel,
+  name,
+}: {
+  to: string;
+  url: string;
+  purpose: EmailChangePurpose;
+  expiresAtLabel: string;
+  name?: string;
+}) {
+  return sendEmail({
+    to,
+    subject:
+      purpose === "current"
+        ? "Confirm your sign-in email change"
+        : "Confirm your new sign-in email address",
+    react: (
+      <EmailChangeConfirmation url={url} purpose={purpose} expiresAtLabel={expiresAtLabel} name={name} />
     ),
   });
 }

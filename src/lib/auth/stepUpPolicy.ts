@@ -16,6 +16,14 @@ export type StepUpPolicy = (typeof STEP_UP_POLICIES)[number];
 export const REQUIRED_STEP_UPS = ["five_minutes", "every_time"] as const satisfies readonly StepUpPolicy[];
 export type RequiredStepUp = (typeof REQUIRED_STEP_UPS)[number];
 
+/**
+ * When a declared step-up applies: always, or only while the account has an
+ * enabled authenticator (`two_factor_enabled`). The condition is declared on
+ * the operation and resolved from the fresh user; clients never supply it.
+ */
+export const STEP_UP_CONDITIONS = ["always", "two_factor_enabled"] as const;
+export type StepUpCondition = (typeof STEP_UP_CONDITIONS)[number];
+
 export const STEP_UP_METHODS = ["totp", "email"] as const;
 export type StepUpMethod = (typeof STEP_UP_METHODS)[number];
 

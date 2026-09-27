@@ -71,7 +71,32 @@ const incrementWithTtl = mock(async (key) => {
   stored.set(key, String(count));
   return count;
 });
+/** A grant in the current payload format, for the mock user's security generation. */
+const grant = (verifiedAt = Date.now(), securityVersion = 0) => JSON.stringify({ verifiedAt, securityVersion });
+/**
+ * The session authority reads the current user row (and the step-up runtime
+ * its security version) through the database; this minimal chain answers
+ * both from the mock user, so the real authority code runs.
+ */
+const userTable = { name: "user" };
+const rowsFor = () =>
+  resolved
+    ? [{ ...resolved.user, securityVersion: resolved.user.securityVersion ?? 0, sessionRevocationPending: false }]
+    : [];
+const fakeDb = {
+  select: () => ({
+    from: () => ({
+      where: () => ({ limit: async () => rowsFor(), for: async () => rowsFor() }),
+    }),
+  }),
+};
 mock.module("server-only", () => ({}));
+mock.module("../../src/lib/db/index.ts", () => ({
+  db: fakeDb,
+  schema: {},
+  user: userTable,
+  emailChangeRequest: { name: "email_change_request" },
+}));
 mock.module("../../src/lib/auth/index.ts", () => ({
   auth: { api: { getSession, verifyTOTP } },
 }));
@@ -172,15 +197,22 @@ describe("action pipeline", () => {
   });
 
   test("grant reuse never extends expiry and old pool grants are ignored", async () => {
-    const timestamp = String(Date.now() - 299_000);
+    const timestamp = grant(Date.now() - 299_000);
     stored.set(grantKey, timestamp);
     await action({ stepUp: "five_minutes" })(undefined, meta);
     expect(stored.get(grantKey)).toBe(timestamp);
     expect(redis.set).not.toHaveBeenCalled();
-    stored.set(grantKey, String(Date.now() - 300_000));
+    stored.set(grantKey, grant(Date.now() - 300_000));
     await denied(action({ stepUp: "five_minutes" })(undefined, meta), "TWO_FACTOR_REQUIRED");
     stored.delete(grantKey);
     stored.set("stepup:lvl:user-1:session-1:3", String(Date.now()));
+    await denied(action({ stepUp: "five_minutes" })(undefined, meta), "TWO_FACTOR_REQUIRED");
+    // A legacy timestamp-only grant cannot prove its generation: refused.
+    stored.set(grantKey, String(Date.now()));
+    await denied(action({ stepUp: "five_minutes" })(undefined, meta), "TWO_FACTOR_REQUIRED");
+    // A grant issued for an older security generation is refused as well.
+    stored.set(grantKey, grant(Date.now(), 0));
+    resolved.user.securityVersion = 1;
     await denied(action({ stepUp: "five_minutes" })(undefined, meta), "TWO_FACTOR_REQUIRED");
   });
 
@@ -195,7 +227,7 @@ describe("action pipeline", () => {
     const handler = mock(() => "done");
     const auditLog = mock(() => "denied");
     const run = action({ mcpAllowed: false, stepUp: "five_minutes", handler, auditLog });
-    stored.set("stepup:grant:user-1:session-1", String(Date.now()));
+    stored.set("stepup:grant:user-1:session-1", grant());
     await denied(run(undefined, {
       ...meta, entryPoint, stepUp: { method: "totp", code: "123456" },
     }), "FORBIDDEN");
@@ -321,7 +353,7 @@ describe("action pipeline", () => {
   });
 
   test("invalid input leaves grants and proofs untouched", async () => {
-    stored.set(grantKey, String(Date.now()));
+    stored.set(grantKey, grant());
     const handler = mock();
     const run = action({
       schema: z.object({ id: z.uuid() }),
@@ -393,7 +425,7 @@ describe("action pipeline", () => {
   });
 
   test("every-time operations ignore reusable grants without extending them", async () => {
-    const timestamp = String(Date.now() - 1000);
+    const timestamp = grant(Date.now() - 1000);
     stored.set(grantKey, timestamp);
     const handler = mock(() => "done");
     const run = action({ stepUp: "every_time", handler });
@@ -467,21 +499,21 @@ describe("action pipeline", () => {
   });
 
   test("reusable grants last five minutes and remain session-bound", async () => {
-    stored.set("stepup:grant:user-1:session-1", String(Date.now() - 120_000));
+    stored.set("stepup:grant:user-1:session-1", grant(Date.now() - 120_000));
     expect(
-      await hasGrant({ userId: user.id, sessionId: session.id }),
+      await hasGrant({ userId: user.id, sessionId: session.id }, 0),
     ).toBe(true);
     expect(
-      await hasGrant({ userId: user.id, sessionId: session.id }),
+      await hasGrant({ userId: user.id, sessionId: session.id }, 0),
     ).toBe(true);
-    stored.set("stepup:grant:user-1:session-1", String(Date.now() - 301_000));
-    expect(await hasGrant({ userId: user.id, sessionId: session.id })).toBe(false);
+    stored.set("stepup:grant:user-1:session-1", grant(Date.now() - 301_000));
+    expect(await hasGrant({ userId: user.id, sessionId: session.id }, 0)).toBe(false);
     expect(
-      await hasGrant({ userId: user.id, sessionId: "other" }),
+      await hasGrant({ userId: user.id, sessionId: "other" }, 0),
     ).toBe(false);
-    stored.set("stepup:grant:user-1:session-1", String(Date.now() + 60_000));
+    stored.set("stepup:grant:user-1:session-1", grant(Date.now() + 60_000));
     expect(
-      await hasGrant({ userId: user.id, sessionId: session.id }),
+      await hasGrant({ userId: user.id, sessionId: session.id }, 0),
     ).toBe(false);
   });
 
@@ -494,7 +526,7 @@ describe("action pipeline", () => {
   ])(
     "malformed proofs cannot fall back to an existing grant: %j",
     async (stepUp) => {
-      stored.set(grantKey, String(Date.now()));
+      stored.set(grantKey, grant());
       await denied(
         action({ stepUp: "every_time" })(undefined, { ...meta, stepUp }),
         "INVALID_INPUT",
@@ -505,7 +537,7 @@ describe("action pipeline", () => {
   );
 
   test("TOTP rejection spends an attempt even if a grant already exists", async () => {
-    stored.set(grantKey, String(Date.now()));
+    stored.set(grantKey, grant());
     verifyTOTP.mockImplementation(async () => {
       throw new APIError("UNAUTHORIZED", { code: "INVALID_CODE" });
     });
@@ -649,6 +681,72 @@ describe("action pipeline", () => {
       expect(logs).toEqual([]);
     },
   );
+});
+
+describe("enrolled-only step-up condition", () => {
+  test.each([
+    { stepUp: "none", stepUpWhen: "two_factor_enabled" },
+    { mcpAllowed: true, stepUpWhen: "two_factor_enabled" },
+    { auth: "public", stepUpWhen: "two_factor_enabled" },
+    { stepUp: "five_minutes", stepUpWhen: "sometimes" },
+  ])("a condition needs an authenticated, MCP-disabled step-up operation: %j", (config) => {
+    expect(() => action(config)).toThrow();
+  });
+
+  test("an enrolled account is verified exactly as with an unconditional policy", async () => {
+    const handler = mock(() => "done");
+    const run = action({ stepUp: "five_minutes", stepUpWhen: "two_factor_enabled", handler });
+    await denied(run(undefined, meta), "TWO_FACTOR_REQUIRED");
+    stored.set(grantKey, grant());
+    expect(await run(undefined, meta)).toBe("done");
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  test("without an authenticator the effective policy is none: no prompt, no grant, unverified email allowed", async () => {
+    resolved.user = { ...resolved.user, role: "user", twoFactorEnabled: false, emailVerified: false };
+    const handler = mock(() => "done");
+    const run = action({ stepUp: "five_minutes", stepUpWhen: "two_factor_enabled", handler });
+    expect(await run(undefined, meta)).toBe("done");
+    expect(stored.has(grantKey)).toBe(false);
+    expect(handler.mock.calls[0][0].stepUp).toBeNull();
+    // An explicit verified-email requirement still applies on its own.
+    await denied(
+      action({ stepUp: "five_minutes", stepUpWhen: "two_factor_enabled", requireVerifiedEmail: true })(undefined, meta),
+      "EMAIL_VERIFICATION_REQUIRED",
+    );
+  });
+
+  test("a stale proof for a condition that no longer holds is refused, not turned into a grant", async () => {
+    resolved.user = { ...resolved.user, role: "user", twoFactorEnabled: false };
+    const handler = mock(() => "done");
+    const run = action({ stepUp: "five_minutes", stepUpWhen: "two_factor_enabled", handler });
+    await denied(run(undefined, { ...meta, stepUp: { method: "totp", code: "123456" } }), "INVALID_INPUT");
+    expect(verifyTOTP).not.toHaveBeenCalled();
+    expect(stored.has(grantKey)).toBe(false);
+    expect(handler).not.toHaveBeenCalled();
+    // The plain resubmission proceeds.
+    expect(await run(undefined, meta)).toBe("done");
+  });
+
+  test("a security-version change during verification refuses the proof instead of relabelling it", async () => {
+    verifyTOTP.mockImplementation(async () => {
+      resolved.user.securityVersion = 7;
+      return { token: session.token, user };
+    });
+    const run = action({ stepUp: "five_minutes" });
+    await denied(run(undefined, { ...meta, stepUp: { method: "totp", code: "123456" } }), "CONFLICT");
+    expect(stored.has(grantKey)).toBe(false);
+  });
+
+  test("grants record the generation they were verified against", async () => {
+    resolved.user.securityVersion = 3;
+    const run = action({ stepUp: "five_minutes" });
+    await run(undefined, { ...meta, stepUp: { method: "totp", code: "123456" } });
+    expect(JSON.parse(stored.get(grantKey))).toMatchObject({ securityVersion: 3 });
+    expect(await run(undefined, meta)).toBe("done");
+    resolved.user.securityVersion = 4;
+    await denied(run(undefined, meta), "TWO_FACTOR_REQUIRED");
+  });
 });
 
 describe("transport adapters", () => {

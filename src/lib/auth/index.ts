@@ -8,6 +8,7 @@ import { rejectSupersededResetTokens } from "./resetTokenPolicy";
 import { TOTP_PERIOD_SECONDS } from "./stepUpPolicy";
 
 import { appName } from "@/src/lib/config";
+import { errorMessage } from "@/src/lib/errorMessage";
 import { db } from "@/src/lib/db";
 import { redisSecondaryStorage } from "@/src/lib/redis";
 import {
@@ -83,6 +84,14 @@ export const auth = betterAuth({
         input: false,
         returned: false,
       },
+      // Server-owned security generation: every credential, factor,
+      // recovery-code and sign-in email change increments it, and operation
+      // step-up grants are valid for exactly one generation (`stepUp.ts`).
+      securityVersion: { type: "number", defaultValue: 0, input: false },
+      // Server-owned authentication barrier: a committed sign-in email change
+      // whose session revocation is not confirmed yet. `sessionAuthority.ts`
+      // revokes and clears it before honouring any session of the account.
+      sessionRevocationPending: { type: "boolean", defaultValue: false, input: false },
     },
   },
   database: drizzleAdapter(db, {
@@ -168,6 +177,35 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: false,
+    /**
+     * Ordinary signup verification stays the provider's flow. Once it
+     * verifies an address, a pending *correction* of that address (the
+     * unverified-email settings flow) must not remain: a verified address is
+     * changed through the dual-mailbox flow only. The cancellation is one
+     * conditional statement owned by the settings service; finalization
+     * re-reads the locked user row anyway, so a missed cancellation here
+     * cannot authorize a correction. Imported lazily because that service
+     * depends on this module.
+     */
+    afterEmailVerification: async (user) => {
+      try {
+        const { cancelCorrectionsForVerifiedAddress } = await import(
+          "@/app/(AuthModule)/_/db/settings/emailChange/cancellation"
+        );
+        await cancelCorrectionsForVerifiedAddress(user.id);
+      } catch (error) {
+        // The verification itself is committed; finalization re-reads the
+        // locked user row, so a missed cancellation cannot authorize anything.
+        console.error(
+          JSON.stringify({
+            level: "error",
+            message: "pending email correction not cancelled after verification",
+            userId: user.id,
+            error: errorMessage(error),
+          }),
+        );
+      }
+    },
     sendVerificationEmail: async ({ user, url, token }) => {
       // Better Auth's own `url` targets its API; the app confirms on its own page.
       const confirmation = new URL(

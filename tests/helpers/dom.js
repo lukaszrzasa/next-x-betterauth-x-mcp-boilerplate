@@ -1,5 +1,12 @@
 import { Window } from "happy-dom";
 
+/** The value installed as `globalThis[key]`: animation-frame functions stay bound to the window. */
+function browserGlobal(browser, key) {
+  if (key === "window") return browser;
+  const value = browser[key];
+  return typeof value === "function" && key.includes("AnimationFrame") ? value.bind(browser) : value;
+}
+
 /**
  * A happy-dom document for component suites, with the globals Radix
  * primitives, TanStack Table and Testing Library touch. Call before
@@ -46,12 +53,7 @@ export function installDom(url = "http://localhost:3000") {
     Object.defineProperty(globalThis, key, {
       configurable: true,
       writable: true,
-      value:
-        key === "window"
-          ? browser
-          : typeof browser[key] === "function" && key.includes("AnimationFrame")
-            ? browser[key].bind(browser)
-            : browser[key],
+      value: browserGlobal(browser, key),
     });
   }
   browser.matchMedia ??= () => ({

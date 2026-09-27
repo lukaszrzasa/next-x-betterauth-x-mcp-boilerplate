@@ -43,10 +43,7 @@ export function UserEmailForm({
         Changing the address marks it unverified, signs the user out everywhere and sends a
         verification email to the new address. Older password-reset links stop working.
       </p>
-      <div className="ui:flex ui:flex-wrap ui:gap-2">
-        <Button type="submit" size="sm" disabled={unchanged || pending}>
-          {pending ? "Saving…" : "Save email"}
-        </Button>
+      <div className="ui:flex ui:flex-wrap ui:justify-end ui:gap-2">
         <Button
           type="button"
           size="sm"
@@ -58,6 +55,9 @@ export function UserEmailForm({
           }}
         >
           Cancel
+        </Button>
+        <Button type="submit" size="sm" disabled={unchanged || pending}>
+          {pending ? "Saving…" : "Save email"}
         </Button>
       </div>
     </form>

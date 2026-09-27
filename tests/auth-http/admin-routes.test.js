@@ -17,7 +17,14 @@ const auth = betterAuth({
 });
 
 // Run in a separate process from builder tests, which mock this same module.
+mock.module("server-only", () => ({}));
 mock.module("../../src/lib/auth/index.ts", () => ({ auth }));
+// The boundary resolves callers through the session authority; here the
+// in-memory provider session is the authority (no database row to merge).
+mock.module("../../src/lib/auth/sessionAuthority.ts", () => ({
+  resolveAuthoritativeSession: (headers) =>
+    auth.api.getSession({ headers, query: { disableCookieCache: true } }),
+}));
 const { GET, POST } = await import("../../app/(AuthModule)/api/auth/[...all]/route");
 const cookies = {};
 let targetId;
@@ -48,6 +55,10 @@ beforeAll(async () => {
     expect(response.status).toBe(200);
     cookies[role] = response.headers.get("set-cookie").split(";")[0];
   }
+  // An ordinary member with no enrollment requirement, never banned by the tests below.
+  await auth.api.createUser({ body: { email: "member@example.com", password: "test-password-12345", name: "member", role: "user" } });
+  const member = await request("sign-in/email", "POST", undefined, { email: "member@example.com", password: "test-password-12345" });
+  cookies.member = member.headers.get("set-cookie").split(";")[0];
 });
 
 test("all installed admin endpoints and future endpoints are blocked for every caller", async () => {
@@ -108,5 +119,43 @@ test("enrollment and factor settings cannot be changed through public HTTP", asy
     for (const cookie of [undefined, ...Object.values(cookies)]) {
       expect((await request(path, "POST", cookie, { password: "test-password-12345" })).status).toBe(404);
     }
+  }
+});
+
+test("account and session management endpoints are hidden: only the guarded operations serve them", async () => {
+  for (const path of [
+    "update-user",
+    "change-password",
+    "change-email",
+    "list-sessions",
+    "revoke-session",
+    "revoke-sessions",
+    "revoke-other-sessions",
+    "reset-password",
+    "update-user/",
+    "change-password/",
+  ]) {
+    for (const cookie of [undefined, cookies.admin, cookies.moderator, cookies.member]) {
+      for (const method of ["GET", "POST"]) {
+        const response = await request(path, method, cookie, { name: "x", newPassword: "test-password-12345", currentPassword: "test-password-12345", token: "t" });
+        expect(response.status).toBe(404);
+      }
+    }
+  }
+  // The emailed reset link's GET callback still reaches the provider (it answers on its own terms).
+  const callback = await request("reset-password/some-token?callbackURL=%2Fauth%2Freset-password", "GET");
+  expect(callback.status).not.toBe(404);
+  // Requesting a reset stays reachable (this test instance has no mailer, so the provider refuses on its own terms).
+  const requested = await request("request-password-reset", "POST", undefined, { email: "user@example.com", redirectTo: "/auth/reset-password" });
+  expect(requested.status).not.toBe(404);
+});
+
+test("signed-in sessions cannot complete a factor setup or spend recovery codes over HTTP; anonymous sign-in keeps both", async () => {
+  for (const path of ["two-factor/verify-totp", "two-factor/verify-backup-code"]) {
+    // A signed-in account that is not in required enrollment: hidden.
+    expect((await request(path, "POST", cookies.member, { code: "000000" })).status).toBe(404);
+    // Anonymous sign-in challenges still reach the provider, which rejects them for lack of a challenge cookie.
+    const anonymous = await request(path, "POST", undefined, { code: "000000" });
+    expect(anonymous.status).not.toBe(404);
   }
 });

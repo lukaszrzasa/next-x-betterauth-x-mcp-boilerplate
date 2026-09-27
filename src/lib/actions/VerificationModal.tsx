@@ -33,6 +33,12 @@ const METHOD_LABELS: Record<StepUpMethod, string> = {
   email: "Email code",
 };
 
+/** Where the code comes from, completing "Enter the six-digit code…". */
+function codeSource(chooses: boolean, method: StepUpMethod): string {
+  if (chooses) return " from your chosen method";
+  return method === "totp" ? " from your authenticator app" : " sent to your email address";
+}
+
 /**
  * The step-up prompt the action runtime opens after `TWO_FACTOR_REQUIRED`.
  * Its boundary with the runtime is `VerificationRequest`; the runtime owns
@@ -113,11 +119,7 @@ const VerificationModal = createCallable<
             </DialogTitle>
             <DialogDescription>
               This action needs a second factor. Enter the six-digit code
-              {challenge.methods.length > 1
-                ? " from your chosen method"
-                : method === "totp"
-                  ? " from your authenticator app"
-                  : " sent to your email address"}
+              {codeSource(challenge.methods.length > 1, method)}
               .
             </DialogDescription>
           </DialogHeader>

@@ -11,6 +11,7 @@ import {
   revokeCurrentUserSessions,
 } from "@/src/lib/auth/userSessionEffects";
 import { user } from "@/src/lib/db";
+import { retirePendingSecurityState } from "@/app/(AuthModule)/_/db/settings/shared/retirePendingSecurityState";
 import { withUserAccountLock, type LockedReads } from "@/app/(AuthModule)/_/db/userAccountLock";
 import { isEffectivelyBanned } from "@/app/(AuthModule)/admin/_/policy";
 import type { BanUserSchema, UserTargetSchema } from "@/app/(AuthModule)/admin/_/schema";
@@ -60,6 +61,10 @@ export async function banUser(ctx: AuthedCtx, input: BanUserSchema): Promise<Use
 
       const expiresIn = BAN_DURATION_SECONDS[input.duration];
       const startedAt = Date.now();
+      // Same lock, before the provider write: a banned account keeps no
+      // pending email request or staged factor setup, and its security
+      // generation moves on. Failure here blocks the ban.
+      await retirePendingSecurityState(ctx, target.id, "banned");
       try {
         // No expiry argument for a permanent ban; the plugin has no default expiry.
         await auth.api.banUser({

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { incrementWithTtl, redis } from "@/src/lib/redis";
+import { decrementIfExists, incrementWithTtl, redis } from "@/src/lib/redis";
 
 /**
  * Shared-state throttling primitives. Both are atomic in Redis, so they hold
@@ -48,4 +48,40 @@ export async function consumeBudget(
   const used = await incrementWithTtl(key, windowSeconds);
   if (used <= limit) return { allowed: true };
   return { allowed: false, retryAfterSeconds: await secondsUntilExpiry(key, windowSeconds) };
+}
+
+/**
+ * Charges one unit of a failure budget *before* the guarded check runs, in
+ * one atomic command, so a burst of concurrent attempts cannot all pass a
+ * read-then-increment check. The caller keeps the charge for a confirmed
+ * failure (`keep`), hands it back for an infrastructure error that was not
+ * an attempt (`refundAttempt`), and clears the counter on success
+ * (`clearAttempts`). Rejects once the window's limit is exceeded.
+ */
+export async function reserveAttempt(
+  key: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<ThrottleDecision> {
+  const attempts = await incrementWithTtl(key, windowSeconds);
+  if (attempts <= limit) return { allowed: true };
+  return { allowed: false, retryAfterSeconds: await secondsUntilExpiry(key, windowSeconds) };
+}
+
+/** Undoes one reservation while the counter still exists; never resurrects an expired key. */
+export async function refundAttempt(key: string): Promise<void> {
+  await decrementIfExists(key);
+}
+
+/** A success ends the failure streak. */
+export async function clearAttempts(key: string): Promise<void> {
+  await redis.del(key);
+}
+
+/**
+ * Marks `key` as spent for `seconds` (`SET NX EX`): true exactly once.
+ * For single-use values that must stay spent across concurrent callers.
+ */
+export async function claimOnce(key: string, seconds: number): Promise<boolean> {
+  return (await redis.set(key, "1", "EX", seconds, "NX")) === "OK";
 }

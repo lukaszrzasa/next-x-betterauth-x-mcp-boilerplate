@@ -43,9 +43,10 @@ describe("action lifecycle", () => {
   });
 
   test("retries only with submitted proof and keeps invalid-code feedback local", async () => {
-    const action = mock(async (_, meta) =>
-      !meta ? required : meta.stepUp.code === "000000" ? invalid : success,
-    );
+    const action = mock(async (_, meta) => {
+      if (!meta) return required;
+      return meta.stepUp.code === "000000" ? invalid : success;
+    });
     const present = mock(async (request) => {
       expect(await request.submit({ ...proof, code: "000000" })).toEqual(
         invalid,

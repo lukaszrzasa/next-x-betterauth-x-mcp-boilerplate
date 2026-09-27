@@ -2,6 +2,7 @@ import "server-only";
 
 import type { AuthedCtx } from "@/src/lib/auth/builders/context";
 import { ActionError } from "@/src/lib/auth/errors";
+import { errorMessage } from "@/src/lib/errorMessage";
 import type { LockedReads } from "@/app/(AuthModule)/_/db/userAccountLock";
 import type { FailedEffect, UserMutationOutcome } from "@/app/(AuthModule)/admin/_/types";
 import { translateProviderError } from "./providerErrors";
@@ -46,7 +47,7 @@ export async function attemptEffect(
       return false;
     }
     ctx.log.error(`effect ${effect} failed`, {
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage(error),
     });
     failed.push({ effect, code: "UNAVAILABLE" });
     return false;

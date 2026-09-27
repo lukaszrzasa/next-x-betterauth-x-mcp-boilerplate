@@ -95,6 +95,10 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
 
+  // A ternary nested in another one reads as a puzzle; use early returns,
+  // a lookup object or a small helper instead.
+  { rules: { "no-nested-ternary": "error" } },
+
   {
     files: ["app/**/admin/**/page.{ts,tsx}"],
     plugins: { app: { rules: { "admin-page": adminPageRule } } },

@@ -61,10 +61,18 @@ The auth views cover sign-in, sign-up, confirmation emails, forgot/reset passwor
 authenticator challenges and recovery-code login. Signed-in pages share one
 application shell: a top bar with theme toggle and account menu (Settings,
 Admin for staff, Sign out), plus a collapsible sidebar on `/admin` routes.
-`/panel`, `/settings/*` and the dashboard pages are empty entry points that
-carry only their breadcrumb. Existing staff without an
-enrolled factor can access only required enrollment, sign-out, and email confirmation.
-Ordinary-user enrollment and post-login account settings remain out of scope.
+`/panel` and the dashboard pages are empty entry points that carry only their
+breadcrumb. Existing staff without an enrolled factor can access only required
+enrollment, sign-out and the two email confirmation pages.
+
+`/settings/profile` edits the display name; `/settings/account` manages the
+sign-in email (link-only confirmations, one 24-hour request, a separate
+correction flow for an unverified address), the password (with "Sign out other
+devices" on by default), an optional authenticator (set up, safe replacement,
+disable when policy allows), recovery codes and sessions. Migration
+`0005_settings_requests_and_security_version.sql` adds the request tables and
+the `security_version` / `session_revocation_pending` user columns behind these
+flows; see "Account settings" in `docs/architecture.md`.
 
 Migration `0004_user_admin_search_indexes.sql` needs the `pg_trgm` extension
 (installed by the migration when the role may create extensions). It creates
@@ -78,7 +86,8 @@ It creates and drops an isolated PostgreSQL schema to test atomic bootstrap,
 concurrent submissions and provider 2FA compatibility; no accounts are created
 in the application tables. Environments without `DATABASE_URL` explicitly skip
 that suite. Form and initialization-cache checks use the same test command.
-The user-administration integration suite (part of `bun run test`) runs against
-isolated services when `TEST_DATABASE_URL` and `TEST_REDIS_URL` name test-only
-PostgreSQL and Redis databases distinct from `DATABASE_URL` and `REDIS_URL`; it
-skips itself otherwise.
+The user-administration and account-settings integration suites (part of
+`bun run test`) run against isolated services when `TEST_DATABASE_URL` and
+`TEST_REDIS_URL` name test-only PostgreSQL and Redis databases distinct from
+`DATABASE_URL` and `REDIS_URL`; they skip themselves otherwise and say so. A
+skipped suite is not evidence.

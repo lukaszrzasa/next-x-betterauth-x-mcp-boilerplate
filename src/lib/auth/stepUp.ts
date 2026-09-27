@@ -15,6 +15,11 @@ import {
 } from "./stepUpPolicy";
 import { ActionError } from "./errors";
 import { VERIFY_EMAIL_CHALLENGE } from "./emailChallenge";
+import {
+  readSecurityVersion,
+  securityStateChangedError,
+  securityVersionOf,
+} from "./securityVersion";
 import { sendTwoFactorOtpEmail } from "@/src/lib/email";
 import { decrementIfExists, incrementWithTtl, redis } from "@/src/lib/redis";
 
@@ -88,18 +93,57 @@ async function clearFailures(scope: Scope) {
  * Grants
  * ------------------------------------------------------------------------- */
 
-/** Read-only: reuse does not refresh the timestamp or Redis expiry. */
-export async function hasGrant(scope: Scope): Promise<boolean> {
+/**
+ * A grant is issued for one security generation of the account. Legacy
+ * timestamp-only payloads are refused: they cannot prove which generation
+ * they belonged to.
+ */
+const grantSchema = z.object({
+  verifiedAt: z.number().finite(),
+  securityVersion: z.int().nonnegative(),
+});
+
+/**
+ * Read-only: reuse does not refresh the timestamp or Redis expiry. A grant
+ * counts only while it is inside its window *and* was issued for the
+ * account's current security generation (`expectedVersion`, from the
+ * authoritative user row): a credential or factor change invalidates every
+ * grant without signing any device out.
+ */
+export async function hasGrant(scope: Scope, expectedVersion: number): Promise<boolean> {
   const raw = await redis.get(grantKey(scope));
   if (!raw) return false;
-  const verifiedAt = Number(raw);
-  if (!Number.isFinite(verifiedAt)) return false;
-  const age = Date.now() - verifiedAt;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return false;
+  }
+  const grant = grantSchema.safeParse(parsed);
+  if (!grant.success) return false;
+  if (grant.data.securityVersion !== expectedVersion) return false;
+  const age = Date.now() - grant.data.verifiedAt;
   return age >= 0 && age < STEP_UP_WINDOW_SECONDS * 1000;
 }
 
-async function writeGrant(scope: Scope) {
-  await redis.set(grantKey(scope), `${Date.now()}`, "EX", STEP_UP_WINDOW_SECONDS);
+/** Labels the grant with the generation the proof was verified against, never a newer one. */
+async function writeGrant(scope: Scope, securityVersion: number) {
+  await redis.set(
+    grantKey(scope),
+    JSON.stringify({ verifiedAt: Date.now(), securityVersion }),
+    "EX",
+    STEP_UP_WINDOW_SECONDS,
+  );
+}
+
+/**
+ * Cleanup after a security change: drops the session's current grant and
+ * outstanding email challenge. The durable version mismatch is what makes an
+ * old grant unusable; a Redis failure here changes nothing about that, so
+ * it is logged by the caller rather than treated as a second marker.
+ */
+export async function invalidateStepUpState(scope: Scope): Promise<void> {
+  await redis.del(grantKey(scope), challengeKey(scope));
 }
 
 /* ---------------------------------------------------------------------------
@@ -211,12 +255,14 @@ const stepUpProofSchema = z.object({
 });
 
 /**
- * Verifies `proof` and, on success, records a five-minute grant.
+ * Verifies `proof` and, on success, records a five-minute grant for the
+ * account's current security generation.
  *
  * TOTP is delegated to Better Auth, which owns the enrolled secret. Mid-session
  * it is a pure "is this code correct?" check: it creates no session, sets no
  * cookie and stores nothing - which is precisely why the grant below is ours to
- * write.
+ * write. `user` must be the authoritative user (see `sessionAuthority`), so
+ * its `securityVersion` is the database's.
  */
 export async function verifyStepUp({
   user,
@@ -281,8 +327,15 @@ export async function verifyStepUp({
     }
   }
 
+  // The proof was checked against the generation the actor context carries.
+  // If the account moved on meanwhile, the result belongs to no generation:
+  // refuse it rather than labelling an old proof with the new version.
+  const current = await readSecurityVersion(user.id);
+  const observed = securityVersionOf(user);
+  if (current === null || current !== observed) throw securityStateChangedError();
+
   if (proof.method === "totp") await clearFailures(scope);
-  if (persistGrant) await writeGrant(scope);
+  if (persistGrant) await writeGrant(scope, observed);
 }
 
 /**

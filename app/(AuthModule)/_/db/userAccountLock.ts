@@ -3,7 +3,7 @@ import "server-only";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool, type PoolClient } from "pg";
 
-import type { AuthedCtx } from "@/src/lib/auth/builders/context";
+import type { AuthedCtx, PublicCtx } from "@/src/lib/auth/builders/context";
 import { ActionError } from "@/src/lib/auth/errors";
 import { schema } from "@/src/lib/db";
 
@@ -80,9 +80,13 @@ async function connectForLock(): Promise<PoolClient> {
  * bound to the lock transaction for policy reads only. Released on every
  * outcome, after `work` settles; never resolve a lock through a racing
  * timeout while a provider write may still be running.
+ *
+ * The lock performs no actor authorization: it accepts a public context for
+ * the emailed-link proofs of the settings flows, whose caller has already
+ * established token authority for `userId`. It is never fabricated for them.
  */
 export async function withUserAccountLock<T>(
-  _ctx: AuthedCtx,
+  _ctx: AuthedCtx | PublicCtx,
   userId: string,
   work: (reads: LockedReads) => Promise<T>,
   options: { adminBan?: boolean } = {},

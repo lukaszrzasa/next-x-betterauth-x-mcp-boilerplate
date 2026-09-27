@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { describeFailure, type ActionFailure, type ActionOutcome } from "@/src/lib/actions";
+import type { FeedbackTone } from "@/src/components/feedback/ActionFeedback";
 import type {
   FailedEffect,
   UserFieldError,
@@ -13,7 +14,7 @@ import type {
  * `describeFailure`; this file adds what is specific to user accounts).
  */
 
-export type FeedbackTone = "success" | "info" | "warning" | "error";
+export type { FeedbackTone };
 
 export type Feedback = {
   tone: FeedbackTone;

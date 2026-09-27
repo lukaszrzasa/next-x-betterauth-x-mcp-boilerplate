@@ -1,7 +1,11 @@
 import type { ZodType } from "zod";
 
 import type { Connector, Permission, RoleName } from "@/src/lib/auth/permissions";
-import type { StepUpPolicy, StepUpProof } from "@/src/lib/auth/stepUpPolicy";
+import type {
+  RequiredStepUp,
+  StepUpCondition,
+  StepUpProof,
+} from "@/src/lib/auth/stepUpPolicy";
 import type { AuditEvent } from "./actionAudit";
 import type { AuthedCtx, PublicCtx } from "./context";
 
@@ -32,8 +36,19 @@ export type BaseConfig<TCtx, TInput, TOutput, TRawInput = TInput> = {
 };
 
 export type OperationPolicy =
-  | { mcpAllowed: true; stepUp?: "none" }
-  | { mcpAllowed?: false; stepUp?: StepUpPolicy };
+  | { mcpAllowed: true; stepUp?: "none"; stepUpWhen?: undefined }
+  | { mcpAllowed?: false; stepUp?: "none"; stepUpWhen?: undefined }
+  | {
+      mcpAllowed?: false;
+      stepUp: RequiredStepUp;
+      /**
+       * `always` (default) or `two_factor_enabled`: the declared step-up
+       * applies only while the fresh user has an enabled authenticator;
+       * otherwise the effective policy is `none` and only an explicit
+       * `requireVerifiedEmail` still applies.
+       */
+      stepUpWhen?: StepUpCondition;
+    };
 
 export type AuthedConfig<TInput, TOutput, TRawInput = TInput> = BaseConfig<
   AuthedCtx,
@@ -65,6 +80,7 @@ export type PublicConfig<TInput, TOutput, TRawInput = TInput> = BaseConfig<
   auth: "public";
   mcpAllowed?: boolean;
   stepUp?: "none";
+  stepUpWhen?: undefined;
 };
 
 /**

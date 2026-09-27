@@ -34,7 +34,7 @@ const redis = {
   },
 };
 mock.module("server-only", () => ({}));
-mock.module("../../src/lib/db/index.ts", () => ({ db: database, ...schema }));
+mock.module("../../src/lib/db/index.ts", () => ({ db: database, schema, ...schema }));
 mock.module("../../src/lib/redis/index.ts", () => ({
   redis,
   incrementWithTtl: async (key) => {
@@ -60,6 +60,7 @@ mock.module("../../src/lib/email/index.tsx", () => ({
   sendVerificationEmail: async () => {},
   sendPasswordResetEmail: async () => {},
   sendTwoFactorOtpEmail: async () => {},
+  sendEmailChangeConfirmationEmail: async () => {},
 }));
 mock.module("next/headers", () => ({
   headers: async () => new Headers(browser.getStore().headers),
@@ -110,6 +111,7 @@ describe.skipIf(!process.env.DATABASE_URL)("setup integration", () => {
       "0001_require_user_two_factor.sql",
       "0002_installation_root_account.sql",
       "0003_user_password_reset_cutoff.sql",
+      "0005_settings_requests_and_security_version.sql",
     ]) {
       await pool.query(
         (
@@ -285,9 +287,12 @@ describe.skipIf(!process.env.DATABASE_URL)("setup integration", () => {
     await expect(
       protectedAction(undefined, { ...meta, headers }),
     ).rejects.toMatchObject({ reason: "TWO_FACTOR_ENROLLMENT_REQUIRED" });
+    // Account management endpoints are hidden outright (guarded operations
+    // serve them); anything else outside the enrollment allow-list is refused.
     expect(
       (await request("update-user", { name: "Blocked" }, adminCookie)).status,
-    ).toBe(403);
+    ).toBe(404);
+    expect((await request("list-accounts", undefined, adminCookie)).status).toBe(403);
     expect(
       (
         await request(

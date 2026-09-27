@@ -7,7 +7,7 @@ This document defines the application’s constraints, implementation defaults, 
 - Next.js application with SSR, Server Actions, and selected MCP tools. Application REST endpoints are out of scope; adding them requires an explicit scope decision and docs update. Auth and MCP protocol handlers are distinct from an application REST surface.
 - Global users and roles; no tenants or organization membership scaffolding.
 - Better Auth with one auth authority and shared role/permission definitions. Admin receives every declared permission through the shared role evaluator; unknown permissions deny. Authentication, verification and business invariants still apply to admin.
-- Password sign-in with email OTP or authenticator TOTP. Staff must enroll the required second factor. Remembered login verification never grants operation step-up. Auth views require authenticator or recovery-code verification for enrolled accounts; setup enrolls the initial admin. General account enrollment/settings are not exposed; the settings pages are empty entry points. Magic links are out of scope.
+- Password sign-in with email OTP or authenticator TOTP. Staff must enroll the required second factor. Remembered login verification never grants operation step-up. Auth views require authenticator or recovery-code verification for enrolled accounts; setup enrolls the initial admin. Signed-in accounts manage their own display name, sign-in email, password, optional authenticator, recovery codes and sessions on the settings pages (see "Account settings"). Magic links are out of scope.
 - MCP requires explicit operation opt-in and cannot invoke operations requiring step-up, even for admin. Initial MCP use is finding accounts and reading role/status with an explicit safe response shape.
 - MCP user lookup is available to authenticated admins and staff whose roles grant user lookup. A connection uses the connected user's authority; it is not an implicit admin identity.
 - Admin shell, R2 upload/storage integration with a working example, Resend integration, and WebSocket editing presence. Presence covers all staff on form pages, without dirty state, typing indicators, or inferred edit locks. A complete media library is out of scope.
@@ -18,7 +18,7 @@ The shared operation owns validated input, permission policy, required verificat
 
 Trusted entry adapters resolve caller identity and entry-point information. Clients cannot supply an authoritative role, verification grant, or a flag claiming to be a different transport. A branded TypeScript context prevents some accidental misuse but is not runtime authorization.
 
-The current auth views and shared operation pipeline use Better Auth sessions directly. The signed session-token cookie identifies the Redis-backed session; there is no application-level user query on each session read. Staff promotion remains future work. Accounts requiring enrollment can access only `/auth/enroll`, sign-out, and email confirmation until Better Auth verifies TOTP. The request proxy, protected page guard, operation authorization, and auth HTTP boundary enforce this using the provider session. Long-lived MCP/presence connections must lose revoked privileges; define and test invalidation/revalidation rather than trusting the role captured when a connection opened. This does not require one particular cache implementation.
+The auth views and the shared operation pipeline resolve the acting account through one session authority (`src/lib/auth/sessionAuthority.ts`): the signed session-token cookie identifies the Redis-backed session (cookie cache bypassed), and the current user row from the database is merged over the provider's cached user copy. This is a deliberate change from the earlier cache-only baseline - one user read per authenticated request - because the settings flows commit direct row writes (email finalization, security version) that a cached copy would not reflect. The authority also refuses effectively banned accounts and reconciles the post-email-change revocation barrier (below) before any session of that account is honoured. `getFreshSession`, the action builder and the auth HTTP boundary all use it; the proxy's cookie-cache read is a navigation hint only. Staff promotion remains future work. Accounts requiring enrollment can access only `/auth/enroll`, sign-out, and email confirmation until Better Auth verifies TOTP. The request proxy, protected page guard, operation authorization, and auth HTTP boundary enforce this using the provider session. Long-lived MCP/presence connections must lose revoked privileges; define and test invalidation/revalidation rather than trusting the role captured when a connection opened. This does not require one particular cache implementation.
 
 MCP eligibility checks apply in the shared operation path as well as MCP registration. Omitting a tool alone is insufficient: a generic tool must not expose the operation indirectly. Admin permission bypass never turns into a bypass of this restriction.
 
@@ -313,7 +313,10 @@ Its contracts, in brief; the scope's README holds the details:
   through dedicated retry operations. No cross-store atomicity is claimed.
 - An administrative email change also writes the server-owned
   `passwordResetInvalidBefore` cutoff; `resetTokenPolicy` refuses reset links
-  issued at or before it.
+  issued at or before it. Administrative email changes and bans first retire
+  the target's pending settings requests (email change/correction, staged
+  authenticator setup) and move its security version on, under the lock they
+  already hold; a failure there blocks the mutation.
 - Scope exception: these user detail forms ship without editing presence,
   stale-edit detection or optimistic concurrency. Name and email are separate
   saves; the last committed write wins. Presence for form pages remains future
@@ -322,6 +325,107 @@ Its contracts, in brief; the scope's README holds the details:
   editing, impersonation, factor resets, session listings, bulk operations and
   exports. Future entities model deletion as an explicit soft delete with query
   exclusions rather than the physical delete of dependency examples.
+
+## Account settings
+
+`/settings/profile` (display name) and `/settings/account` (sign-in email,
+password, authenticator, recovery codes, sessions), served by the auth
+module's module-wide scope; `/settings` redirects to Profile. The settings
+layout renders the title and a `<nav aria-label="Settings">` of real links
+outside each page's own loading and error boundaries. Pages are
+`page(authRoutes.settingsX, …)` and additionally call `requireEnrolledSession`
+before their `toServerQuery` reads; every operation checks enrollment again.
+Nothing here imports `admin/_`.
+
+- Code layout: each service function is its own module under
+  `app/(AuthModule)/_/db/settings/<area>/` (`profile`, `password`,
+  `emailChange`, `twoFactor`, `sessions`), named after the function it
+  exports; an area's internals (row transitions, projections, errors) sit
+  beside them. `shared/` holds what several areas use: `policy.ts` (every
+  limit, TTL and window), `throttleKeys.ts` (the Redis counter names), the
+  typed refusals and the session-effect helpers. Section feedback on both the
+  settings and admin pages is the shared `ActionFeedback` component with the
+  `useFeedback` state hook.
+- Every settings operation is authenticated, `mcpAllowed: false`, takes no
+  user ID (the subject is `ctx.user.id`) and needs no administrative
+  permission. Root manages its own account here under the same rules; the
+  administrative root restrictions are unchanged. Impersonated sessions are
+  refused by the step-up-protected operations. Session revocation accepts a
+  session ID and resolves it among the actor's own sessions only.
+- `stepUpWhen: "two_factor_enabled"` is the one declarative step-up condition:
+  the declared `five_minutes` policy applies while the fresh user has an
+  enabled authenticator, otherwise the effective policy is `none` (an explicit
+  `requireVerifiedEmail` still applies) and a stale client proof is refused
+  rather than turned into a grant. Password change, verified email-change
+  initiation, replacement, disabling and recovery-code regeneration use it.
+  Admin declarations are unchanged.
+- Verification matrix: reads, name and session actions need nothing; the
+  sensitive operations need a verified address, the current password (checked
+  through the provider's verifier with a five-failures-per-fifteen-minutes
+  budget, reserved before the comparison) and, when enrolled, the step-up.
+  The unverified-address **correction** is the deliberate exception:
+  `stepUp: "none"`, password plus a fresh TOTP code verified through the
+  existing verifier without persisting a grant, mailing the corrected address
+  only.
+- Step-up grants are versioned: the Redis payload is
+  `{ verifiedAt, securityVersion }` and a grant counts only for the account's
+  current `user.securityVersion`. Credential, factor, recovery-code and
+  sign-in email changes increment that version (inside their own transaction
+  for app-owned writes, immediately before a provider-owned write); services
+  re-check it after waiting for the account lock. This invalidates operation
+  grants without signing devices out; remembered-device invalidation and
+  extra sign-outs after a factor change are deliberately not implemented.
+- Sign-in email changes are **link-only**: no emailed code. A *change* (verified
+  address) is current-mailbox link, authenticated destination selection, new-
+  mailbox link; a *correction* (unverified address) is the corrected mailbox's
+  link alone. Requests live in `email_change_request` (PostgreSQL is the
+  authority; Redis throttles) with one fixed 24-hour deadline, SHA-256 token
+  digests with per-stage generations, explicit cancellation, replacement by a
+  new request and single-use links. The public page
+  `/auth/email-change/confirm` inspects on GET and confirms only on the
+  explicit submit of a public Server Action; the token is the whole authority
+  and the browser's session is irrelevant. Password change, reset, an
+  administrative email change, a ban and ordinary verification of a corrected
+  address retire pending requests.
+- **Finalization is a narrowly scoped direct SQL exception**: under the account
+  lock, one write transaction locks the user row and then the request row,
+  validates only the locked values, and writes exactly `email`,
+  `emailVerified`, `passwordResetInvalidBefore`, `updatedAt`,
+  `securityVersion` (+1) and `sessionRevocationPending` on the user plus the
+  request's terminal state. PostgreSQL's unique email is the final arbiter.
+  Session revocation runs after the commit; the durable `sessionRevocationPending`
+  flags (user and request) record unfinished revocation, and the session
+  authority revokes and clears them (version-conditionally) before honouring any
+  session of the account. The response says so honestly when revocation could
+  not be confirmed.
+- Authenticator: optional enrollment uses the provider's own enable/verify pair,
+  staged by an app-owned `authenticator_setup_request` (ten minutes, bound to
+  the initiating session and security version) so the factor stays inactive
+  until proven. Replacement stages a new encrypted secret while the old
+  authenticator and codes keep working, then swaps secret and recovery-code set
+  in one transaction; `src/lib/auth/factorCodec.ts` mirrors the provider's
+  secret, code and recovery-code formats with public exports only, proven by
+  real provider login tests. Disabling is permitted only when neither the staff
+  role nor the stored policy requires a factor. New recovery codes are shown
+  once, inside a disposable flow that unmounts the action results.
+- Sessions are the provider's Redis-backed sessions, projected without tokens,
+  current first, in pages of 20; revoke one, sign out other devices, sign out
+  everywhere. The password form's "Sign out other devices (recommended)"
+  checkbox maps to the provider's own `revokeOtherSessions`.
+- Throttles (Redis, fail closed): email initiation 5/hour, sends 60 s per
+  purpose and 10/hour, public proofs 30 per request and 60 per address per ten
+  minutes, factor setup initiation 5/hour, setup codes 5 per attempt per
+  fifteen minutes. Outcomes are explicit DTOs (`SyncOutcome`,
+  `EmailRequestOutcome`, `EmailProofOutcome`, `SetupStarted`,
+  `RecoveryCodesIssued`, `SessionPage`) with closed lifecycle codes; nothing
+  reuses the admin `UserMutationOutcome`.
+- Persistent audit remains `TODO(audit)` comments at the confirmed write sites
+  and external effects; mailbox proofs record a subject, never an actor.
+
+Migration `0005_settings_requests_and_security_version.sql` adds the two
+request tables and the `security_version` / `session_revocation_pending` user
+columns; it was generated by drizzle-kit and reviewed to contain only those
+changes (the hand-written `user_admin_*` indexes are untouched).
 
 ## Infrastructure and effects
 
@@ -333,7 +437,7 @@ R2 failures fail uploads without reporting success. Resend failures do not claim
 
 Database changes that must succeed together use a transaction. For effects outside that transaction, state whether loss is acceptable. Required eventual delivery needs durable retry; best-effort presence does not justify adding a general event bus. R2 and database updates require explicit ordering and cleanup on partial failure, not a claim of cross-service atomicity.
 
-Ordinary users may access the current minimal account page without 2FA. Already enrolled accounts must complete their login challenge. Setup enrolls the initial administrator. Future administration surfaces retain staff verification requirements; ordinary-user enrollment UI remains out of scope. Assign one role per user. Role composition is out of scope; this is a product default, not a Better Auth limitation. Do not expose impersonation, a role editor, bulk operations, or additional plugins merely because a dependency provides them.
+Ordinary users may use the settings pages without 2FA, and may optionally enroll an authenticator there. Already enrolled accounts must complete their login challenge. Setup enrolls the initial administrator. Future administration surfaces retain staff verification requirements. Assign one role per user. Role composition is out of scope; this is a product default, not a Better Auth limitation. Do not expose impersonation, a role editor, bulk operations, or additional plugins merely because a dependency provides them.
 
 ## Agent completion defaults
 
@@ -355,12 +459,17 @@ Defaults include filenames, shared-directory names, internal subdivisions, extra
 ## Authentication views and bootstrap
 
 `/auth/sign-in`, `/auth/sign-up`, `/auth/forgot-password`, and `/auth/reset-password`
-are guest-only. `/auth/email-confirmation?token=…` works with or without a session.
+are guest-only. `/auth/email-confirmation?token=…` and
+`/auth/email-change/confirm?token=…` work with or without a session.
 Sign-up sends a confirmation email and creates a session; verification is not
-required to open `/panel`. That page and the settings pages are empty entry points
-carrying only their breadcrumb; account identity and sign-out live in the shell's
-account menu. Password reset revokes sessions
-and preserves existing 2FA. Recovery codes replace the second factor, not the password.
+required to open `/panel`. That page is an empty entry point carrying only its
+breadcrumb; account identity and sign-out live in the shell's account menu, and
+the settings pages are described under "Account settings". Password reset
+revokes sessions and preserves existing 2FA; its completion runs through the
+guarded public operation `auth.passwordReset.complete` (the provider's direct
+`reset-password` POST is hidden, the emailed link's GET callback is not), so it
+shares the account lock with the settings lifecycles and honours the reset
+cutoff. Recovery codes replace the second factor, not the password.
 
 `/auth/setup` is available only when the installation table is empty and no users
 exist. After setup, the installation row stores the root user's ID and creation
@@ -390,9 +499,16 @@ verification. Interrupted enrollment can restart after sign-in even with
 the initial setup page closed. Subsequent logins use Better Auth's factor challenge and
 single-use recovery codes. Ordinary users have no enrollment UI.
 
-The HTTP auth boundary keeps admin operations and factor settings private.
-Only required, unenrolled accounts can enable TOTP; enabling email OTP cannot
-satisfy this requirement. Provider login challenges and recovery remain available.
+The HTTP auth boundary keeps admin operations and factor settings private, and
+hides the provider's account and session management endpoints (`update-user`,
+`change-password`, `change-email`, `list-sessions`, `revoke-session`,
+`revoke-sessions`, `revoke-other-sessions`, `reset-password` POST): the
+application's guarded operations own validation, password and step-up checks
+and lifecycle coordination for them. Over HTTP, `two-factor/enable` and
+`two-factor/verify-totp` serve required enrollment only; `verify-backup-code`
+serves anonymous sign-in only. Provider login challenges and recovery remain
+available; sign-up, sign-in, sign-out, request-password-reset and ordinary email
+verification are unchanged.
 Official shadcn components use Radix primitives and prefixed Tailwind utilities;
 theme tokens are document-level and the reset is scoped to `.app-ui` (see
 "Application shell and dashboard access"). Each form has its own component and hook, React Hook

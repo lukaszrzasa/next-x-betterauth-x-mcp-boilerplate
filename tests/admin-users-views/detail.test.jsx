@@ -162,11 +162,15 @@ test("name editing: one field, disabled while unchanged, submitted alone, cancel
   const input = screen.getByLabelText("Name");
   expect(input.value).toBe("Grace Hopper");
   expect(screen.getByRole("button", { name: "Save name" }).disabled).toBe(true);
-  expect(screen.queryByRole("button", { name: "Edit email" }).disabled).toBe(true);
+  // The form is a modal: the page behind it, including the other edit button, is hidden.
+  expect(screen.getByRole("dialog", { name: "Edit name" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Edit email" })).toBeNull();
   fireEvent.change(input, { target: { value: "Grace B. Hopper" } });
   expect(screen.getByRole("button", { name: "Save name" }).disabled).toBe(false);
   fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-  expect(screen.queryByLabelText("Name")).toBeNull();
+  await waitFor(() => {
+    if (screen.queryByLabelText("Name")) throw new Error("still open");
+  });
   expect(actions.updateUserNameAction).not.toHaveBeenCalled();
 
   fireEvent.click(screen.getByRole("button", { name: "Edit name" }));
@@ -177,7 +181,9 @@ test("name editing: one field, disabled while unchanged, submitted alone, cancel
   await waitFor(() => expect(actions.updateUserNameAction).toHaveBeenCalledTimes(1));
   expect(actions.updateUserNameAction.mock.calls[0][0]).toEqual({ userId: "u-target", name: "Grace B. Hopper" });
   await screen.findByText("Name updated");
-  expect(screen.queryByLabelText("Name")).toBeNull();
+  await waitFor(() => {
+    if (screen.queryByLabelText("Name")) throw new Error("still open");
+  });
   expect(refresh).toHaveBeenCalled();
 });
 

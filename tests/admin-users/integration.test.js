@@ -30,7 +30,7 @@ if (!configured) {
 }
 
 const browser = new AsyncLocalStorage();
-const sent = { verification: [], reset: [], otp: [] };
+const sent = { verification: [], reset: [], otp: [], emailChange: [] };
 mock.module("server-only", () => ({}));
 mock.module("next/cache", () => ({ revalidatePath: () => {} }));
 mock.module("../../src/lib/email/index.tsx", () => ({
@@ -42,6 +42,9 @@ mock.module("../../src/lib/email/index.tsx", () => ({
   },
   sendTwoFactorOtpEmail: async (message) => {
     sent.otp.push(message);
+  },
+  sendEmailChangeConfirmationEmail: async (message) => {
+    sent.emailChange.push(message);
   },
 }));
 mock.module("next/headers", () => ({
@@ -99,7 +102,13 @@ function run(actor, operation, input, extra) {
 }
 
 async function grantStepUp(actor) {
-  await redis.set(`stepup:grant:${actor.id}:${actor.session.id}`, `${Date.now()}`, "EX", 300);
+  const [current] = await db.select({ securityVersion: userTable.securityVersion }).from(userTable).where(sql`${userTable.id} = ${actor.id}`);
+  await redis.set(
+    `stepup:grant:${actor.id}:${actor.session.id}`,
+    JSON.stringify({ verifiedAt: Date.now(), securityVersion: current?.securityVersion ?? 0 }),
+    "EX",
+    300,
+  );
 }
 
 async function createUser({ name, email, role = "user", staffEnrolled = false, emailVerified = true }) {
@@ -426,12 +435,13 @@ describe.skipIf(!configured)("admin users integration", () => {
       expect(admins.filter((entry) => !entry.banned)).toHaveLength(1);
 
       // The loser's sessions were revoked by the ban; even a session created
-      // afterwards (a legacy or malformed state) cannot ban the last admin.
+      // afterwards (a legacy or malformed state) cannot ban the last admin:
+      // the session authority refuses an effectively banned account outright.
       const survivorId = admins.find((entry) => !entry.banned).id;
       const bannedActor = await actorFor(survivorId === thirdId ? actors.admin.id : thirdId);
       await grantStepUp(bannedActor);
       await expect(run(bannedActor, mutations.banUserOperation, { userId: survivorId, duration: "24h", reason: "last admin" })).rejects.toMatchObject({
-        data: { reason: "last-admin" },
+        reason: "UNAUTHENTICATED",
       });
       expect((await row(survivorId)).banned).toBe(false);
     } finally {

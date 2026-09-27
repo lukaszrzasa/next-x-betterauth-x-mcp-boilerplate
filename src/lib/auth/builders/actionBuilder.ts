@@ -3,15 +3,22 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { unstable_rethrow } from "next/navigation";
 
-import { auth } from "@/src/lib/auth/index";
 import { ActionError } from "@/src/lib/auth/errors";
-import { STEP_UP_POLICIES, type StepUpPolicy } from "@/src/lib/auth/stepUpPolicy";
+import { resolveAuthoritativeSession } from "@/src/lib/auth/sessionAuthority";
+import {
+  STEP_UP_CONDITIONS,
+  STEP_UP_POLICIES,
+  type StepUpCondition,
+  type StepUpPolicy,
+} from "@/src/lib/auth/stepUpPolicy";
 import { Ctx, createLogger, type Session, type User } from "./context";
 import { parseInput } from "./actionInput";
 import { checkAuthorization } from "./actionAuthorization";
 import { ensureStepUp } from "./actionStepUp";
 import { writeAudit, type AuditDescription } from "./actionAudit";
 import type { Action, ActionMeta, AuthedConfig, PublicConfig } from "./actionTypes";
+
+const OUTCOME_LOG_LEVELS = { success: "info", denied: "warn", failed: "error" } as const;
 
 export function defineAction<
   TInput = undefined,
@@ -37,11 +44,18 @@ export function defineAction<TInput, TOutput, TRawInput>(
   // Snapshot policy at definition time; fail loudly on invalid config.
   const mcpAllowed = config.mcpAllowed === undefined ? false : config.mcpAllowed;
   const stepUp = config.stepUp === undefined ? "none" : config.stepUp;
+  const stepUpWhen = config.stepUpWhen === undefined ? "always" : config.stepUpWhen;
   if (typeof mcpAllowed !== "boolean" || !STEP_UP_POLICIES.includes(stepUp as StepUpPolicy)) {
     throw new Error("Invalid operation policy.");
   }
   if (stepUp !== "none" && (mcpAllowed || config.auth === "public")) {
     throw new Error("Step-up requires an authenticated operation with MCP disabled.");
+  }
+  if (!STEP_UP_CONDITIONS.includes(stepUpWhen as StepUpCondition)) {
+    throw new Error("Invalid step-up condition.");
+  }
+  if (stepUpWhen !== "always" && (stepUp === "none" || mcpAllowed || config.auth === "public")) {
+    throw new Error("A step-up condition requires an authenticated, MCP-disabled operation with step-up.");
   }
   const runAction = async (rawInput: TRawInput, meta: ActionMeta) => {
     const startedAt = Date.now();
@@ -56,13 +70,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
       outcome: "success" | "denied" | "failed",
       fields: Record<string, unknown> = {},
     ) => {
-      const level =
-        outcome === "success"
-          ? "info"
-          : outcome === "denied"
-            ? "warn"
-            : "error";
-      log[level]("action", {
+      log[OUTCOME_LOG_LEVELS[outcome]]("action", {
         outcome,
         durationMs: Date.now() - startedAt,
         userId: ctx?.user?.id,
@@ -113,21 +121,33 @@ export function defineAction<TInput, TOutput, TRawInput>(
           describeAudit = (event) => authedAudit(authedCtx, event);
 
         checkEntryPoint(meta, mcpAllowed);
+        // The effective policy is computed once from the fresh user and used
+        // for both authorization and verification. Declared `two_factor_enabled`
+        // asks a user without an authenticator for nothing extra; their
+        // password check inside the operation is what protects them.
+        const effectiveStepUp = resolveStepUpPolicy(stepUp, stepUpWhen, user);
         checkAuthorization(
           {
             roles: authedConfig.roles,
             permissions: authedConfig.permissions,
             permissionsConnector: authedConfig.permissionsConnector,
             requireVerifiedEmail: authedConfig.requireVerifiedEmail,
-            stepUp,
+            stepUp: effectiveStepUp,
           },
           authedCtx,
         );
 
-        if (stepUp !== "none") {
-          await ensureStepUp(authedCtx, meta, stepUp);
-          authedCtx = authedCtx.withStepUp(stepUp);
+        if (effectiveStepUp !== "none") {
+          await ensureStepUp(authedCtx, meta, effectiveStepUp);
+          authedCtx = authedCtx.withStepUp(effectiveStepUp);
           ctx = authedCtx;
+        } else if (stepUp !== "none" && meta.stepUp !== undefined) {
+          // A stale client still sending proof for a condition that no longer
+          // holds: refuse the obsolete proof rather than turning it into a
+          // grant. A fresh submission without it proceeds normally.
+          throw new ActionError("INVALID_INPUT", {
+            message: "Verification proof is not expected for this account; submit again without it.",
+          });
         }
         output = await authedConfig.handler(authedCtx, input);
       }
@@ -180,8 +200,9 @@ type ResolvedSession<TInput, TOutput, TRawInput> =
 
 /**
  * Public operations never touch the session store, even for a signed-in
- * caller. Everything else reads the store (the cookie cache may be stale)
- * and refuses anonymous callers before any input is parsed.
+ * caller. Everything else resolves the authoritative session (store plus
+ * the current user row, never the cookie cache) and refuses anonymous
+ * callers before any input is parsed.
  */
 async function resolveSession<TInput, TOutput, TRawInput>(
   config:
@@ -191,13 +212,20 @@ async function resolveSession<TInput, TOutput, TRawInput>(
 ): Promise<ResolvedSession<TInput, TOutput, TRawInput>> {
   if (config.auth === "public") return { kind: "public", config };
 
-  const authSession = await auth.api.getSession({
-    headers,
-    query: { disableCookieCache: true },
-  });
+  const authSession = await resolveAuthoritativeSession(headers);
   if (!authSession) throw new ActionError("UNAUTHENTICATED");
 
   return { kind: "authed", config, ...authSession };
+}
+
+/** Declared policy, or `none` when the declared condition does not hold for this user. */
+function resolveStepUpPolicy(
+  declared: StepUpPolicy,
+  condition: StepUpCondition,
+  user: User,
+): StepUpPolicy {
+  if (declared === "none" || condition === "always") return declared;
+  return user.twoFactorEnabled ? declared : "none";
 }
 
 /**
