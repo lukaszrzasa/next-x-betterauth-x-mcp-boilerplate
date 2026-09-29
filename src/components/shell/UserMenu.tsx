@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
-import { adminRoutes } from "@/app/(AdminModule)/_/routes";
+import { appRoutes } from "@/src/lib/app/routes";
 import { useSignOut } from "@/app/(AuthModule)/_/hooks/useSignOut";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 import { initialsOf } from "@/src/lib/initials";
@@ -69,9 +69,9 @@ export function UserMenu() {
               Settings
             </Link>
           </DropdownMenuItem>
-          {can(adminRoutes.dashboard.access) && (
+          {can(appRoutes.dashboard.access) && (
             <DropdownMenuItem asChild>
-              <Link href={adminRoutes.dashboard.href}>
+              <Link href={appRoutes.dashboard.href}>
                 <LayoutDashboardIcon />
                 Admin
               </Link>

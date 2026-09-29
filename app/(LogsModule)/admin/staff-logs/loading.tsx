@@ -1,7 +1,7 @@
 import { DataTableSkeleton } from "@/src/components/data-table/DataTableSkeleton";
 import { Skeleton } from "@/src/components/ui/skeleton";
-import { AppBreadcrumbs } from "@/app/_/shell/AppBreadcrumbs";
-import { adminRoutes } from "@/app/(AdminModule)/_/routes";
+import { AppBreadcrumbs } from "@/src/components/shell/AppBreadcrumbs";
+import { appRoutes } from "@/src/lib/app/routes";
 import { logsRoutes } from "@/app/(LogsModule)/_/routes";
 import { STAFF_LOGS_COLUMN_SKELETON_WIDTHS } from "@/app/(LogsModule)/admin/_/components/staffLogs/staffLogsColumnWidths";
 
@@ -9,7 +9,7 @@ export default function StaffLogsLoading() {
   return (
     <>
       <AppBreadcrumbs
-        items={[{ label: "Admin", href: adminRoutes.dashboard.href }, { label: "System" }, logsRoutes.staffLogs]}
+        items={[{ label: "Admin", href: appRoutes.dashboard.href }, { label: "System" }, logsRoutes.staffLogs]}
       />
       <div className="ui:flex ui:flex-col ui:gap-6">
         <div className="ui:flex ui:flex-col ui:gap-2">

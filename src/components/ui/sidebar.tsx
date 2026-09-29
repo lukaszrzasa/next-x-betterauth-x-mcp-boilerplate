@@ -22,7 +22,7 @@ import {
 import {
   SIDEBAR_COOKIE_MAX_AGE,
   SIDEBAR_COOKIE_NAME,
-} from "@/app/_/shell/sidebarState";
+} from "@/src/components/shell/sidebarState";
 import { useIsMobile } from "@/src/lib/hooks/useIsMobile";
 import { cn } from "@/src/lib/utils";
 

@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
-import { page, redirectRefused } from "@/app/_/access";
-import { AppBreadcrumbs } from "@/app/_/shell/AppBreadcrumbs";
-import { adminRoutes } from "@/app/(AdminModule)/_/routes";
+import { page, redirectRefused } from "@/src/lib/app/access";
+import { AppBreadcrumbs } from "@/src/components/shell/AppBreadcrumbs";
+import { appRoutes } from "@/src/lib/app/routes";
 import { logsRoutes } from "@/app/(LogsModule)/_/routes";
 import { StaffLogsList } from "@/app/(LogsModule)/admin/_/components/staffLogs/StaffLogsList";
 import { listStaffLogFilterOptionsQuery, listStaffLogsQuery } from "@/app/(LogsModule)/admin/_/queries";
@@ -43,7 +43,7 @@ export default page<PageProps<"/admin/staff-logs">>(logsRoutes.staffLogs, async 
   return (
     <>
       <AppBreadcrumbs
-        items={[{ label: "Admin", href: adminRoutes.dashboard.href }, { label: "System" }, logsRoutes.staffLogs]}
+        items={[{ label: "Admin", href: appRoutes.dashboard.href }, { label: "System" }, logsRoutes.staffLogs]}
       />
       <div className="ui:flex ui:flex-col ui:gap-6">
         <div className="ui:flex ui:flex-col ui:gap-1">

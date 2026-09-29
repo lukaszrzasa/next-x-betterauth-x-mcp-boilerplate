@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { page } from "@/app/_/access";
+import { page } from "@/src/lib/app/access";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 /** The settings index has no page of its own; Profile is the first section. */

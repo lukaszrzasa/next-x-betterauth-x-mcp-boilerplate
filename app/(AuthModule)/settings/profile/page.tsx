@@ -1,4 +1,4 @@
-import { page, redirectRefused } from "@/app/_/access";
+import { page, redirectRefused } from "@/src/lib/app/access";
 import { ProfileSection } from "@/app/(AuthModule)/_/components/settings/profile/ProfileSection";
 import { requireEnrolledSession } from "@/app/(AuthModule)/_/guards";
 import { getProfileQuery } from "@/app/(AuthModule)/_/queries";

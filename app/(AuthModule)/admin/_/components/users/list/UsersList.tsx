@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Button } from "@/src/components/ui/button";
 import { useTableNavigation } from "@/src/lib/data-table/useTableNavigation";
-import { useViewer } from "@/app/_/shell/ViewerProvider";
+import { useViewer } from "@/src/components/shell/ViewerProvider";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 import {
   clearUsersFilters,

@@ -6,7 +6,7 @@ import { defineRoutes } from "@/src/lib/access/routes";
  * its list (`?log=<id>`); there is no standalone detail route.
  *
  * The sidebar lists these under its "System" category. Navigation categories
- * are staff-facing information architecture composed in `app/_/navigation.ts`;
+ * are staff-facing information architecture composed in `src/lib/app/navigation.ts`;
  * they do not follow module names.
  */
 export const logsRoutes = defineRoutes({

@@ -7,8 +7,8 @@ import { Pool } from "pg";
  * (`drizzle/0006_logs_email_and_staff.sql`) with its constraints and
  * triggers, the email recorder and the staff log (called with genuine
  * contexts from test-only guarded operations), redaction as stored,
- * idempotency and retry chains under concurrency, and the admin reads
- * through their real operations.
+ * idempotency, retry chains and completions under concurrency, and the
+ * admin reads through their real operations.
  *
  * Opt-in like the other integration suites: TEST_DATABASE_URL must name a
  * test-only database that differs from DATABASE_URL (PostgreSQL 18+, for
@@ -43,11 +43,12 @@ const { z } = await import("zod");
 const { db } = await import("../../src/lib/db/index.ts");
 const { migrate } = await import("drizzle-orm/node-postgres/migrator");
 const { defineAction } = await import("../../src/lib/auth/builders/actionBuilder.ts");
-const { recordStaffLog, StaffLogError } = await import("../../app/(LogsModule)/_/db/staffLogService.ts");
+const { loadLogReadOperations, loadLogRecorders } = await import("../helpers/logOperations.js");
+const { recordStaffLog, beginEmailLog, completeEmailLog } = await loadLogRecorders();
+const { StaffLogError } = await import("../../app/(LogsModule)/_/staffLog/types.ts");
 const { date, text, url, user, value } = await import("../../app/(LogsModule)/_/staffLog/blocks.ts");
-const { beginEmailLog, completeEmailLog } = await import("../../app/(LogsModule)/_/db/emailLogService.ts");
 const { REDACTED, REDACTED_LINK } = await import("../../app/(LogsModule)/_/redaction.ts");
-const logQueries = await import("../../app/(LogsModule)/admin/_/operations/logQueries.ts");
+const logQueries = await loadLogReadOperations();
 const { EMAIL_LOGS_QUERY_DEFAULTS, STAFF_LOGS_QUERY_DEFAULTS } = await import("../../app/(LogsModule)/admin/_/queryState.ts");
 
 const pool = configured ? new Pool({ connectionString: TEST_DATABASE_URL }) : null;
@@ -503,6 +504,17 @@ describe.skipIf(!configured)("logs integration", () => {
       const input = verificationEmail();
       const first = await ok(begin(actors.ada, input));
       expect(await ok(begin(actors.ada, input))).toEqual({ id: first.id, duplicate: true });
+      // The same request later, by the same account under another name: a replay, and the first snapshot stays.
+      const signedIn = sessions.get(actors.ada.cookie).user;
+      signedIn.name = "Ada King";
+      try {
+        expect(await ok(begin(actors.ada, input))).toEqual({ id: first.id, duplicate: true });
+      } finally {
+        signedIn.name = "Ada Lovelace";
+      }
+      const [stored] = await rows("email_log", "id = $1", [first.id]);
+      expect(stored.requester_label).toBe("Ada Lovelace");
+      expect(await rows("email_log")).toHaveLength(1);
       expect((await failure(begin(actors.ada, { ...input, subject: "Another subject" }))).code).toBe("RECORD_KEY_CONFLICT");
       expect((await failure(begin(actors.root, input))).code).toBe("RECORD_KEY_CONFLICT");
       expect((await failure(begin(actors.ada, { ...input, recipientEmail: "a@x.test" }))).code).toBe("RECORD_KEY_CONFLICT");
@@ -579,6 +591,235 @@ describe.skipIf(!configured)("logs integration", () => {
       expect(await ok(complete(actors.ada, { id, status: "failed", completedAt, secrets: {} }))).toEqual({ id, duplicate: true });
     });
 
+    test("a duplicate completion writes nothing: the row and its timestamps stay as they were", async () => {
+      for (const status of ["accepted", "failed", "unknown"]) {
+        const { id } = await ok(begin(actors.ada, verificationEmail()));
+        const observation = { id, status, errorCode: status === "accepted" ? undefined : "CODE", secrets: {} };
+        await ok(complete(actors.ada, observation));
+        const [recorded] = await rows("email_log", "id = $1", [id]);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        expect(await ok(complete(actors.root, observation))).toEqual({ id, duplicate: true });
+        expect(await ok(complete(null, observation))).toEqual({ id, duplicate: true });
+        expect(await rows("email_log", "id = $1", [id])).toEqual([recorded]);
+      }
+    });
+
+    test("a refused completion writes nothing either: a conflict, or a time before the start", async () => {
+      const startedAt = new Date(Date.now() - 60_000);
+      const { id } = await ok(begin(actors.ada, verificationEmail({ startedAt })));
+      const early = new Date(startedAt.getTime() - 1);
+      const [sending] = await rows("email_log", "id = $1", [id]);
+      expect((await failure(complete(actors.ada, { id, status: "accepted", completedAt: early, secrets: {} }))).issues).toEqual([
+        { path: "completedAt", code: "before_start" },
+      ]);
+      expect(await rows("email_log", "id = $1", [id])).toEqual([sending]);
+
+      await ok(complete(actors.ada, { id, status: "unknown", errorCode: "TIMEOUT", secrets: {} }));
+      const [unknown] = await rows("email_log", "id = $1", [id]);
+      // Still resolvable, so the time is the reason; an unknown again is a conflict whatever its time.
+      expect((await failure(complete(actors.ada, { id, status: "failed", completedAt: early, secrets: {} }))).issues).toEqual([
+        { path: "completedAt", code: "before_start" },
+      ]);
+      expect((await failure(complete(actors.ada, { id, status: "unknown", completedAt: early, secrets: {} }))).code).toBe("COMPLETION_CONFLICT");
+      expect(await rows("email_log", "id = $1", [id])).toEqual([unknown]);
+
+      await ok(complete(actors.ada, { id, status: "failed", secrets: {} }));
+      const [final] = await rows("email_log", "id = $1", [id]);
+      // Final and too early: the conflict is the answer.
+      expect((await failure(complete(actors.ada, { id, status: "accepted", completedAt: early, secrets: {} }))).code).toBe("COMPLETION_CONFLICT");
+      expect(await rows("email_log", "id = $1", [id])).toEqual([final]);
+    });
+
+    test("resolving unknown replaces the diagnostics, nulls included, and keeps the provider ID it does not replace", async () => {
+      const timedOut = async () => {
+        const { id } = await ok(begin(actors.ada, verificationEmail()));
+        await ok(
+          complete(actors.ada, {
+            id,
+            status: "unknown",
+            providerMessageId: "msg_pending",
+            errorCode: "TIMEOUT",
+            errorMessage: "Request timed out",
+            stackTrace: "Error: timeout\n    at send",
+            secrets: {},
+          }),
+        );
+        expect((await rows("email_log", "id = $1", [id]))[0]).toMatchObject({ provider_message_id: "msg_pending", error_code: "TIMEOUT" });
+        return id;
+      };
+      const stored = async (id) => (await rows("email_log", "id = $1", [id]))[0];
+      const cleared = { error_code: null, error_message: null, stack_trace: null };
+
+      const kept = await timedOut();
+      await ok(complete(actors.ada, { id: kept, status: "accepted", secrets: {} }));
+      expect(await stored(kept)).toMatchObject({ status: "accepted", provider_message_id: "msg_pending", ...cleared });
+
+      const replaced = await timedOut();
+      await ok(complete(actors.ada, { id: replaced, status: "accepted", providerMessageId: "msg_final", secrets: {} }));
+      expect(await stored(replaced)).toMatchObject({ status: "accepted", provider_message_id: "msg_final", ...cleared });
+
+      const failed = await timedOut();
+      await ok(complete(actors.ada, { id: failed, status: "failed", errorCode: "BOUNCED", secrets: {} }));
+      expect(await stored(failed)).toMatchObject({
+        status: "failed",
+        provider_message_id: "msg_pending",
+        error_code: "BOUNCED",
+        error_message: null,
+        stack_trace: null,
+      });
+
+      // From `sending` there is nothing to keep.
+      const { id: fresh } = await ok(begin(actors.ada, verificationEmail()));
+      await ok(complete(actors.ada, { id: fresh, status: "failed", secrets: {} }));
+      expect(await stored(fresh)).toMatchObject({ status: "failed", provider_message_id: null, ...cleared });
+    });
+
+    test("without an observed time the completion is the recording time, never earlier than the start", async () => {
+      // Started, by the caller's clock, two minutes from now: inside the permitted skew.
+      const startedAt = new Date(Date.now() + 120_000);
+      const { id } = await ok(begin(actors.ada, verificationEmail({ startedAt })));
+      await ok(complete(actors.ada, { id, status: "accepted", secrets: {} }));
+      const [row] = await rows("email_log", "id = $1", [id]);
+      expect(row.completed_at).toEqual(startedAt);
+
+      const { id: usual } = await ok(begin(actors.ada, verificationEmail()));
+      const before = Date.now();
+      await ok(complete(actors.ada, { id: usual, status: "accepted", secrets: {} }));
+      const [recorded] = await rows("email_log", "id = $1", [usual]);
+      expect(recorded.completed_at >= recorded.started_at).toBe(true);
+      expect(Math.abs(recorded.completed_at.getTime() - before)).toBeLessThan(60_000);
+    });
+
+    describe("competing completions", () => {
+      const ROUNDS = 12;
+      const sendingAttempt = async (overrides) => (await ok(begin(actors.ada, verificationEmail(overrides)))).id;
+      const stored = async (id) => (await rows("email_log", "id = $1", [id]))[0];
+      /** Every call at once; `{ value }` or `{ error }` each, in the order given. */
+      const together = (id, observations) =>
+        Promise.all(observations.map((observation) => complete(actors.ada, { id, secrets: {}, ...observation })));
+      const written = (results) => results.filter((result) => result.value?.duplicate === false);
+      const duplicates = (results) => results.filter((result) => result.value?.duplicate === true);
+      const codes = (results) => results.filter((result) => result.error).map((result) => result.error.code);
+
+      test("the identical observation, ten times at once: one write, nine duplicates", async () => {
+        const id = await sendingAttempt();
+        const results = await together(id, Array(10).fill({ status: "accepted", providerMessageId: "msg_1" }));
+        expect(codes(results)).toEqual([]);
+        expect(written(results)).toHaveLength(1);
+        expect(duplicates(results)).toHaveLength(9);
+        expect(await stored(id)).toMatchObject({ status: "accepted", provider_message_id: "msg_1" });
+      });
+
+      test("different final observations: one is recorded, the rest are its duplicates or conflicts, and it is not overwritten", async () => {
+        const accepted = { status: "accepted", providerMessageId: "msg_a" };
+        const failed = { status: "failed", errorCode: "BOUNCED" };
+        for (let round = 0; round < ROUNDS; round += 1) {
+          const id = await sendingAttempt();
+          const observations = [accepted, failed, accepted, failed, accepted, failed];
+          const results = await together(id, observations);
+          expect(written(results)).toHaveLength(1);
+          const winner = observations[results.indexOf(written(results)[0])];
+          // Whoever reported what the winner recorded is told so; the others conflict.
+          results.forEach((result, index) => {
+            if (result.value?.duplicate === false) return;
+            if (observations[index] === winner) expect(result.value).toEqual({ id, duplicate: true });
+            else expect(result.error?.code).toBe("COMPLETION_CONFLICT");
+          });
+          const row = await stored(id);
+          expect(row).toMatchObject(
+            winner === accepted
+              ? { status: "accepted", provider_message_id: "msg_a", error_code: null }
+              : { status: "failed", provider_message_id: null, error_code: "BOUNCED" },
+          );
+        }
+      });
+
+      test("unknown against accepted: accepted is final either way, as the first write or as the resolution", async () => {
+        for (let round = 0; round < ROUNDS; round += 1) {
+          const id = await sendingAttempt();
+          const [unknown, accepted] = await together(id, [
+            { status: "unknown", errorCode: "TIMEOUT", errorMessage: "Request timed out" },
+            { status: "accepted", providerMessageId: "msg_a" },
+          ]);
+          expect(accepted.value).toEqual({ id, duplicate: false });
+          if (unknown.error) {
+            // Accepted was recorded first.
+            expect(unknown.error.code).toBe("COMPLETION_CONFLICT");
+          } else {
+            // Unknown was recorded first, and accepted resolved it.
+            expect(unknown.value).toEqual({ id, duplicate: false });
+          }
+          expect(await stored(id)).toMatchObject({
+            status: "accepted",
+            provider_message_id: "msg_a",
+            error_code: null,
+            error_message: null,
+          });
+        }
+      });
+
+      test("two resolutions of unknown: one wins; the other is its duplicate only when it says the same", async () => {
+        for (let round = 0; round < ROUNDS; round += 1) {
+          const id = await sendingAttempt();
+          await ok(complete(actors.ada, { id, status: "unknown", providerMessageId: "msg_pending", errorCode: "TIMEOUT", secrets: {} }));
+
+          const observations = [{ status: "accepted" }, { status: "failed", errorCode: "BOUNCED" }, { status: "accepted" }];
+          const results = await together(id, observations);
+          expect(written(results)).toHaveLength(1);
+          const winner = observations[results.indexOf(written(results)[0])];
+          results.forEach((result, index) => {
+            if (result.value?.duplicate === false) return;
+            if (observations[index].status === winner.status) expect(result.value).toEqual({ id, duplicate: true });
+            else expect(result.error?.code).toBe("COMPLETION_CONFLICT");
+          });
+          expect(await stored(id)).toMatchObject({
+            status: winner.status,
+            // Kept from the unknown it resolved, whoever won.
+            provider_message_id: "msg_pending",
+            error_code: winner.errorCode ?? null,
+          });
+        }
+      });
+
+      test("a time before the start never gets written, whatever it races", async () => {
+        const startedAt = new Date(Date.now() - 60_000);
+        const early = new Date(startedAt.getTime() - 1_000);
+        for (let round = 0; round < ROUNDS; round += 1) {
+          const id = await sendingAttempt({ startedAt });
+          const [invalid, valid, invalidSame] = await together(id, [
+            { status: "failed", completedAt: early },
+            { status: "accepted", providerMessageId: "msg_a" },
+            { status: "accepted", providerMessageId: "msg_a", completedAt: early },
+          ]);
+          expect(valid.value).toEqual({ id, duplicate: false });
+          // Judged against the attempt as it was found: still sending (the time), or already accepted (the conflict).
+          for (const refused of [invalid, invalidSame]) {
+            expect(["INVALID_RECORD", "COMPLETION_CONFLICT"]).toContain(refused.error?.code);
+            if (refused.error.code === "INVALID_RECORD") {
+              expect(refused.error.issues).toEqual([{ path: "completedAt", code: "before_start" }]);
+            }
+          }
+          const row = await stored(id);
+          expect(row).toMatchObject({ status: "accepted", provider_message_id: "msg_a" });
+          expect(row.completed_at >= row.started_at).toBe(true);
+        }
+      });
+
+      test("no completion is ever reported as a storage failure by a race", async () => {
+        const id = await sendingAttempt();
+        const results = await together(id, [
+          ...Array(4).fill({ status: "unknown", errorCode: "TIMEOUT" }),
+          ...Array(4).fill({ status: "accepted", providerMessageId: "msg_a" }),
+          ...Array(4).fill({ status: "failed", errorCode: "BOUNCED" }),
+        ]);
+        expect(codes(results).filter((code) => code !== "COMPLETION_CONFLICT")).toEqual([]);
+        // At most two writes: the first observation, and one resolution when that was unknown.
+        expect(written(results).length).toBeGreaterThanOrEqual(1);
+        expect(written(results).length).toBeLessThanOrEqual(2);
+        expect(["accepted", "failed"]).toContain((await stored(id)).status);
+      });
+    });
+
     test("retries form a chain with numbered attempts, the original and the retried attempt", async () => {
       const first = await ok(begin(actors.ada, verificationEmail()));
       await ok(complete(actors.ada, { id: first.id, status: "failed", secrets: {} }));
@@ -615,6 +856,8 @@ describe.skipIf(!configured)("logs integration", () => {
         Array.from({ length: 6 }, () => begin(actors.ada, verificationEmail({ recordKey: "same-retry", previousAttemptId: results.find((r) => r.value).value.id }))),
       );
       expect(new Set(identical.map((result) => result.value.id)).size).toBe(1);
+      expect(identical.filter((result) => !result.value.duplicate)).toHaveLength(1);
+      expect(identical.filter((result) => result.value.duplicate)).toHaveLength(5);
       const numbers = (await rows("email_log")).map((row) => row.attempt_number).sort();
       expect(numbers).toEqual([1, 2, 3]);
     });

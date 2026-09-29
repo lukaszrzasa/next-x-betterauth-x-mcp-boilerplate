@@ -1,5 +1,5 @@
 import "server-only";
-import { adminRoutes } from "@/app/(AdminModule)/_/routes";
+import { appRoutes } from "@/src/lib/app/routes";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 import { createPageFactory } from "@/src/lib/access/page";
 import { authorize } from "@/src/lib/access/routes";
@@ -13,7 +13,7 @@ export const { page, guard, redirectRefused } = createPageFactory({
   signIn: authRoutes.signIn.href,
   // The dashboard if the viewer may open it, otherwise the panel.
   denied: (session) =>
-    authorize(session.user, adminRoutes.dashboard.access)
-      ? adminRoutes.dashboard.href
+    authorize(session.user, appRoutes.dashboard.access)
+      ? appRoutes.dashboard.href
       : authRoutes.panel.href,
 });

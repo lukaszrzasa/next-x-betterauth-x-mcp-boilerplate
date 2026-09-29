@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { appRoutes } from "@/app/_/routes";
+import { appRoutes } from "@/src/lib/app/routes";
 import { appName } from "@/src/lib/config";
 import { cn } from "@/src/lib/utils";
 

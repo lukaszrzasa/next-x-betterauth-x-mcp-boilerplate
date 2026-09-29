@@ -6,7 +6,7 @@ import { authorize, type RouteDef } from "./routes";
 
 /**
  * Page factory bound to the application's redirect targets, which the app
- * supplies (`app/_/access.ts`); this module knows no routes of its own.
+ * supplies (`src/lib/app/access.ts`); this module knows no routes of its own.
  */
 export type PageFactoryOptions = {
   /** Where guests go. */

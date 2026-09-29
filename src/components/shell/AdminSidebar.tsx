@@ -24,7 +24,7 @@ import {
   useSidebar,
 } from "@/src/components/ui/sidebar";
 import { isRouteActive, type RouteIcon } from "@/src/lib/access/routes";
-import { visibleNavigation } from "@/app/_/navigation";
+import { visibleNavigation } from "@/src/lib/app/navigation";
 import { AppBrand } from "./AppBrand";
 import { useViewer } from "./ViewerProvider";
 

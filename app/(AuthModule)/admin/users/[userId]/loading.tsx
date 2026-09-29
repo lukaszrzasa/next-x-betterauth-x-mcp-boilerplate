@@ -1,6 +1,6 @@
 import { Skeleton } from "@/src/components/ui/skeleton";
-import { AppBreadcrumbs } from "@/app/_/shell/AppBreadcrumbs";
-import { adminRoutes } from "@/app/(AdminModule)/_/routes";
+import { AppBreadcrumbs } from "@/src/components/shell/AppBreadcrumbs";
+import { appRoutes } from "@/src/lib/app/routes";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 function SectionSkeleton({ rows }: { rows: number }) {
@@ -28,7 +28,7 @@ export default function UserLoading() {
     <>
       <AppBreadcrumbs
         items={[
-          { label: "Admin", href: adminRoutes.dashboard.href },
+          { label: "Admin", href: appRoutes.dashboard.href },
           { label: authRoutes.adminUsers.label, href: authRoutes.adminUsers.href },
           { label: "User" },
         ]}

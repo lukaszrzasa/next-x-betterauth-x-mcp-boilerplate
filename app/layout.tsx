@@ -3,12 +3,12 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
-import { AppShell } from "@/app/_/shell/AppShell";
+import { AppShell } from "@/src/components/shell/AppShell";
 import {
   SIDEBAR_COOKIE_NAME,
   readSidebarState,
-} from "@/app/_/shell/sidebarState";
-import { ViewerProvider } from "@/app/_/shell/ViewerProvider";
+} from "@/src/components/shell/sidebarState";
+import { ViewerProvider } from "@/src/components/shell/ViewerProvider";
 import { ConfirmDialogRoot } from "@/src/components/feedback/ConfirmDialog";
 import { ThemeProvider } from "@/src/components/theme/ThemeProvider";
 import { ActionProvider } from "@/src/lib/actions";

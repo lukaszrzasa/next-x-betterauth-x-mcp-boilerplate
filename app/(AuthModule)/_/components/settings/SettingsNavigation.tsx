@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isRouteActive, type RouteDef } from "@/src/lib/access/routes";
-import { AppBreadcrumbs } from "@/app/_/shell/AppBreadcrumbs";
-import { appRoutes } from "@/app/_/routes";
+import { AppBreadcrumbs } from "@/src/components/shell/AppBreadcrumbs";
+import { appRoutes } from "@/src/lib/app/routes";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 type SettingsPage = RouteDef & { label: string };

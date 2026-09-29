@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { UserXIcon } from "lucide-react";
 import { buttonVariants } from "@/src/components/ui/button";
-import { useViewer } from "@/app/_/shell/ViewerProvider";
+import { useViewer } from "@/src/components/shell/ViewerProvider";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 /** The ID is unknown or malformed. Never an empty editable form. */

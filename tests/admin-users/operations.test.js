@@ -121,7 +121,7 @@ mock.module("../../src/lib/redis/index.ts", () => ({
 mock.module("../../src/lib/email/index.tsx", () => ({ sendTwoFactorOtpEmail: async () => {} }));
 mock.module("next/headers", () => ({ headers: async () => requestHeaders }));
 mock.module("next/cache", () => ({ revalidatePath: () => {} }));
-mock.module("../../app/(LogsModule)/_/db/staffLogService.ts", () => ({ recordStaffLog }));
+mock.module("../../app/(LogsModule)/admin/_/operations/staff/recordStaffLog.ts", () => ({ recordStaffLog }));
 
 // ---------------------------------------------------------------------------
 // Persistence seams

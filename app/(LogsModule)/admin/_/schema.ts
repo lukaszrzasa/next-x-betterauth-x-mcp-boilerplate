@@ -6,7 +6,6 @@ import {
   staffLogResourceTypeSchema,
 } from "@/app/(LogsModule)/_/staffLog/schema";
 import { EMAIL_LOG_STATUSES } from "@/app/(LogsModule)/_/types";
-import type { ActorView } from "./types";
 
 /**
  * Read contracts of the admin lists and the email dialog. The list schemas
@@ -132,11 +131,6 @@ export const staffLogsQuerySchema = z
     resourceId: z.union([z.literal(""), staffLogIdSchema]),
   })
   .superRefine(refineRange);
-
-/** Columns of an actor/requester snapshot, projected as stored. */
-export function toActorView(kind: string, id: string | null, label: string): ActorView {
-  return { kind, id: kind === "anonymous" ? null : id, label };
-}
 
 // ---------------------------------------------------------------------------
 // Types

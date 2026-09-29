@@ -8,7 +8,7 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@/src/components/ui/sidebar";
-import { adminRoutes } from "@/app/(AdminModule)/_/routes";
+import { appRoutes } from "@/src/lib/app/routes";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 import { AdminSidebar } from "./AdminSidebar";
 import { AppHeader } from "./AppHeader";
@@ -22,7 +22,7 @@ function isUnder(pathname: string, prefix: string): boolean {
 /** Which chrome a path receives: presentation only, access is decided per page. */
 export function getShellMode(pathname: string): ShellMode {
   if (isUnder(pathname, authRoutes.views.href)) return "auth";
-  if (isUnder(pathname, adminRoutes.dashboard.href)) return "admin";
+  if (isUnder(pathname, appRoutes.dashboard.href)) return "admin";
   return "app";
 }
 

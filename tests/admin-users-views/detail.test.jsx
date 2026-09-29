@@ -40,7 +40,7 @@ const React = await import("react");
 const { render, fireEvent, screen, cleanup, waitFor, within, act } = await import("@testing-library/react");
 const { ActionProvider } = await import("../../src/lib/actions");
 const { ConfirmDialogRoot } = await import("../../src/components/feedback/ConfirmDialog");
-const { ViewerProvider } = await import("../../app/_/shell/ViewerProvider");
+const { ViewerProvider } = await import("../../src/components/shell/ViewerProvider");
 const { UserDetail } = await import("../../app/(AuthModule)/admin/_/components/users/detail/UserDetail");
 const { USER_ACTIONS } = await import("../../app/(AuthModule)/admin/_/types");
 

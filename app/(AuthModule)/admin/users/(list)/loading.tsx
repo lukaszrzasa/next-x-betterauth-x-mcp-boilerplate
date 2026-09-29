@@ -1,7 +1,7 @@
 import { DataTableSkeleton } from "@/src/components/data-table/DataTableSkeleton";
 import { Skeleton } from "@/src/components/ui/skeleton";
-import { AppBreadcrumbs } from "@/app/_/shell/AppBreadcrumbs";
-import { adminRoutes } from "@/app/(AdminModule)/_/routes";
+import { AppBreadcrumbs } from "@/src/components/shell/AppBreadcrumbs";
+import { appRoutes } from "@/src/lib/app/routes";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 import { USERS_COLUMN_SKELETON_WIDTHS } from "@/app/(AuthModule)/admin/_/components/users/list/usersColumnWidths";
 
@@ -9,7 +9,7 @@ export default function UsersLoading() {
   return (
     <>
       <AppBreadcrumbs
-        items={[{ label: "Admin", href: adminRoutes.dashboard.href }, authRoutes.adminUsers]}
+        items={[{ label: "Admin", href: appRoutes.dashboard.href }, authRoutes.adminUsers]}
       />
       <div className="ui:flex ui:flex-col ui:gap-6">
         <div className="ui:flex ui:flex-col ui:gap-2">

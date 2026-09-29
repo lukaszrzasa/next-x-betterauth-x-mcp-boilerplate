@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useViewer } from "@/app/_/shell/ViewerProvider";
+import { useViewer } from "@/src/components/shell/ViewerProvider";
 import { cn } from "@/src/lib/utils";
 import { resolveEntityLink } from "@/app/(LogsModule)/admin/_/entityNavigation";
 import type { ActorView, EntityView } from "@/app/(LogsModule)/admin/_/types";

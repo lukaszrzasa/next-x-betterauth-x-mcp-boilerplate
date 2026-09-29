@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { page, redirectRefused } from "@/app/_/access";
-import { AppBreadcrumbs } from "@/app/_/shell/AppBreadcrumbs";
-import { adminRoutes } from "@/app/(AdminModule)/_/routes";
+import { page, redirectRefused } from "@/src/lib/app/access";
+import { AppBreadcrumbs } from "@/src/components/shell/AppBreadcrumbs";
+import { appRoutes } from "@/src/lib/app/routes";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 import { UserDetail } from "@/app/(AuthModule)/admin/_/components/users/detail/UserDetail";
 import { getUserQuery } from "@/app/(AuthModule)/admin/_/queries";
@@ -49,7 +49,7 @@ export default page<PageProps<"/admin/users/[userId]">>(
     return (
       <>
         <AppBreadcrumbs
-          items={[{ label: "Admin", href: adminRoutes.dashboard.href }, usersCrumb, { label: user.name }]}
+          items={[{ label: "Admin", href: appRoutes.dashboard.href }, usersCrumb, { label: user.name }]}
         />
         <UserDetail user={user} listUrl={listUrl} />
       </>

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 mock.module("server-only", () => ({}));
 const recordStaffLog = mock(async () => {});
-mock.module("../../app/(LogsModule)/_/db/staffLogService.ts", () => ({ recordStaffLog }));
+mock.module("../../app/(LogsModule)/admin/_/operations/staff/recordStaffLog.ts", () => ({ recordStaffLog }));
 
 const { banned, emailUpdated, logged, nameUpdated, sessionsRetried, sessionsRevoked, unbanned } = await import(
   "../../app/(AuthModule)/admin/_/services/staffLog.ts"

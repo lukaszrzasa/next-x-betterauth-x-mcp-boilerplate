@@ -1,7 +1,8 @@
 "use server";
 
 import { toServerAction } from "@/src/lib/auth/builders/adapters";
-import { getEmailLogOperation, listStaffLogsOperation } from "./operations/logQueries";
+import { getEmailLogOperation } from "./operations/email/getEmailLog";
+import { listStaffLogsOperation } from "./operations/staff/listStaffLogs";
 
 /**
  * Reads that load on demand in the browser: the email record behind

@@ -81,7 +81,8 @@ const { loadAdminUserOperations } = await import("../helpers/authOperations.js")
 const { mutations, emails } = await loadAdminUserOperations();
 const { defineAction } = await import("../../src/lib/auth/builders/actionBuilder.ts");
 const { sendTwoFactorOtpEmail, EmailDeliveryError } = await import("../../src/lib/email/index.tsx");
-const logQueries = await import("../../app/(LogsModule)/admin/_/operations/logQueries.ts");
+const { loadLogReadOperations } = await import("../helpers/logOperations.js");
+const logQueries = await loadLogReadOperations();
 const { EMAIL_LOGS_QUERY_DEFAULTS, STAFF_LOGS_QUERY_DEFAULTS } = await import("../../app/(LogsModule)/admin/_/queryState.ts");
 
 const pool = configured ? new Pool({ connectionString: TEST_DATABASE_URL }) : null;
@@ -293,6 +294,52 @@ describe.skipIf(!configured)("logs wiring", () => {
     const [attempt] = await emailRows("nokey@example.com");
     expect(attempt).toMatchObject({ status: "failed", error_code: "configuration", requester_kind: "anonymous" });
     expect(attempt.error_message).toContain("RESEND_API_KEY is not set");
+  });
+
+  test("a completion that cannot be written changes nothing about the delivery; the attempt stays sending", async () => {
+    // The attempt can begin, and no observation can be recorded.
+    await pool.query("ALTER TABLE email_log ADD CONSTRAINT test_no_completion CHECK (status = 'sending') NOT VALID");
+    const errors = console.error;
+    try {
+      const probe = defineAction({
+        name: "test.sendCode",
+        handler: () => sendTwoFactorOtpEmail({ to: "uncompleted@example.com", code: "774411", expiresInMinutes: 5 }),
+      });
+
+      provider.answer = async () => ({ data: { id: "msg_uncompleted" }, error: null, headers: {} });
+      errors.mockClear();
+      expect(await run(actors.root, probe, undefined)).toEqual({ id: "msg_uncompleted" });
+      const reported = errors.mock.calls.filter(([line]) => String(line).includes("email log not completed"));
+      expect(reported).toHaveLength(1);
+      expect(JSON.stringify(reported)).toContain("STORAGE_FAILED");
+      expect(JSON.stringify(errors.mock.calls)).not.toContain("774411");
+
+      // A refusal is still the caller's refusal, not the log's failure.
+      provider.answer = async () => ({
+        data: null,
+        error: { name: "validation_error", statusCode: 422, message: "Refused." },
+        headers: {},
+      });
+      const error = await run(actors.root, probe, undefined).catch((caught) => caught);
+      expect(error.cause).toBeInstanceOf(EmailDeliveryError);
+      expect(error.cause.status).toBe("failed");
+      expect(provider.calls).toHaveLength(2);
+    } finally {
+      await pool.query("ALTER TABLE email_log DROP CONSTRAINT test_no_completion");
+    }
+
+    const attempts = await emailRows("uncompleted@example.com");
+    expect(attempts).toHaveLength(2);
+    for (const attempt of attempts) {
+      expect(attempt).toMatchObject({
+        status: "sending",
+        completed_at: null,
+        completion_digest: null,
+        provider_message_id: null,
+        error_code: null,
+        requester_id: actors.root.id,
+      });
+    }
   });
 
   test("a log that cannot be written never stops the email", async () => {

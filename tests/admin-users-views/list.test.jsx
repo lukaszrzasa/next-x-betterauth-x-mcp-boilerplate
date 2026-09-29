@@ -12,7 +12,7 @@ mock.module("next/navigation", () => ({
 
 const React = await import("react");
 const { render, fireEvent, screen, cleanup, within } = await import("@testing-library/react");
-const { ViewerProvider } = await import("../../app/_/shell/ViewerProvider");
+const { ViewerProvider } = await import("../../src/components/shell/ViewerProvider");
 const { UsersList } = await import("../../app/(AuthModule)/admin/_/components/users/list/UsersList");
 const { USERS_QUERY_DEFAULTS } = await import("../../app/(AuthModule)/admin/_/queryState");
 const { SEARCH_DEBOUNCE_MS } = await import("../../src/lib/data-table/useTableNavigation");

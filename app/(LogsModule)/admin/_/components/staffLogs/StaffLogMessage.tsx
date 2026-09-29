@@ -1,12 +1,12 @@
 "use client";
 
+import {authRoutes} from "@/app/(AuthModule)/_/routes";
+import type {StaffLogBlockView} from "@/app/(LogsModule)/_/staffLog/schema";
+import {LogTime} from "@/app/(LogsModule)/admin/_/components/shared/LogTime";
+import {useViewer} from "@/src/components/shell/ViewerProvider";
+import {buildRoute} from "@/src/lib/routes";
+import {cn} from "@/src/lib/utils";
 import Link from "next/link";
-import { buildRoute } from "@/src/lib/routes";
-import { cn } from "@/src/lib/utils";
-import { authRoutes } from "@/app/(AuthModule)/_/routes";
-import { useViewer } from "@/app/_/shell/ViewerProvider";
-import type { StaffLogBlockView } from "@/app/(LogsModule)/_/staffLog/schema";
-import { LogTime } from "@/app/(LogsModule)/admin/_/components/shared/LogTime";
 
 const linkClass = "ui:font-medium ui:text-foreground ui:underline ui:underline-offset-4 ui:hover:text-primary";
 
@@ -53,8 +53,7 @@ function Block({ block }: { block: StaffLogBlockView }) {
     case "unsupported":
       return <span className="ui:text-muted-foreground ui:italic">[unsupported content]</span>;
     default: {
-      const unreachable: never = block;
-      return unreachable;
+      return block;
     }
   }
 }

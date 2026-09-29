@@ -28,7 +28,7 @@ The handler is the use case, read top to bottom: what is checked first and which
 
 Every persistence entry function an operation calls requires the appropriate branded context as its first argument: `findProfile(ctx)`, `selectNewAddress(ctx, selection)`. This applies to reads and writes even when the query does not use any context fields. Context must not be optional, defaulted, replaced with a plain user ID, fabricated, or supplied through a type assertion. Builders resolve identity and run the configured validation, permission, and verification checks before handing context to the handler, which passes it on. Feature code must not construct contexts; restrict access to the context factory to trusted infrastructure. This is an intentional safeguard against accidental direct database calls, not proof that any arbitrary context has passed every possible permission check. A handler can rely on the gates its definition declared; rules about the target of the call, lifecycle state and fresh security state remain its own. Two documented exceptions take no context, because none exists where they run: the provider's `afterEmailVerification` hook (`cancelCorrectionsForVerifiedAddress`) and the shared infrastructure under `src/lib/auth`.
 
-A short operation is written directly in its handler. A substantial one can have a named workflow function in the same file or directory (`finalizeNewAddress`). One substantial use case per file; related files share a feature directory; trivial variants of one effect can share a file. Extract additional helpers only for meaningful reuse or complexity, never as a forwarding layer. Pure calculations and private query helpers inside a persistence module do not need artificial context parameters; they must not become exported context-free database entry points.
+A short operation is written directly in its handler. A substantial one can have a named workflow function in the same file or directory (`finalizeNewAddress`). One substantial use case per file; related files share a feature directory; trivial variants of one effect can share a file. Extract additional helpers only for meaningful reuse or complexity, never as a forwarding layer. Pure calculations and query helpers shared between files inside `_/db/` do not need artificial context parameters. ESLint (`persistence/require-context`) checks the boundary: importing a database function from outside `_/db/` requires a mandatory, non-defaulted branded context as its first parameter. Type-only imports and data exports are allowed; aliases, re-exports, namespace imports and statically resolved dynamic imports are checked. Every callable overload must satisfy the contract. The provider verification hook has a documented, local lint suppression because no operation context exists there. This rule uses TypeScript type information; TypeScript then checks that callers actually supply the required context.
 
 ### Definitions and entry points
 
@@ -54,11 +54,18 @@ content is about that module even when other code reads it - lives in the module
 `_`, not in `src/lib`. Only a core capability's infrastructure (Better Auth, the
 permission definitions) is global; a module's routes are never.
 
-The application as a whole has one composition scope, `app/_`, for what belongs to
-no single module and composes several: the shell (`shell/`), the navigation
+A `_` directory is module-only: there is no `app/_`. What belongs to no single
+module and composes several is global and lives in `src`: the shell
+(`src/components/shell/`) and, in `src/lib/app/`, the navigation
 (`navigation.ts`), the page factory bound to the app's redirect targets
-(`access.ts`) and the app-level routes (`routes.ts`). It may import any module's
-module-wide `_`; modules do not import it.
+(`access.ts`) and the app-level routes (`routes.ts`). These may import any
+module's module-wide `_`.
+
+Every page belongs to a module, with two exceptions that belong to none and
+sit directly under `app/`: the homepage (`app/page.tsx`) and the dashboard
+(`app/admin/page.tsx`). Their routes are in `src/lib/app/routes.ts`. There
+is no admin module: a dashboard page with behavior of its own is its
+module's, under that module's `admin/`.
 
 - Module-wide `_` is available to both ordinary application code and admin code.
 - `admin/_` is available only to code inside an `admin/` scope. Non-admin code cannot import it, including through re-exports or type-only imports.
@@ -95,9 +102,9 @@ app/
         components/
         hooks/
         utils/
-app/_/                         # application composition: shell, navigation, access binding
 src/
   lib/
+    app/                         # application composition: app routes, navigation, access binding
     access/                      # declarative page access: defineRoutes, authorize, page factory
     auth/                        # one global Better Auth configuration
     actions/                     # reusable action runtime/builders
@@ -109,6 +116,7 @@ src/
     realtime/                    # WebSocket transport
     date/                        # canonical date helpers
   components/                    # globally reusable UI
+    shell/                       # the application shell: sidebar, header, viewer context
 ```
 
 The two scope locations and dependency direction are constraints. Create their subdirectories and files when used; the tree describes their homes, not a requirement to create empty scaffolding. Split large `db/` or `operations/` directories into named capability subdirectories within the same scope. Keep one `actions.ts` per scope by default; split exports by capability only when navigation becomes difficult. Do not flatten everything into `_`, and do not introduce extra underscore scopes as a size-management technique.
@@ -147,8 +155,8 @@ Routes are module data: each module declares its page paths once in
 enrollment allow-list, email links, navigation and breadcrumbs. This holds for
 the auth module too: its Better Auth configuration is global infrastructure in
 `src/lib/auth`, but its routes live with the module, and `src/lib/auth` imports
-them from there. Pages the application owns as a whole (the homepage) are in
-`app/_/routes.ts`. A page path never appears as a string literal outside its
+them from there. Pages the application owns as a whole (the homepage, the
+dashboard) are in `src/lib/app/routes.ts`. A page path never appears as a string literal outside its
 table, so renaming a page folder is one edit plus whatever the type checker flags.
 
 The table is one `defineRoutes` call. An entry is either a plain path (a flow
@@ -176,7 +184,7 @@ buildRoute("/docs/[...slug]", { slug: ["guide", "setup"] });        // "/docs/gu
 The root layout (`app/layout.tsx`) resolves the request once - the fresh
 session and the `sidebar_state` cookie - and mounts `ViewerProvider` with a
 minimal viewer (`name`, `email`, `image`, `role`, or `null` for guests) above
-the persistent client shell (`app/_/shell/AppShell.tsx`). Nothing is
+the persistent client shell (`src/components/shell/AppShell.tsx`). Nothing is
 passed down as props: the account menu, the sidebar and any client code read
 `useViewer()`, which also exposes `can(access)` bound to the current roles. The
 shell decides its chrome from the pathname alone: authentication views
@@ -191,11 +199,11 @@ Page access is declared, not coded. A module's route table
 must hold, evaluated through the shared `hasRole`/`can`, so comma-separated
 roles are honoured everywhere. `authorize(viewer, access)` in
 `src/lib/access/routes.ts` is the only evaluator; navigation
-(`app/_/navigation.ts`, groups composed from the modules' declarations) and
+(`src/lib/app/navigation.ts`, groups composed from the modules' declarations) and
 the page guard both call it, so a link is shown exactly when its page opens.
 
 Pages are written as `export default page(route, render)` from the
-server-only `app/_/access.ts`, which binds the generic factory in
+server-only `src/lib/app/access.ts`, which binds the generic factory in
 `src/lib/access/page.tsx` to the application's redirect targets: the factory
 reads the fresh session, enforces the route's `access` and only then renders. Guests go to sign-in;
 refused viewers go to the dashboard if they may open it, otherwise the panel.
@@ -485,7 +493,33 @@ The logs module (`app/(LogsModule)`, contracts in its `_/README.md`) owns
 `staff_log` and `email_log`, their writers and the admin lists
 `/admin/staff-logs` and `/admin/email-logs`. The sidebar lists them under
 "System": navigation categories are staff-facing information architecture
-composed in `app/_/navigation.ts` and may hold pages of several modules.
+composed in `src/lib/app/navigation.ts` and may hold pages of several modules.
+
+**Responsibilities** (decision record: ADR 0004).
+
+- The three recorders (`recordStaffLog`, `beginEmailLog`,
+  `completeEmailLog`) are internal operations: plain server-only functions
+  called by a trusted operation with the context it already holds. They run
+  no second guard and are never a Server Action, endpoint or MCP tool. The
+  email recorders are module-wide (`_/operations/email/`), since the global
+  sender calls them. The staff recorder and its insert are in `admin/_`
+  with the reads: staff act in the dashboard, so only admin code can write
+  an entry. The four reads (`admin/_/operations/`) are `defineAction`
+  operations, each admin-only by itself.
+- An operation validates, redacts, fingerprints and decides what the facts
+  mean (a replay, a conflict, a stale predecessor, not found). `db/` gets
+  prepared values, never raw input or a declared secret, and returns a row
+  or null, an ID or none, or a page of rows. Lint keeps validation,
+  redaction and the operations out of the module's `db/`.
+- Coordination is chosen per write. A staff entry and a first email attempt
+  are single inserts; the unique record key arbitrates a race. A completion
+  is one conditional update whose `WHERE` clause is the allowed transition
+  and the time guard, followed by a read only when nothing was written. A
+  retry is the one transaction with a row lock, on the chain's original:
+  whether the predecessor is still the latest attempt has to be decided on
+  rows that cannot move, so `db/` opens the transaction and hands the
+  operation the reads and the insert bound to it. Reads use the shared
+  read-only snapshot, so a count and its page agree; that is not a lock.
 
 **Staff log** (decision record: ADR 0003).
 
@@ -528,7 +562,9 @@ composed in `app/_/navigation.ts` and may hold pages of several modules.
   and idempotency digests. The producer declares its secrets; links and
   denied keys are removed regardless. There is no raw-content storage.
 - Every write is idempotent on a caller key compared by a digest of the
-  sanitized payload; retries form a chain allocated under a lock.
+  sanitized payload; retries form a chain allocated under a lock on its
+  original attempt. A completion is compared by the digest of its sanitized
+  observation: the identical one is a duplicate and rewrites nothing.
 - The reads are admin-only, not MCP-eligible, without step-up. The list is
   SSR; details load on demand into a dialog selected by `?log=<id>`.
 

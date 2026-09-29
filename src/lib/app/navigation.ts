@@ -4,7 +4,7 @@ import {
   type RouteIcon,
   type Viewer,
 } from "@/src/lib/access/routes";
-import { adminRoutes } from "@/app/(AdminModule)/_/routes";
+import { appRoutes } from "@/src/lib/app/routes";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 import { logsRoutes } from "@/app/(LogsModule)/_/routes";
 
@@ -24,7 +24,7 @@ export type NavigationGroup = {
 };
 
 export const navigation: readonly NavigationGroup[] = [
-  { label: "General", items: [adminRoutes.dashboard, authRoutes.adminUsers] },
+  { label: "General", items: [appRoutes.dashboard, authRoutes.adminUsers] },
   { label: "System", items: [logsRoutes.staffLogs, logsRoutes.emailLogs] },
 ];
 

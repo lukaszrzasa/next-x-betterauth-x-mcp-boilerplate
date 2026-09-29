@@ -1,6 +1,7 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import dbContextRule from "./tooling/eslint/db-context.mjs";
 
 /**
  * Feature code reaches the database through a service that takes a `Ctx`,
@@ -41,11 +42,11 @@ const contextTypesOnly = {
     "Import context types only. Runtime contexts are constructed by defineAction.",
 };
 
-const PAGE_FACTORY_MODULE = "@/app/_/access";
+const PAGE_FACTORY_MODULE = "@/src/lib/app/access";
 
 /**
  * Every page under an `admin` segment is written as
- * `export default page(route, render)` from `@/app/_/access`, so its
+ * `export default page(route, render)` from `@/src/lib/app/access`, so its
  * access rule is the declared route's and cannot be left out. Anything else
  * as the default export is an error.
  */
@@ -94,6 +95,15 @@ const adminPageRule = {
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+
+  {
+    files: ["**/*.{ts,tsx,mts}"],
+    languageOptions: {
+      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
+    },
+    plugins: { persistence: { rules: { "require-context": dbContextRule } } },
+    rules: { "persistence/require-context": "error" },
+  },
 
   // A ternary nested in another one reads as a puzzle; use early returns,
   // a lookup object or a small helper instead.
@@ -185,6 +195,52 @@ const eslintConfig = defineConfig([
               group: ["**/_/operations/**", "**/_/services/**", "**/_/policies/**", "**/_/errors/**", "**/_/errors", "**/_/policy"],
               message:
                 "Persistence returns facts (a row, null, changed or not); workflows, policies, effects and refusals belong to the operation.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // The logs module's persistence, by the same rule. It is handed prepared
+  // values: what is redacted, what a record key's replay means and which
+  // refusal a caller gets are decided by the operation. Types may cross
+  // (a prepared row, a query's vocabulary); the code that decides may not.
+  {
+    files: ["app/(LogsModule)/**/_/db/**/*.{ts,tsx,mts}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            ...internalOnly.filter((entry) => entry.name !== "@/src/lib/db"),
+            {
+              name: "@/src/lib/email",
+              message: "Persistence sends no mail; the sender records through the operations.",
+            },
+          ],
+          patterns: [
+            noParentImports,
+            { group: ["**/lib/redis", "**/lib/redis/*"] },
+            contextTypesOnly,
+            {
+              group: ["**/_/operations/**"],
+              message:
+                "Persistence returns facts (a row, null, an ID or none); the operation decides what they mean.",
+            },
+            {
+              group: [
+                "**/_/redaction",
+                "**/_/derivation",
+                "**/_/schema",
+                "**/_/types",
+                "**/_/staffLog/schema",
+                "**/_/staffLog/types",
+                "**/_/queryState",
+              ],
+              allowTypeImports: true,
+              message:
+                "Import types only. Validation, redaction, derived values, range resolution and recorder errors belong to the operation.",
             },
           ],
         },

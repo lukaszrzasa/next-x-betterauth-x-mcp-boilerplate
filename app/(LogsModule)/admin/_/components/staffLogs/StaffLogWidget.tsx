@@ -6,7 +6,7 @@ import { Button } from "@/src/components/ui/button";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { SEARCH_DEBOUNCE_MS } from "@/src/lib/data-table/useTableNavigation";
 import { cn } from "@/src/lib/utils";
-import { useViewer } from "@/app/_/shell/ViewerProvider";
+import { useViewer } from "@/src/components/shell/ViewerProvider";
 import { logsRoutes } from "@/app/(LogsModule)/_/routes";
 import { useStaffLogs, type StaffLogsState } from "@/app/(LogsModule)/admin/_/hooks/useStaffLogs";
 import { STAFF_LOGS_QUERY_DEFAULTS } from "@/app/(LogsModule)/admin/_/queryState";

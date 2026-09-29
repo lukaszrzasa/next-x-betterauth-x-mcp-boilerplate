@@ -80,8 +80,8 @@ mock.module("../../src/lib/auth/client.ts", () => ({
 const React = await import("react");
 const { render, fireEvent, screen, cleanup, waitFor, act } =
   await import("@testing-library/react");
-const { AppShell, getShellMode } = await import("../../app/_/shell/AppShell");
-const { ViewerProvider } = await import("../../app/_/shell/ViewerProvider");
+const { AppShell, getShellMode } = await import("../../src/components/shell/AppShell");
+const { ViewerProvider } = await import("../../src/components/shell/ViewerProvider");
 
 const alice = { name: "Alice Admin", email: "alice@example.com", image: null, role: "admin" };
 const mod = { ...alice, name: "Mo Derator", role: "moderator" };

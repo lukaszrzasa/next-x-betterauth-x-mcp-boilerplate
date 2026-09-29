@@ -1,11 +1,9 @@
 import "server-only";
 
 import { toServerQuery } from "@/src/lib/auth/builders/adapters";
-import {
-  listEmailLogsOperation,
-  listStaffLogFilterOptionsOperation,
-  listStaffLogsOperation,
-} from "./operations/logQueries";
+import { listEmailLogsOperation } from "./operations/email/listEmailLogs";
+import { listStaffLogFilterOptionsOperation } from "./operations/staff/listFilterOptions";
+import { listStaffLogsOperation } from "./operations/staff/listStaffLogs";
 
 /**
  * SSR wiring for the list pages: the trusted `server-render` entry point

@@ -12,8 +12,9 @@ import {
   type AuthedCtx,
   type PublicCtx,
 } from "@/src/lib/auth/builders/context";
-import { beginEmailLog, completeEmailLog } from "@/app/(LogsModule)/_/db/emailLogService";
 import { clipText } from "@/app/(LogsModule)/_/derivation";
+import { beginEmailLog } from "@/app/(LogsModule)/_/operations/email/beginEmailLog";
+import { completeEmailLog } from "@/app/(LogsModule)/_/operations/email/completeEmailLog";
 import { serializeErrorForLog } from "@/app/(LogsModule)/_/redaction";
 import { LOG_LIMITS } from "@/app/(LogsModule)/_/schema";
 import { LogRecordingError, type EmailCompletionStatus } from "@/app/(LogsModule)/_/types";

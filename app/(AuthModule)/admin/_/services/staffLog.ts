@@ -2,7 +2,7 @@ import "server-only";
 
 import type { AuthedCtx } from "@/src/lib/auth/builders/context";
 import { errorMessage } from "@/src/lib/errorMessage";
-import { recordStaffLog } from "@/app/(LogsModule)/_/db/staffLogService";
+import { recordStaffLog } from "@/app/(LogsModule)/admin/_/operations/staff/recordStaffLog";
 import { date, text, user, value, type StaffLogBlock } from "@/app/(LogsModule)/_/staffLog/blocks";
 import type { UserMutationOutcome } from "@/app/(AuthModule)/admin/_/types";
 

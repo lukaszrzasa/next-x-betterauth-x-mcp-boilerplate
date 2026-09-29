@@ -1,4 +1,4 @@
-import { page, redirectRefused } from "@/app/_/access";
+import { page, redirectRefused } from "@/src/lib/app/access";
 import { AccountSettings } from "@/app/(AuthModule)/_/components/settings/account/AccountSettings";
 import { SESSIONS_PAGE_PARAM } from "@/app/(AuthModule)/_/components/settings/account/SessionList";
 import { requireEnrolledSession } from "@/app/(AuthModule)/_/guards";

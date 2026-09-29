@@ -16,11 +16,35 @@ rules they follow, and ADR 0003 the reasons for the staff log's shape.
 | `_/routes.ts` | `logsRoutes.staffLogs`, `logsRoutes.emailLogs` (admin only) |
 | `_/staffLog/blocks.ts` | The message blocks, their builders, `messageText` |
 | `_/staffLog/schema.ts` | Entry and block schemas, the tolerant block reader |
-| `_/db/staffLogService.ts` | `recordStaffLog` |
+| `_/staffLog/types.ts` | `StaffLogEntry`, `StaffLogError` |
 | `_/types.ts`, `_/schema.ts`, `_/redaction.ts`, `_/derivation.ts` | Email log contracts, content policy and derived values |
-| `_/db/emailLogService.ts` | `beginEmailLog`, `completeEmailLog` |
-| `admin/_/…` | List schemas, URL codecs, read services, the guarded reads, tables, the email dialog, `StaffLogWidget` |
+| `_/operations/email/beginEmailLog.ts` | `beginEmailLog`; `prepareInitiation.ts` is what it stores, `recordRetry.ts` the retry chain, `recordKeyReplay.ts` a taken key |
+| `_/operations/email/completeEmailLog.ts` | `completeEmailLog`; `prepareCompletion.ts` is what it stores |
+| `_/db/email/` | The statements: the attempt insert, the narrow attempt reads, the retry transaction, the conditional completion |
+| `admin/_/operations/staff/recordStaffLog.ts` | `recordStaffLog`; its one insert is `admin/_/db/staff/insertStaffLog.ts` |
+| `admin/_/operations/email/`, `admin/_/operations/staff/` | The four guarded reads, one per file; `email/projection.ts` maps rows to what the browser gets |
+| `admin/_/db/email/`, `admin/_/db/staff/` | The reads' SQL: projections, filters, sorting, count and page in one snapshot |
+| `admin/_/…` | List schemas, URL codecs, tables, the email dialog, `StaffLogWidget` |
 | `src/lib/db/schema/logs.ts` | `staff_log`, `email_log`; migration `drizzle/0006_logs_email_and_staff.sql` |
+
+Who does what (decision record: ADR 0004). An operation is the workflow,
+read top to bottom in its file: validation, redaction, what a record key's
+replay or a completion's refusal means, and the error the caller gets.
+`db/` is handed prepared values (never the raw input or a declared secret)
+and returns facts: a row or null, an ID or none, a page of rows. Lint keeps
+validation, redaction and the operations out of `db/`.
+
+The three recorders are internal: plain server-only functions a trusted
+operation calls with the genuine context it holds. They run no guard of
+their own, and are not Server Actions, MCP tools or HTTP endpoints. The
+four reads are guarded operations, each admin-only by itself.
+
+Scope. The email recorders are module-wide, because the global sender
+(`src/lib/email/send.ts`) calls them. Everything of the staff log that
+touches the database is in `admin/_`, the write included: staff act in the
+dashboard, so only admin code can record an entry. What stays module-wide
+is the staff log's contract (`_/staffLog/`: blocks, schemas, entry and
+error types), which has no database access.
 
 ## Staff log
 
@@ -44,7 +68,7 @@ Entries are append-only: the database refuses to update or delete one.
 ### Writing an entry
 
 ```ts
-import { recordStaffLog } from "@/app/(LogsModule)/_/db/staffLogService";
+import { recordStaffLog } from "@/app/(LogsModule)/admin/_/operations/staff/recordStaffLog";
 import { date, text, user } from "@/app/(LogsModule)/_/staffLog/blocks";
 
 await recordStaffLog(ctx, {
@@ -54,17 +78,21 @@ await recordStaffLog(ctx, {
 });
 ```
 
-- Call it from the service that performed the action, after the action is
-  confirmed, with the context that service received. The actor is
-  `ctx.user` and cannot be passed in.
+- Call it from the operation that performed the action, after the action is
+  confirmed, with the context that operation received. The actor is
+  `ctx.user` and cannot be passed in. Whether a change is a staff action
+  worth an entry is the caller's decision; the recorder does not check roles.
 - One staff action is one entry. What the action caused (sessions signed
   out, pending requests cancelled) belongs in its sentence, or nowhere.
-- It throws `StaffLogError` when the entry is invalid or cannot be stored.
-  The action already happened, so the caller does not undo it: it tells the
-  staff member that the change was made but not logged. User administration
-  does this with the `unrecorded` flag of its outcome
-  (`app/(AuthModule)/admin/_/db/users/staffLog.ts`).
-- The write is its own statement, outside the caller's transaction.
+- It throws `StaffLogError` (`_/staffLog/types.ts`) when the entry is
+  invalid or cannot be stored. An invalid entry is described by paths and
+  codes; a storage failure keeps its `cause`. The action already happened,
+  so the caller does not undo it: it tells the staff member that the change
+  was made but not logged. User administration does this with the
+  `unrecorded` flag of its outcome
+  (`logged()` in `app/(AuthModule)/admin/_/services/staffLog.ts`).
+- The write is one insert, its own statement, outside the caller's
+  transaction and any lock.
 
 ### Message blocks
 
@@ -175,9 +203,16 @@ beginEmailLog(ctx, input: BeginEmailLogInput): Promise<RecordResult>;
 completeEmailLog(ctx, input: CompleteEmailLogInput): Promise<RecordResult>;
 ```
 
-Server-only services, called by `sendEmail` with the genuine context of the
-enclosing operation. They are not Server Actions, MCP tools or HTTP
-endpoints.
+```ts
+import { beginEmailLog } from "@/app/(LogsModule)/_/operations/email/beginEmailLog";
+import { completeEmailLog } from "@/app/(LogsModule)/_/operations/email/completeEmailLog";
+```
+
+Internal server-only operations, called by `sendEmail` with the genuine
+context of the enclosing operation. They are not Server Actions, MCP tools
+or HTTP endpoints. The context of a completion is the provenance of a
+trusted call, not ownership: whoever completes an attempt need not be who
+requested it.
 
 **Requester.** Derived from `ctx` alone: an authenticated context records
 `{ kind: "user", id: ctx.user.id, label: ctx.user.name }` (redacted, clipped
@@ -211,13 +246,30 @@ optional `completedAt`, `providerMessageId`, `errorCode`, `errorMessage`,
   conflict as "already recorded" after re-reading the row if it matters.
 - A row left in `sending` is never converted; after 15 minutes the dialog
   says that no completion was recorded, and it stays filterable as sending.
+- When several apply, the answer is the first of: `NOT_FOUND`, duplicate,
+  `COMPLETION_CONFLICT`, a `completedAt` before the start
+  (`INVALID_RECORD`). A final attempt stays a conflict even when the time
+  proposed for it was too early as well.
 
-Retries: pass the chain's **latest** attempt as `previousAttemptId`. The
-recorder locks the chain's original row, rechecks the key, requires the
-predecessor to be the latest attempt (`STALE_PREDECESSOR` otherwise) and the
-recipient email and user ID to be the original's (`RECIPIENT_MISMATCH`; a
-different recipient is a new chain), then allocates the next attempt number.
-Competing retries serialize; exactly one wins. Subject and body may differ,
+A completion is one conditional `UPDATE`: the attempt's ID, a status the
+observation may be recorded from, and a time that is not before the start.
+There is no transaction and no `SELECT … FOR UPDATE` around it. Two
+completions of one attempt contend on the row inside PostgreSQL, and the
+second is evaluated against what the first committed. Only when nothing was
+written is the attempt read, to say why. A duplicate never rewrites the row,
+so its timestamps stay. The trigger on `email_log` remains the backstop.
+
+Retries: pass the chain's **latest** attempt as `previousAttemptId`. In one
+transaction the recorder answers a replay of the key first (its predecessor
+is stale by then), locks the chain's original row, rechecks the key,
+requires the predecessor to be the latest attempt (`STALE_PREDECESSOR`
+otherwise) and then the recipient email and user ID to be the original's
+(`RECIPIENT_MISMATCH`; a different recipient is a new chain), and allocates
+the next attempt number. Competing retries serialize; exactly one wins. This
+is the one write that needs a lock: the decision depends on rows that must
+not move while it is made. A first attempt is a single insert arbitrated by
+the unique key. `sendEmail` records every message as a first attempt and
+links no chains; retries are a capability for a caller that resends. Subject and body may differ,
 because a resend regenerates its tokens. The module never generates tokens,
 chooses templates or reconstructs an email from redacted content.
 
@@ -272,6 +324,8 @@ to the application log and still sends. Never record a recorder failure
 through the recorder.
 
 Recording runs in its own statements, not inside the caller's transaction.
+The conversion to `LogRecordingError` happens once, around the whole
+operation, preparation included; the persistence functions do not repeat it.
 
 ## Redaction
 
@@ -370,9 +424,12 @@ RESTRICT`. There is no delete service, retention, purge or export.
 
 ## Email list and dialog
 
-Pages are `page(logsRoutes.*, …)`. The email reads in
-`admin/_/operations/logQueries.ts` declare `roles: ["admin"]`,
-`mcpAllowed: false` and `stepUp: "none"`. The list is SSR (`queries.ts`,
+Pages are `page(logsRoutes.*, …)`. The email reads
+(`admin/_/operations/email/listEmailLogs.ts`, `getEmailLog.ts`) declare
+`roles: ["admin"]`, `mcpAllowed: false` and `stepUp: "none"`. The operation
+takes one `asOf`, resolves the range from it, asks `db/` for rows with
+instants and values, and maps them to the DTO; the record key and the
+digests are never selected. The list is SSR (`queries.ts`,
 `toServerQuery`); the dialog read is a Server Action (`actions.ts`) because
 it loads on demand, and it re-checks access itself.
 
@@ -389,9 +446,10 @@ defaults and the page redirects after authorization):
 | `status`, `recipient`, `userId` | exact matches (`recipient` lowercase) |
 
 Filters combine with AND. Relative ranges are elapsed days ending at one
-server `asOf` instant per read. Count and page share one repeatable-read,
-read-only snapshot with a 5-second statement timeout; the staff log reads
-work the same way.
+server `asOf` instant per read. Count and page (or a record and its attempt
+chain) share one repeatable-read, read-only snapshot with a 5-second
+statement timeout, opened by the `db/` function (`withReadSnapshot`); the
+staff log reads work the same way. It is a read-only snapshot, not a lock.
 
 The dialog opens from a real "View details" button (rows are not click
 targets). Opening and switching attempts push a history entry with the
@@ -410,7 +468,12 @@ only when the destination's access rule admits the viewer.
 ## Verification
 
 `bun run test` includes `tests/logs/*`, `tests/logs-views/lists.test.jsx`
-and, for the entries of user administration, `tests/admin-users/*`. The
-integration suites need `TEST_DATABASE_URL` naming a test-only PostgreSQL 18
-database distinct from `DATABASE_URL`, and skip themselves (saying so)
-otherwise. A skipped suite is not evidence.
+and, for the entries of user administration, `tests/admin-users/*`.
+`recorders.test.js` and `operations.test.js` run the operations with
+persistence mocked (order of preparation, what reaches `db/`, how its facts
+are interpreted). `integration.test.js` runs the SQL, the constraints and
+triggers, and the competing retries and completions against PostgreSQL;
+`wiring.test.js` runs the sender end to end. The integration suites need
+`TEST_DATABASE_URL` naming a test-only PostgreSQL 18 database distinct from
+`DATABASE_URL` (`wiring` also `TEST_REDIS_URL`), and skip themselves (saying
+so) otherwise. A skipped suite is not evidence.

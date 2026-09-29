@@ -1,6 +1,6 @@
-import { page } from "@/app/_/access";
-import { AppBreadcrumbs } from "@/app/_/shell/AppBreadcrumbs";
-import { appRoutes } from "@/app/_/routes";
+import { page } from "@/src/lib/app/access";
+import { AppBreadcrumbs } from "@/src/components/shell/AppBreadcrumbs";
+import { appRoutes } from "@/src/lib/app/routes";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 export default page(authRoutes.panel, () => (

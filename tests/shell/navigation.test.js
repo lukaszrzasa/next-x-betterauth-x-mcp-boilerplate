@@ -1,9 +1,8 @@
 import { expect, test } from "bun:test";
-import { navigation, visibleNavigation } from "../../app/_/navigation";
-import { adminRoutes } from "../../app/(AdminModule)/_/routes";
+import { navigation, visibleNavigation } from "../../src/lib/app/navigation";
 import { authRoutes } from "../../app/(AuthModule)/_/routes";
 import { logsRoutes } from "../../app/(LogsModule)/_/routes";
-import { appRoutes } from "../../app/_/routes";
+import { appRoutes } from "../../src/lib/app/routes";
 
 const hrefs = (viewer) =>
   visibleNavigation(viewer).map((group) => [group.label, group.items.map((item) => item.href)]);
@@ -42,7 +41,7 @@ test("the System category lists the logs module's pages; categories do not follo
 });
 
 test("every declared path is owned by exactly one route table", () => {
-  const hrefs = [appRoutes, adminRoutes, authRoutes, logsRoutes].flatMap((table) =>
+  const hrefs = [appRoutes, authRoutes, logsRoutes].flatMap((table) =>
     Object.values(table).map((route) => route.href),
   );
   expect(new Set(hrefs).size).toBe(hrefs.length);

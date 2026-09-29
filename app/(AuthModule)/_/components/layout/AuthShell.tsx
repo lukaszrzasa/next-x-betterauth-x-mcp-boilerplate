@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { AppBrand } from "@/app/_/shell/AppBrand";
+import { AppBrand } from "@/src/components/shell/AppBrand";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { appName } from "@/src/lib/config";
 

@@ -198,6 +198,7 @@ export const auth = betterAuth({
      */
     afterEmailVerification: async (user) => {
       try {
+        // eslint-disable-next-line persistence/require-context -- Provider verification hook has no operation context (ADR 0004).
         const { cancelCorrectionsForVerifiedAddress } = await import(
           "@/app/(AuthModule)/_/db/emailRequests/cancellation"
         );
