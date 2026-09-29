@@ -1,0 +1,32 @@
+import "server-only";
+
+import { auth } from "@/src/lib/auth";
+import type { AuthedCtx } from "@/src/lib/auth/builders/context";
+import { authRoutes } from "@/app/(AuthModule)/_/routes";
+
+/**
+ * The provider requests behind the two email actions. Both take the target's
+ * current address as freshly loaded by the caller, never as browser input,
+ * and both reuse the application's configured templates and links: the
+ * verification email goes through `emailVerification.sendVerificationEmail`
+ * (the app's confirmation page), the reset email through
+ * `emailAndPassword.sendResetPassword` with the app's reset page as the
+ * callback. A resolved promise means the provider accepted the request, not
+ * that anything reached an inbox.
+ */
+
+/**
+ * Deliberately without the actor's headers: with a session attached, Better
+ * Auth insists the address is the session's own and refuses anyone else's.
+ * Authorization already happened in the guarded operation.
+ */
+export async function requestVerificationEmail(_ctx: AuthedCtx, email: string): Promise<void> {
+  await auth.api.sendVerificationEmail({ body: { email } });
+}
+
+/** No step-up: the public forgot-password flow already exists; this only targets it. */
+export async function requestPasswordResetEmail(_ctx: AuthedCtx, email: string): Promise<void> {
+  await auth.api.requestPasswordReset({
+    body: { email, redirectTo: authRoutes.resetPassword.href },
+  });
+}

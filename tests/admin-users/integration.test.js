@@ -2,6 +2,7 @@ import "dotenv/config";
 import { afterAll, beforeAll, beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createHmac } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
 
 /**
@@ -66,13 +67,12 @@ const { auth } = await import("../../src/lib/auth/index.ts");
 const { migrate } = await import("drizzle-orm/node-postgres/migrator");
 const { sql } = await import("drizzle-orm");
 const { loadInstallationState } = await import("../../src/lib/auth/installation.ts");
-const { closeUserAccountLockPool } = await import("../../app/(AuthModule)/_/db/userAccountLock.ts");
+const { closeAccountSecurityLockPool } = await import("../../app/(AuthModule)/_/db/security/accountLock.ts");
 const { setupRootAdmin } = await import("../../app/(AuthModule)/_/operations/setup.ts");
-const queries = await import("../../app/(AuthModule)/admin/_/operations/usersQueries.ts");
-const mutations = await import("../../app/(AuthModule)/admin/_/operations/usersMutations.ts");
-const emails = await import("../../app/(AuthModule)/admin/_/operations/usersEmails.ts");
+const { loadAdminUserOperations } = await import("../helpers/authOperations.js");
+const { queries, mutations, emails } = await loadAdminUserOperations();
 const { USERS_QUERY_DEFAULTS } = await import("../../app/(AuthModule)/admin/_/queryState.ts");
-const { ADMIN_EMAIL_ACTOR_LIMIT } = await import("../../app/(AuthModule)/admin/_/db/users/throttle.ts");
+const { ADMIN_EMAIL_ACTOR_LIMIT } = await import("../../app/(AuthModule)/admin/_/services/emailThrottle.ts");
 const { revokeCurrentUserSessions, refreshCommittedUserSessions } =
   await import("../../src/lib/auth/userSessionEffects.ts");
 
@@ -169,7 +169,7 @@ describe.skipIf(!configured)("admin users integration", () => {
   }, 60_000);
 
   afterAll(async () => {
-    await closeUserAccountLockPool();
+    await closeAccountSecurityLockPool();
     await adminPool?.end();
     redis.disconnect();
   });
@@ -620,11 +620,13 @@ describe.skipIf(!configured)("admin users integration", () => {
     void GET;
     const count = (await adminPool.query('select count(*)::int as n from "user"')).rows[0].n;
     expect(count).toBeGreaterThan(4);
-    const source = await Promise.all(
-      ["bans.ts", "emails.ts", "profile.ts", "reads.ts", "sessions.ts", "targets.ts"].map((file) =>
-        Bun.file(new URL(`../../app/(AuthModule)/admin/_/db/users/${file}`, import.meta.url)).text(),
-      ),
+    // Every operation, persistence and service file of user administration.
+    const featureRoot = fileURLToPath(new URL("../../app/(AuthModule)/admin/_/", import.meta.url));
+    const files = ["operations", "db", "services"].flatMap((folder) =>
+      [...new Bun.Glob(`${folder}/**/*.ts`).scanSync(featureRoot)].map((file) => `${featureRoot}${file}`),
     );
+    expect(files.length).toBeGreaterThan(15);
+    const source = await Promise.all(files.map((file) => Bun.file(file).text()));
     for (const text of source) {
       expect(text).not.toContain("removeUser");
       expect(text).not.toMatch(/delete\(user\)|DELETE FROM "user"/i);

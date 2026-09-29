@@ -2,9 +2,9 @@ import "server-only";
 
 import { toServerQuery } from "@/src/lib/auth/builders/adapters";
 import { getAccountOperation } from "./operations/settings/account";
-import { inspectEmailProofOperation } from "./operations/settings/emailProof";
-import { getProfileOperation } from "./operations/settings/profile";
-import { listSessionsOperation } from "./operations/settings/sessions";
+import { inspectEmailProofOperation } from "./operations/settings/emailChange/inspectEmailProof";
+import { getProfileOperation } from "./operations/settings/profile/getProfile";
+import { listSessionsOperation } from "./operations/settings/sessions/listSessions";
 
 /**
  * SSR wiring for the settings pages and the public confirmation page: the

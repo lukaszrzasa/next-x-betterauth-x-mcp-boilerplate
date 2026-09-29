@@ -5,7 +5,7 @@ const recordStaffLog = mock(async () => {});
 mock.module("../../app/(LogsModule)/_/db/staffLogService.ts", () => ({ recordStaffLog }));
 
 const { banned, emailUpdated, logged, nameUpdated, sessionsRetried, sessionsRevoked, unbanned } = await import(
-  "../../app/(AuthModule)/admin/_/db/users/staffLog.ts"
+  "../../app/(AuthModule)/admin/_/services/staffLog.ts"
 );
 const { messageText } = await import("../../app/(LogsModule)/_/staffLog/blocks.ts");
 const { staffLogEntrySchema } = await import("../../app/(LogsModule)/_/staffLog/schema.ts");

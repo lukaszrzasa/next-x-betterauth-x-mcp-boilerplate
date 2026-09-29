@@ -1,18 +1,19 @@
 "use server";
 
 import { toServerAction } from "@/src/lib/auth/builders/adapters";
+import { banUserOperation } from "./operations/users/ban";
+import { retryEmailChangeEffectsOperation } from "./operations/users/retryEmailChangeEffects";
 import {
-  banUserOperation,
   retryBanSessionsOperation,
-  retryEmailChangeEffectsOperation,
   retryNameSessionRefreshOperation,
   retryUnbanSessionRefreshOperation,
-  revokeUserSessionsOperation,
-  unbanUserOperation,
-  updateUserEmailOperation,
-  updateUserNameOperation,
-} from "./operations/usersMutations";
-import { sendPasswordResetOperation, sendVerificationOperation } from "./operations/usersEmails";
+} from "./operations/users/retrySessionEffects";
+import { revokeUserSessionsOperation } from "./operations/users/revokeSessions";
+import { sendPasswordResetOperation } from "./operations/users/sendPasswordReset";
+import { sendVerificationOperation } from "./operations/users/sendVerification";
+import { unbanUserOperation } from "./operations/users/unban";
+import { updateUserEmailOperation } from "./operations/users/updateEmail";
+import { updateUserNameOperation } from "./operations/users/updateName";
 
 /** Server Action exports for user administration: the inferred adapters, nothing else. */
 export const updateUserNameAction = toServerAction(updateUserNameOperation);

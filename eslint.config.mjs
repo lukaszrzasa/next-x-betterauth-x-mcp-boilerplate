@@ -155,6 +155,43 @@ const eslintConfig = defineConfig([
     },
   },
 
+  // The auth module's persistence stays persistence: reads, writes and the
+  // predicates of a conditional write. What to do, in which order, whom to
+  // mail and what to charge is decided by the operation that calls it. The
+  // transaction-bound setup and the lock need no exception: they import the
+  // provider and the driver, which are not restricted.
+  {
+    files: ["app/(AuthModule)/**/_/db/**/*.{ts,tsx,mts}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            ...internalOnly.filter((entry) => entry.name !== "@/src/lib/db"),
+            {
+              name: "@/src/lib/email",
+              message: "Persistence sends no mail; the operation delivers after the write.",
+            },
+            {
+              name: "@/src/lib/throttle",
+              message: "Attempt budgets and cooldowns are charged by the operation or its service.",
+            },
+          ],
+          patterns: [
+            noParentImports,
+            { group: ["**/lib/redis", "**/lib/redis/*"] },
+            contextTypesOnly,
+            {
+              group: ["**/_/operations/**", "**/_/services/**", "**/_/policies/**", "**/_/errors/**", "**/_/errors", "**/_/policy"],
+              message:
+                "Persistence returns facts (a row, null, changed or not); workflows, policies, effects and refusals belong to the operation.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

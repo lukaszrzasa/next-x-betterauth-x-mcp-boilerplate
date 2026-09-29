@@ -33,7 +33,8 @@ architecture document owns the rules they follow.
 ## Target rules
 
 Evaluated by the pure `evaluateUserAction` in `policy.ts` from freshly loaded
-rows and `installation.rootUserId`, on every invocation: root is untouchable by
+rows and `installation.rootUserId`, on every invocation
+(`operations/users/authorizeTarget.ts`): root is untouchable by
 anyone else; root may only rename themselves, resend their own verification,
 request their own reset email and revoke their own sessions; every other actor
 is refused actions on their own account; staff targets additionally need
@@ -60,11 +61,22 @@ read-only transaction with a 5-second statement timeout.
 
 ## Code layout
 
-- `db/users/`: `reads.ts` (list and detail projections), `targets.ts` (fresh
-  target load and policy decision), `outcomes.ts` (unchanged / completed /
-  partial), `providerErrors.ts`, and one file per capability: `profile.ts`
-  (name, email and their retries), `sessions.ts`, `bans.ts`, `emails.ts`,
-  `throttle.ts`.
+- `operations/users/`: one use case per file, each with its `defineAction`
+  declaration and its sequence: `list.ts`, `get.ts`, `updateName.ts`,
+  `updateEmail.ts`, `ban.ts`, `unban.ts`, `revokeSessions.ts`,
+  `sendVerification.ts`, `sendPasswordReset.ts`,
+  `retryEmailChangeEffects.ts` and `retrySessionEffects.ts` (the three
+  single-effect recoveries). Shared by them: `authorizeTarget.ts` (fresh
+  target, root ID and the policy decision), `confirmCommitted.ts` (a provider
+  error after a committed write), `emailEffects.ts` and `projection.ts` (rows
+  to DTOs and capabilities).
+- `db/users/`: persistence only. `listUsers.ts` (filters, sort, count and
+  page in one snapshot), `userDetail.ts`, `targets.ts` (target row, root ID,
+  the count of usable admins) and `predicates.ts` (the SQL twins of the
+  policy's ban and role rules).
+- `services/`: `providerErrors.ts`, `effects.ts` (unchanged / completed /
+  partial), `emails.ts`, `emailThrottle.ts` and `staffLog.ts`. `errors.ts`
+  holds the typed refusals.
 - `hooks/actions/`: one hook per one-click action (`useSendVerification`,
   `useUnbanUser`, the `useRetry*` recoveries, ...), each a thin binding of
   its Server Action to the shared `useUserMutation`, which owns feedback,
@@ -85,11 +97,22 @@ read-only transaction with a 5-second statement timeout.
 
 Provider writes use the global `auth` instance (`adminUpdateUser`, `banUser`,
 `unbanUser`) with the actor's request headers from `ctx.getRequestHeaders()`;
-they are never wrapped in an outer transaction. Short account actions run under
-`withUserAccountLock` (`app/(AuthModule)/_/db/userAccountLock.ts`): a
-PostgreSQL advisory lock held by a read-only transaction on a dedicated
-two-connection pool, with 5-second lock and statement timeouts. Bans first take
-the global admin-ban lock. Email is never sent while the lock is held.
+they are never wrapped in an outer transaction.
+
+Renames, session revocation, unban and the effect recoveries take no lock:
+they authorize the target from fresh rows and act. Overlapping commands are
+ordinary last-writer-wins, a repeated revocation is harmless, and a recovery
+that overlaps an unban may sign a user out once more than necessary.
+
+The email change and the ban run under `withAccountSecurityLock`
+(`app/(AuthModule)/_/db/security/accountLock.ts`): a PostgreSQL advisory lock
+held by a transaction that writes nothing, on a dedicated two-connection pool,
+with a 5-second lock timeout. Both retire the target's pending security state
+in one commit and write through the provider in another; the lock keeps the
+owner's own email request, factor setup or password change out of the gap.
+Bans first take the global admin-ban lock, always in that order, and count the
+usable admins under it. Email is never sent, and the staff log never written,
+while a lock is held.
 
 Session effects are performed explicitly through
 `src/lib/auth/userSessionEffects.ts` and observed: a committed name or unban
@@ -106,7 +129,7 @@ server-owned `passwordResetInvalidBefore` in one provider update; the
 `resetTokenPolicy` before-hook then refuses reset links issued at or before
 that instant. Before that write, and before a ban's, the target's pending
 account-settings state is retired under the same lock
-(`retirePendingSecurityState` in the module-wide settings services: pending
+(`retirePendingSecurityState` in the module-wide `db/security/retirement.ts`: pending
 email change/correction requests, staged authenticator setups, and a
 security-version increment that invalidates the target's step-up grants); a
 failure there blocks the mutation. The session authority now refuses an
@@ -120,7 +143,7 @@ The two email actions are throttled in Redis (60 seconds per target and action,
 
 The detail forms ship without editing presence, stale-edit detection or
 optimistic concurrency: name and email are saved separately, last committed
-write wins, and the lock only serializes security invariants. There is no user
+write wins, and the lock only serializes the security-state protocol. There is no user
 creation, deletion, role editor, avatar editing, impersonation or bulk action.
 
 ## Migrations and prerequisites
@@ -138,7 +161,11 @@ auth schema is regenerated.
 ## Verification
 
 `bun run test` runs the policy, codec, operation, page, table and view suites
-and the provider integration suite. The latter runs only against isolated
+and the provider integration suite. The operation suite runs the real
+operations with the persistence modules, the provider and Redis replaced
+beneath them; which operations wait for the account security lock is covered,
+with the settings flows, by `tests/settings/coordination.test.js`. The
+integration suites run only against isolated
 services: set `TEST_DATABASE_URL` and `TEST_REDIS_URL` to test-only PostgreSQL
 and Redis databases (they must differ from `DATABASE_URL` and `REDIS_URL`; the
 suite refuses otherwise and skips when unset). The database needs `pg_trgm`.

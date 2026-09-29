@@ -14,9 +14,9 @@ import { auth } from "./index";
  * installed internal adapter's own methods (`refreshUserSessions`,
  * `listSessions`, `deleteSessions`, `deleteUserSessions`, `findSessions`)
  * and never rebuild Redis key names. Session tokens never leave the server:
- * the owned-session listing below carries them only so the settings service
- * can map a public session ID to the token it revokes, and that service
- * projects them away before anything is returned.
+ * the owned-session listing below carries them only so the settings
+ * operations can map a public session ID to the token they revoke, and they
+ * project them away before anything is returned.
  */
 
 async function internalAdapter() {

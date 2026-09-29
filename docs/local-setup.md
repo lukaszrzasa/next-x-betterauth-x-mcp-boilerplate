@@ -49,6 +49,6 @@ I rely on isolated integration testing rather than just unit tests. Run the stan
 
 **Deep Integration Testing:**
 *   When `DATABASE_URL` is present, the setup integration suite runs. It creates and drops an **isolated PostgreSQL schema** to test atomic bootstrapping, concurrent submissions, and provider 2FA compatibility without polluting application tables.
-*   When `TEST_DATABASE_URL` and `TEST_REDIS_URL` are provided, the user-administration and account-settings suites execute against completely distinct, isolated databases.
+*   When `TEST_DATABASE_URL` and `TEST_REDIS_URL` are provided, the user-administration, account-settings and coordination suites execute against completely distinct, isolated databases. The coordination suite arranges its interleavings with connections it controls and observes them in `pg_locks`, so it does not depend on timing.
 *   The logs integration suite needs only `TEST_DATABASE_URL` (a test-only PostgreSQL 18 database): it runs the email recorders and the staff log with genuine contexts, the migration's constraints and triggers, concurrency and redaction checks, and the admin reads.
 *   If isolation cannot be guaranteed (e.g., missing test DB variables), the test runner explicitly skips these suites and logs a warning. False positives are worse than failed tests.

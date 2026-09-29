@@ -1,7 +1,8 @@
 import "server-only";
 
 import { toServerQuery } from "@/src/lib/auth/builders/adapters";
-import { getUserOperation, listUsersOperation } from "./operations/usersQueries";
+import { getUserOperation } from "./operations/users/get";
+import { listUsersOperation } from "./operations/users/list";
 
 /**
  * SSR wiring for the pages: the trusted `server-render` entry point around

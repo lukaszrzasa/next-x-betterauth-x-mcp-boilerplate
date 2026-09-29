@@ -71,21 +71,15 @@ const { auth } = await import("../../src/lib/auth/index.ts");
 const { migrate } = await import("drizzle-orm/node-postgres/migrator");
 const { sql, eq } = await import("drizzle-orm");
 const { loadInstallationState } = await import("../../src/lib/auth/installation.ts");
-const { closeUserAccountLockPool } = await import("../../app/(AuthModule)/_/db/userAccountLock.ts");
+const { closeAccountSecurityLockPool } = await import("../../app/(AuthModule)/_/db/security/accountLock.ts");
 const { setupRootAdmin } = await import("../../app/(AuthModule)/_/operations/setup.ts");
 const { resolveAuthoritativeSession } = await import("../../src/lib/auth/sessionAuthority.ts");
 const { hasGrant } = await import("../../src/lib/auth/stepUp.ts");
-const profile = await import("../../app/(AuthModule)/_/operations/settings/profile.ts");
-const account = await import("../../app/(AuthModule)/_/operations/settings/account.ts");
-const password = await import("../../app/(AuthModule)/_/operations/settings/password.ts");
-const emailChange = await import("../../app/(AuthModule)/_/operations/settings/emailChange.ts");
-const emailCorrection = await import("../../app/(AuthModule)/_/operations/settings/emailCorrection.ts");
-const emailProof = await import("../../app/(AuthModule)/_/operations/settings/emailProof.ts");
-const authenticator = await import("../../app/(AuthModule)/_/operations/settings/authenticator.ts");
-const recoveryCodes = await import("../../app/(AuthModule)/_/operations/settings/recoveryCodes.ts");
-const sessions = await import("../../app/(AuthModule)/_/operations/settings/sessions.ts");
+const { loadSettingsOperations, loadAdminUserOperations } = await import("../helpers/authOperations.js");
+const { profile, account, password, emailChange, emailCorrection, emailProof, authenticator, recoveryCodes, sessions } =
+  await loadSettingsOperations();
 const { completePasswordResetOperation } = await import("../../app/(AuthModule)/_/operations/passwordReset.ts");
-const adminMutations = await import("../../app/(AuthModule)/admin/_/operations/usersMutations.ts");
+const { mutations: adminMutations } = await loadAdminUserOperations();
 
 const adminPool = configured ? new Pool({ connectionString: TEST_DATABASE_URL }) : null;
 const rootInput = { name: "Root Admin", email: "root@example.com", password: "root-password-12345" };
@@ -233,7 +227,7 @@ describe.skipIf(!configured)("settings integration", () => {
   }, 90_000);
 
   afterAll(async () => {
-    await closeUserAccountLockPool();
+    await closeAccountSecurityLockPool();
     await adminPool?.end();
     redis.disconnect();
   });
@@ -556,7 +550,7 @@ describe.skipIf(!configured)("settings integration", () => {
     await run(actors.alice, password.changePasswordOperation, { currentPassword: "alice-three-12345", newPassword: PASSWORD, revokeOtherSessions: false });
   });
 
-  test("an administrative email change retires the pending request under the same lock", async () => {
+  test("an administrative email change retires the pending request", async () => {
     await redis.del(`settings:email-send:${actors.alice.id}:current`);
     const begun = await run(actors.alice, emailChange.beginEmailChangeOperation, { currentPassword: PASSWORD });
     const token = lastLink();
@@ -822,7 +816,8 @@ describe.skipIf(!configured)("settings integration", () => {
     expect(await run(aliceOther, authenticator.disableAuthenticatorOperation, { currentPassword: PASSWORD })).toEqual({ status: "unchanged" });
   });
 
-  test("a superseded actor context is refused after waiting for the lock: version checks, not just grants", async () => {
+  // The wait itself (an operation queued behind the lock while the generation moves) is in coordination.test.js.
+  test("a grant issued for an earlier security generation admits nothing: the pipeline asks for a new proof", async () => {
     const stale = await actorFor(actors.carol.id);
     await grantStepUp(stale);
     // Something moves the generation on between the grant and the operation.

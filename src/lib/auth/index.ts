@@ -191,15 +191,15 @@ export const auth = betterAuth({
      * verifies an address, a pending *correction* of that address (the
      * unverified-email settings flow) must not remain: a verified address is
      * changed through the dual-mailbox flow only. The cancellation is one
-     * conditional statement owned by the settings service; finalization
-     * re-reads the locked user row anyway, so a missed cancellation here
-     * cannot authorize a correction. Imported lazily because that service
-     * depends on this module.
+     * conditional statement owned by the email request persistence;
+     * finalization re-reads the locked user row anyway, so a missed
+     * cancellation here cannot authorize a correction. Imported lazily
+     * because the settings code depends on this module.
      */
     afterEmailVerification: async (user) => {
       try {
         const { cancelCorrectionsForVerifiedAddress } = await import(
-          "@/app/(AuthModule)/_/db/settings/emailChange/cancellation"
+          "@/app/(AuthModule)/_/db/emailRequests/cancellation"
         );
         await cancelCorrectionsForVerifiedAddress(user.id);
       } catch (error) {

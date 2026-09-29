@@ -3,39 +3,31 @@
 import { toServerAction } from "@/src/lib/auth/builders/adapters";
 import { completePasswordResetOperation } from "./operations/passwordReset";
 import { setupRootAdmin } from "./operations/setup";
-import {
-  beginEnrollmentOperation,
-  beginReplacementOperation,
-  cancelSetupOperation,
-  confirmEnrollmentOperation,
-  confirmReplacementOperation,
-  disableAuthenticatorOperation,
-  retryFactorSessionRefreshOperation,
-} from "./operations/settings/authenticator";
-import {
-  beginEmailChangeOperation,
-  cancelEmailRequestOperation,
-  resendEmailRequestOperation,
-  resendVerificationOperation,
-  selectNewEmailOperation,
-} from "./operations/settings/emailChange";
-import { beginEmailCorrectionOperation } from "./operations/settings/emailCorrection";
-import { confirmEmailProofOperation } from "./operations/settings/emailProof";
-import { changePasswordOperation } from "./operations/settings/password";
-import {
-  retryProfileSessionRefreshOperation,
-  updateDisplayNameOperation,
-} from "./operations/settings/profile";
-import { regenerateRecoveryCodesOperation } from "./operations/settings/recoveryCodes";
-import {
-  revokeAllSessionsOperation,
-  revokeOtherSessionsOperation,
-  revokeSessionOperation,
-} from "./operations/settings/sessions";
+import { beginEnrollmentOperation } from "./operations/settings/authenticator/beginEnrollment";
+import { beginReplacementOperation } from "./operations/settings/authenticator/beginReplacement";
+import { cancelSetupOperation } from "./operations/settings/authenticator/cancelSetup";
+import { confirmEnrollmentOperation } from "./operations/settings/authenticator/confirmEnrollment";
+import { confirmReplacementOperation } from "./operations/settings/authenticator/confirmReplacement";
+import { disableAuthenticatorOperation } from "./operations/settings/authenticator/disableAuthenticator";
+import { regenerateRecoveryCodesOperation } from "./operations/settings/authenticator/regenerateRecoveryCodes";
+import { retryFactorSessionRefreshOperation } from "./operations/settings/authenticator/retryFactorSessionRefresh";
+import { beginEmailChangeOperation } from "./operations/settings/emailChange/beginEmailChange";
+import { beginEmailCorrectionOperation } from "./operations/settings/emailChange/beginEmailCorrection";
+import { cancelEmailRequestOperation } from "./operations/settings/emailChange/cancelEmailRequest";
+import { confirmEmailProofOperation } from "./operations/settings/emailChange/confirmEmailProof";
+import { resendEmailRequestOperation } from "./operations/settings/emailChange/resendEmailRequest";
+import { resendVerificationOperation } from "./operations/settings/emailChange/resendVerification";
+import { selectNewEmailOperation } from "./operations/settings/emailChange/selectNewEmail";
+import { changePasswordOperation } from "./operations/settings/password/changePassword";
+import { retryProfileSessionRefreshOperation } from "./operations/settings/profile/retryProfileSessionRefresh";
+import { updateDisplayNameOperation } from "./operations/settings/profile/updateDisplayName";
+import { revokeAllSessionsOperation } from "./operations/settings/sessions/revokeAllSessions";
+import { revokeOtherSessionsOperation } from "./operations/settings/sessions/revokeOtherSessions";
+import { revokeSessionOperation } from "./operations/settings/sessions/revokeSession";
 
 export const setupRootAdminAction = toServerAction(setupRootAdmin);
 
-/** Public: the emailed reset link's completion, coordinated with the account lock. */
+/** Public: the emailed reset link's completion. */
 export const completePasswordResetAction = toServerAction(completePasswordResetOperation);
 
 /** Account settings: the inferred adapters of the guarded operations, nothing else. */

@@ -18,7 +18,7 @@ import { ActionError } from "./errors";
 
 /** A Drizzle handle that can run raw statements: the database or a transaction. */
 export type SqlExecutor = Pick<NodePgDatabase<typeof schema>, "execute">;
-/** A Drizzle handle that can read: the database, a transaction or the lock's reads. */
+/** A Drizzle handle that can read: the database or a transaction. */
 export type SqlReader = Pick<NodePgDatabase<typeof schema>, "select">;
 
 /** `ActionError.data` of a `CONFLICT` raised because the account's security state moved on. */
@@ -54,13 +54,14 @@ export async function readSecurityVersion(
 
 /**
  * Refuses an actor context whose proofs were established for an older
- * generation. Called under the account lock, after waiting for it, so a
- * queued operation cannot spend authorization that an earlier one superseded.
+ * generation. Called under the account security lock, after waiting for it,
+ * so a queued operation cannot spend authorization that an earlier one
+ * superseded.
  */
 export async function assertSecurityStateCurrent(
-  reads: SqlReader,
   userId: string,
   expected: number,
+  reads: SqlReader = db,
 ): Promise<number> {
   const current = await readSecurityVersion(userId, reads);
   if (current === null) {
@@ -78,8 +79,8 @@ export async function assertSecurityStateCurrent(
  * Only this column changes.
  */
 export async function incrementSecurityVersion(
-  executor: SqlExecutor,
   userId: string,
+  executor: SqlExecutor = db,
 ): Promise<number> {
   const result = await executor.execute<{ security_version: number }>(
     sql`UPDATE "user" SET security_version = security_version + 1 WHERE id = ${userId} RETURNING security_version`,

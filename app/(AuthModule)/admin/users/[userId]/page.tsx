@@ -51,7 +51,7 @@ export default page<PageProps<"/admin/users/[userId]">>(
         <AppBreadcrumbs
           items={[{ label: "Admin", href: adminRoutes.dashboard.href }, usersCrumb, { label: user.name }]}
         />
-        <UserDetail user={user} listUrl={listUrl} readAt={new Date().toISOString()} />
+        <UserDetail user={user} listUrl={listUrl} />
       </>
     );
   },

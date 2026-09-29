@@ -1,5 +1,6 @@
 "use client";
 
+import { AccountRefreshProvider } from "@/app/(AuthModule)/admin/_/hooks/useAccountRefresh";
 import type { UserDetail as UserDetailData } from "@/app/(AuthModule)/admin/_/types";
 import { UserStaffLogSection } from "./sections/UserStaffLogSection";
 import { UserAccessSection } from "./sections/UserAccessSection";
@@ -13,18 +14,18 @@ import { UserIdentityHeader } from "./UserIdentityHeader";
  * owning its own actions and feedback. On wide screens Profile and Security
  * take the wider column and Access and Account details the narrower one;
  * the DOM order stays Profile, Security, Access, Account details. The staff
- * log of the account follows, for viewers who may read it.
+ * log of the account follows, for viewers who may read it, and is read
+ * again after a change one of the sections confirmed.
  */
-export function UserDetail({
-  user,
-  listUrl,
-  readAt,
-}: {
-  user: UserDetailData;
-  listUrl: string | null;
-  /** When the page was read; a refresh after an action moves it on. */
-  readAt: string;
-}) {
+export function UserDetail({ user, listUrl }: { user: UserDetailData; listUrl: string | null }) {
+  return (
+    <AccountRefreshProvider>
+      <UserDetailBody user={user} listUrl={listUrl} />
+    </AccountRefreshProvider>
+  );
+}
+
+function UserDetailBody({ user, listUrl }: { user: UserDetailData; listUrl: string | null }) {
   return (
     <div className="ui:flex ui:w-full ui:max-w-[80rem] ui:flex-col ui:gap-6">
       <UserIdentityHeader user={user} listUrl={listUrl} />
@@ -38,7 +39,7 @@ export function UserDetail({
           <UserMetadataSection user={user} />
         </div>
       </div>
-      <UserStaffLogSection userId={user.id} revision={readAt} />
+      <UserStaffLogSection userId={user.id} />
     </div>
   );
 }

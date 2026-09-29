@@ -17,7 +17,7 @@ import { revokeCurrentUserSessions } from "./userSessionEffects";
  *
  * Used by `getFreshSession` (pages, the root layout), by the action
  * builder's session resolution and by the auth HTTP boundary. It imports no
- * settings service and installs no callback.
+ * settings code and installs no callback.
  */
 
 type ProviderSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;

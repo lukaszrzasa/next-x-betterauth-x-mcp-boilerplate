@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useWatch } from "react-hook-form";
 import { useAction } from "@/src/lib/actions";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
@@ -11,6 +10,7 @@ import {
   readFieldError,
   type Feedback,
 } from "@/app/(AuthModule)/admin/_/hooks/feedback";
+import { useAccountRefresh } from "@/app/(AuthModule)/admin/_/hooks/useAccountRefresh";
 import { userNameFormSchema } from "@/app/(AuthModule)/admin/_/schema";
 import type { UserDetail } from "@/app/(AuthModule)/admin/_/types";
 
@@ -27,7 +27,7 @@ export function useUserNameForm({
   user: UserDetail;
   onSettled: (feedback: Feedback) => void;
 }) {
-  const router = useRouter();
+  const refresh = useAccountRefresh();
   const { form, createSubmitHandler } = useSchemaForm(userNameFormSchema, { name: user.name });
   const { execute, isPending } = useAction(updateUserNameAction, {
     onError: (error) => {
@@ -50,7 +50,7 @@ export function useUserNameForm({
     const feedback = feedbackFor("updateName", result);
     if (!feedback) return;
     onSettled(feedback);
-    if (result.status === "success" && result.data.status !== "unchanged") router.refresh();
+    if (result.status === "success" && result.data.status !== "unchanged") refresh();
   });
 
   const reset = () => form.reset({ name: user.name });

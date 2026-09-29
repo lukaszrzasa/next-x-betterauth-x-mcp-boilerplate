@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useAction } from "@/src/lib/actions";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
 import { banUserAction } from "@/app/(AuthModule)/admin/_/actions";
@@ -10,6 +9,7 @@ import {
   readFieldError,
   type Feedback,
 } from "@/app/(AuthModule)/admin/_/hooks/feedback";
+import { useAccountRefresh } from "@/app/(AuthModule)/admin/_/hooks/useAccountRefresh";
 import { userBanFormSchema } from "@/app/(AuthModule)/admin/_/schema";
 import type { UserDetail } from "@/app/(AuthModule)/admin/_/types";
 
@@ -25,7 +25,7 @@ export function useUserBanForm({
   user: UserDetail;
   onSettled: (feedback: Feedback) => void;
 }) {
-  const router = useRouter();
+  const refresh = useAccountRefresh();
   const { form, createSubmitHandler } = useSchemaForm(userBanFormSchema, { reason: "" });
   const { execute, isPending } = useAction(banUserAction, {
     onError: (error) => {
@@ -47,7 +47,7 @@ export function useUserBanForm({
     const feedback = feedbackFor("ban", result);
     if (!feedback) return;
     onSettled(feedback);
-    if (result.status === "success" && result.data.status !== "unchanged") router.refresh();
+    if (result.status === "success" && result.data.status !== "unchanged") refresh();
   });
 
   const reset = () => form.reset({ reason: "" });

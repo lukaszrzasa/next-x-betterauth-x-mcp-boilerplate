@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useWatch } from "react-hook-form";
 import { confirm } from "@/src/components/feedback/ConfirmDialog";
 import { useAction } from "@/src/lib/actions";
@@ -12,6 +11,7 @@ import {
   readFieldError,
   type Feedback,
 } from "@/app/(AuthModule)/admin/_/hooks/feedback";
+import { useAccountRefresh } from "@/app/(AuthModule)/admin/_/hooks/useAccountRefresh";
 import { userEmailFormSchema } from "@/app/(AuthModule)/admin/_/schema";
 import type { UserDetail } from "@/app/(AuthModule)/admin/_/types";
 
@@ -29,7 +29,7 @@ export function useUserEmailForm({
   user: UserDetail;
   onSettled: (feedback: Feedback) => void;
 }) {
-  const router = useRouter();
+  const refresh = useAccountRefresh();
   const { form, createSubmitHandler } = useSchemaForm(userEmailFormSchema, { email: user.email });
   const { execute, isPending } = useAction(updateUserEmailAction, {
     onError: (error) => {
@@ -60,7 +60,7 @@ export function useUserEmailForm({
     const feedback = feedbackFor("updateEmail", result);
     if (!feedback) return;
     onSettled(feedback);
-    if (result.status === "success" && result.data.status !== "unchanged") router.refresh();
+    if (result.status === "success" && result.data.status !== "unchanged") refresh();
   });
 
   const reset = () => form.reset({ email: user.email });

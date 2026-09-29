@@ -4,12 +4,12 @@ import type { RequiredStepUp } from "@/src/lib/auth/stepUpPolicy";
 import type { CtxInit, Logger, Session, User } from "./types";
 
 /**
- * Capability passed to server-side services.
+ * Capability passed to handlers and, by them, to persistence and services.
  *
- * The builder gives handlers a Ctx only after all gates pass. Audit hooks can
- * also receive a context for a denied request; stepUp stays null until
- * step-up succeeds. Branding prevents structural lookalikes, and lint prevents
- * feature code from importing the factory at runtime.
+ * The builder gives handlers a Ctx only after all gates pass. Step-up itself
+ * runs with the context as it was before verification, so stepUp stays null
+ * until step-up succeeds. Branding prevents structural lookalikes, and lint
+ * prevents feature code from importing the factory at runtime.
  *
  * These guardrails prevent accidental bypasses in trusted server code. The
  * private constructor funnels construction through the factory; it is not a
@@ -30,7 +30,7 @@ export class Ctx<TUser extends User | null = User> {
 
   /**
    * The acting request's headers, kept private so a context serialized by
-   * mistake (a DTO spread, a log line) never carries cookies. Services read
+   * mistake (a DTO spread, a log line) never carries cookies. Callers read
    * them only through `getRequestHeaders()`, and only to call provider APIs
    * that authenticate the actor (`auth.api.adminUpdateUser`, `banUser`, ...).
    */
@@ -67,7 +67,7 @@ export class Ctx<TUser extends User | null = User> {
   }
 
   /**
-   * Runtime check for services that want to validate a context.
+   * Runtime check of provenance, for code that wants to validate a context.
    */
   static is(value: unknown): value is Ctx<User | null> {
     return typeof value === "object" && value !== null && #brand in value;

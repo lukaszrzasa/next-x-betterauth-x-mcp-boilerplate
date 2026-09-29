@@ -75,10 +75,10 @@ const { auth } = await import("../../src/lib/auth/index.ts");
 const { migrate } = await import("drizzle-orm/node-postgres/migrator");
 const { sql } = await import("drizzle-orm");
 const { loadInstallationState } = await import("../../src/lib/auth/installation.ts");
-const { closeUserAccountLockPool } = await import("../../app/(AuthModule)/_/db/userAccountLock.ts");
+const { closeAccountSecurityLockPool } = await import("../../app/(AuthModule)/_/db/security/accountLock.ts");
 const { setupRootAdmin } = await import("../../app/(AuthModule)/_/operations/setup.ts");
-const mutations = await import("../../app/(AuthModule)/admin/_/operations/usersMutations.ts");
-const emails = await import("../../app/(AuthModule)/admin/_/operations/usersEmails.ts");
+const { loadAdminUserOperations } = await import("../helpers/authOperations.js");
+const { mutations, emails } = await loadAdminUserOperations();
 const { defineAction } = await import("../../src/lib/auth/builders/actionBuilder.ts");
 const { sendTwoFactorOtpEmail, EmailDeliveryError } = await import("../../src/lib/email/index.tsx");
 const logQueries = await import("../../app/(LogsModule)/admin/_/operations/logQueries.ts");
@@ -133,7 +133,7 @@ describe.skipIf(!configured)("logs wiring", () => {
   }, 60_000);
 
   afterAll(async () => {
-    await closeUserAccountLockPool();
+    await closeAccountSecurityLockPool();
     await pool?.end();
     redis.disconnect();
   });

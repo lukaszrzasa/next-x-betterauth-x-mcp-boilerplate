@@ -5,7 +5,7 @@
 1. [Architecture](architecture.md): scope, shared operations, layout, import scopes, authorization, step-up, MCP, and infrastructure.
 2. [Agent instructions](agent-instructions.md): working conventions and completion criteria.
 3. [Glossary](CONTEXT.md): admin, staff, editing presence, MCP eligibility, and step-up requirements.
-4. [Admin authority decision](adr/0001-admin-permission-bypass.md) and [shared-operation decision](adr/0002-shared-operations-and-mcp-restrictions.md): rationale for consequential choices.
+4. [Admin authority decision](adr/0001-admin-permission-bypass.md), [shared-operation decision](adr/0002-shared-operations-and-mcp-restrictions.md), [staff log decision](adr/0003-staff-log-snapshot-blocks.md) and [workflow ownership decision](adr/0004-operations-own-workflows.md): rationale for consequential choices.
 
 [Design evidence](evidence.md) records observations behind the decisions. It is background material, not an additional source of instructions.
 
@@ -26,6 +26,8 @@
 | Two pages need the same date format | Find/reuse the shared semantic helper, or promote a matching local helper; do not copy it. |
 | Only one capability needs an image transformation | Keep it local unless deliberate shared use is established. |
 | A requested operation has one simple query | Keep the query in `db/` and call it directly from the `defineAction` handler in `operations/`; no extra business-logic wrapper. |
+| A requested operation checks, writes, mails and reports a result | Write that sequence in the handler; `db/` gets the reads and writes it needs and returns facts, not outcomes or refusals. |
+| A write must not lose a race | Put the precondition in the statement's `WHERE` and check the result; add a transaction or a lock only for an invariant that one statement cannot hold. |
 | A one-line fix touches older structure | Make the coherent fix; do not infer authorization for a migration. |
 | A staff account has not enrolled its factor | Permit only the enrollment/verification flow until access requirements are satisfied. |
 | Redis holding verification grants is unavailable | Fail affected protected operations; never skip verification. |

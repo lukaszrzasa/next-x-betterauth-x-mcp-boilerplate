@@ -33,7 +33,8 @@ export function defineAction<
 
 /**
  * Session → input → authorization → step-up → handler.
- * Each handler should delegate related writes to one transactional service.
+ * The handler is the use case: its sequence, its refusals and its outcome.
+ * Reads and writes go through the owning scope's `db/`.
  * Expected refusals throw ActionError; adapters choose the client response.
  */
 export function defineAction<TInput, TOutput, TRawInput>(

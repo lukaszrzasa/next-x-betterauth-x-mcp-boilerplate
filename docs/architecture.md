@@ -22,18 +22,22 @@ The auth views and the shared operation pipeline resolve the acting account thro
 
 MCP eligibility checks apply in the shared operation path as well as MCP registration. Omitting a tool alone is insufficient: a generic tool must not expose the operation indirectly. Admin permission bypass never turns into a bypass of this restriction.
 
-Shared action definitions live in `operations/`. Each definition uses `defineAction` to declare its input schema, role admission (`roles`, answered NOT_FOUND to everyone else), permissions, verification requirements, and handler. The definition is the guarded operation; do not add a separate business-operation wrapper around it just to satisfy a layer diagram. Database queries and writes live in the owning scope's `db/` services.
+Shared action definitions live in `operations/`. Each definition uses `defineAction` to declare its input schema, role admission (`roles`, answered NOT_FOUND to everyone else), permissions, verification requirements, and handler. The definition is the guarded operation; do not add a separate business-operation wrapper around it just to satisfy a layer diagram. Database queries and writes live in the owning scope's `db/`.
 
-Every application service entry function requires the appropriate branded context as its first argument: `service(ctx, input)`. This applies to reads and writes even when the query does not use any context fields. Context must not be optional, defaulted, replaced with a plain user ID, fabricated, or supplied through a type assertion. Builders resolve identity and run the configured validation, permission, and verification checks before handing context to the handler, which passes it to the service. Feature code must not construct contexts; restrict access to the context factory to trusted infrastructure. This is an intentional safeguard against accidental direct service calls, not proof that any arbitrary context has passed every possible permission check.
+The handler is the use case, read top to bottom: what is checked first and which refusal the caller gets, when an attempt or a cooldown is charged, which provider call and effects run, whether the result is completed, unchanged or partial, and which confirmed change is logged. `db/` is persistence: scoped reads with explicit columns, writes, the predicates of a conditional write, necessary transactions and lock mechanics. It returns facts (a row or null, changed or not, a count, a known constraint conflict), takes the application's decisions as values (a reason, a deadline, the stage that was observed) and sends no mail, charges no budget and raises no business refusal. A `WHERE` clause that repeats the owner, the expected stage or a deadline is the atomic form of the operation's precondition, and belongs there. Provider and Redis integrations that are neither go to `services/`; pure rules with more than one caller go to `policies/` (decision record: ADR 0004).
 
-A small definition can use `handler: (ctx, input) => service(ctx, input)`. Several cohesive steps can also stay in the handler. Extract additional helpers only for meaningful reuse or complexity. Pure calculations and private query helpers within a guarded service do not need artificial context parameters; they must not become exported context-free database entry points.
+Every persistence entry function an operation calls requires the appropriate branded context as its first argument: `findProfile(ctx)`, `selectNewAddress(ctx, selection)`. This applies to reads and writes even when the query does not use any context fields. Context must not be optional, defaulted, replaced with a plain user ID, fabricated, or supplied through a type assertion. Builders resolve identity and run the configured validation, permission, and verification checks before handing context to the handler, which passes it on. Feature code must not construct contexts; restrict access to the context factory to trusted infrastructure. This is an intentional safeguard against accidental direct database calls, not proof that any arbitrary context has passed every possible permission check. A handler can rely on the gates its definition declared; rules about the target of the call, lifecycle state and fresh security state remain its own. Two documented exceptions take no context, because none exists where they run: the provider's `afterEmailVerification` hook (`cancelCorrectionsForVerifiedAddress`) and the shared infrastructure under `src/lib/auth`.
+
+A short operation is written directly in its handler. A substantial one can have a named workflow function in the same file or directory (`finalizeNewAddress`). One substantial use case per file; related files share a feature directory; trivial variants of one effect can share a file. Extract additional helpers only for meaningful reuse or complexity, never as a forwarding layer. Pure calculations and private query helpers inside a persistence module do not need artificial context parameters; they must not become exported context-free database entry points.
 
 ### Definitions and entry points
 
 - `operations/`: server-only `defineAction` definitions, shared by the entry points that need them. Keep schema, permissions, verification, and handler together. Use `import "server-only"`, not a file-level `"use server"` directive.
 - `actions.ts`: one file per scope by default, containing Next.js Server Action exports through `toServerAction`. It contains transport wiring, not duplicated validation or business logic.
 - `mcp.ts`: explicit registration of selected tools using the shared definitions. It does not import browser-facing exports from `actions.ts` and does not expose every definition automatically.
-- `db/`: services requiring builder-supplied `ctx` as their first argument.
+- `db/`: persistence, taking the builder-supplied `ctx` as its first argument.
+- `services/`: provider, Redis and mail integrations an operation calls (password verification with its attempt budget, delivery, session effects).
+- `policies/`: pure decisions shared by several operations.
 
 Prefer inferred adapter input/output types instead of repeating them at the export. The desired Server Action export is `export const updateDisplayNameAction = toServerAction(updateDisplayName)`. Verify this factory-produced export with the installed Next.js compiler before adopting it. If the compiler requires an explicit async export, keep that wrapper minimal and retain inferred types. This is an implementation compatibility check, not a reason to add another business layer.
 
@@ -71,9 +75,11 @@ app/
       types.ts                   # shared type declarations
       schema.ts
       actions.ts                 # Next.js Server Action exports
-      db/
-        users-service.ts
-      operations/                # shared defineAction definitions
+      db/                        # persistence: reads, writes, conditional predicates
+        users/
+      operations/                # shared defineAction definitions, one use case per file
+      services/                  # provider and effect integrations, when needed
+      policies/                  # shared pure decisions, when needed
       components/
       hooks/
       utils/
@@ -84,7 +90,7 @@ app/
         types.ts
         actions.ts                 # Next.js Server Action exports
         db/
-          users-admin-service.ts
+          users/
         operations/
         components/
         hooks/
@@ -305,18 +311,32 @@ Its contracts, in brief; the scope's README holds the details:
   ban status is computed at the read instant in SQL and never rewritten by a
   read. The list needs the `pg_trgm` extension and the `user_admin_*` indexes
   from migration 0004.
-- Provider writes use the global `auth` instance under a PostgreSQL advisory
-  lock (`withUserAccountLock`) that serializes short actions on one account and
-  guards the last-admin count; session effects are performed and observed
-  through `src/lib/auth/userSessionEffects.ts`. Outcomes are `unchanged`,
+- Code layout: one use case per file under `admin/_/operations/users/`
+  (`list`, `get`, `updateName`, `updateEmail`, `ban`, `unban`,
+  `revokeSessions`, the two email actions and the effect recoveries), with
+  `authorizeTarget.ts` deciding the target rules for all of them.
+  `db/users/` reads rows and counts; `services/` holds the provider error
+  translation, the effect outcomes, the email throttle and the staff log
+  entries.
+- Provider writes use the global `auth` instance. Renames, session
+  revocation, unban and every effect recovery are ordinary operations: they
+  authorize the target from fresh rows and act, and the last committed write
+  wins. Only the email change and the ban take the account security lock
+  (`withAccountSecurityLock`), because they retire pending security state and
+  then write through the provider in a separate commit; a ban first takes the
+  global admin-ban lock, under which the last-admin count is taken. Session
+  effects are performed and observed through
+  `src/lib/auth/userSessionEffects.ts`. Outcomes are `unchanged`,
   `completed` or `partial` (with `committed` and `failedEffects`), recovered
-  through dedicated retry operations. No cross-store atomicity is claimed.
+  through dedicated retry operations that repair effects for the account as
+  it is now. No cross-store atomicity is claimed.
 - An administrative email change also writes the server-owned
   `passwordResetInvalidBefore` cutoff; `resetTokenPolicy` refuses reset links
   issued at or before it. Administrative email changes and bans first retire
   the target's pending settings requests (email change/correction, staged
   authenticator setup) and move its security version on, under the lock they
-  already hold; a failure there blocks the mutation.
+  hold; a failure there blocks the mutation, and the retirement stands if the
+  provider write fails afterwards.
 - Every action here that changes an account or its sessions writes one staff
   log entry once it is confirmed (see "Logs"); the two email actions do not.
   The detail page shows the account's entries to admins.
@@ -340,15 +360,36 @@ outside each page's own loading and error boundaries. Pages are
 before their `toServerQuery` reads; every operation checks enrollment again.
 Nothing here imports `admin/_`.
 
-- Code layout: each service function is its own module under
-  `app/(AuthModule)/_/db/settings/<area>/` (`profile`, `password`,
-  `emailChange`, `twoFactor`, `sessions`), named after the function it
-  exports; an area's internals (row transitions, projections, errors) sit
-  beside them. `shared/` holds what several areas use: `policy.ts` (every
-  limit, TTL and window), `throttleKeys.ts` (the Redis counter names), the
-  typed refusals and the session-effect helpers. Section feedback on both the
-  settings and admin pages is the shared `ActionFeedback` component with the
+- Code layout: one use case per file under
+  `app/(AuthModule)/_/operations/settings/<area>/` (`profile`, `sessions`,
+  `password`, `emailChange`, `authenticator`), named after the use case;
+  what several use cases of an area share (`ownedRequest.ts`,
+  `pendingRequest.ts`, `ownedSetup.ts`) sits beside them. `db/` holds their
+  persistence by table (`profile`, `emailRequests`, `authenticator`) plus
+  `security/` (the lock, the retirement of pending state) and `setup/`.
+  `services/` holds password verification with its budget, mail delivery
+  and its allowances, tokens and session effects; `policies/` holds
+  `limits.ts` (every limit, TTL and window) and the lifecycle rules;
+  `errors/` holds the typed refusals. Section feedback on both the settings
+  and admin pages is the shared `ActionFeedback` component with the
   `useFeedback` state hook.
+- Coordination is per flow. Names, session listing and revocation and the
+  refresh retries take no lock: repeated or overlapping calls are harmless
+  and the last write wins. The transitions of an email request (choosing the
+  new address, resending, cancelling, the current mailbox's proof) are one
+  conditional statement each, matching owner, stage, token generation and
+  deadline; a statement that matched nothing reports no success and mails
+  nothing. The account security lock (`db/security/accountLock.ts`, a
+  PostgreSQL advisory lock on a small pool of its own) remains for the
+  credential and factor protocol only, whose steps commit on separate
+  connections: password change and reset, starting an email change or
+  correction, the new-address proof, enrollment, replacement, cancelling a
+  setup, disabling and recovery-code regeneration. It is not a rollback
+  boundary.
+- A resend pays for its mail before it rotates the token: the minute's
+  cooldown and the hourly allowance are reserved first, so a refused resend
+  never invalidates the link already in the mailbox. A rotation that then
+  loses to a concurrent step mails nothing and keeps both charges.
 - Every settings operation is authenticated, `mcpAllowed: false`, takes no
   user ID (the subject is `ctx.user.id`) and needs no administrative
   permission. Root manages its own account here under the same rules; the
@@ -374,8 +415,8 @@ Nothing here imports `admin/_`.
   `{ verifiedAt, securityVersion }` and a grant counts only for the account's
   current `user.securityVersion`. Credential, factor, recovery-code and
   sign-in email changes increment that version (inside their own transaction
-  for app-owned writes, immediately before a provider-owned write); services
-  re-check it after waiting for the account lock. This invalidates operation
+  for app-owned writes, immediately before a provider-owned write);
+  operations re-check it after waiting for the account security lock. This invalidates operation
   grants without signing devices out; remembered-device invalidation and
   extra sign-outs after a factor change are deliberately not implemented.
 - Sign-in email changes are **link-only**: no emailed code. A *change* (verified
@@ -391,11 +432,17 @@ Nothing here imports `admin/_`.
   administrative email change, a ban and ordinary verification of a corrected
   address retire pending requests.
 - **Finalization is a narrowly scoped direct SQL exception**: under the account
-  lock, one write transaction locks the user row and then the request row,
-  validates only the locked values, and writes exactly `email`,
+  security lock, one write transaction (`db/emailRequests/finalization.ts`)
+  locks the user row and then the request row and hands them to the
+  operation's decision, which validates only the locked values; a refusal
+  that closes the request is returned, not thrown, so that its transition
+  commits. The commit writes exactly `email`,
   `emailVerified`, `passwordResetInvalidBefore`, `updatedAt`,
   `securityVersion` (+1) and `sessionRevocationPending` on the user plus the
-  request's terminal state. PostgreSQL's unique email is the final arbiter.
+  request's terminal state, and retires a staged authenticator setup.
+  PostgreSQL's unique email (`user_email_unique`, and only that constraint)
+  is the final arbiter of an address claimed concurrently: the transaction
+  rolls back and the request is closed as unavailable.
   Session revocation runs after the commit; the durable `sessionRevocationPending`
   flags (user and request) record unfinished revocation, and the session
   authority revokes and clears them (version-conditionally) before honouring any
@@ -406,7 +453,9 @@ Nothing here imports `admin/_`.
   the initiating session and security version) so the factor stays inactive
   until proven. Replacement stages a new encrypted secret while the old
   authenticator and codes keep working, then swaps secret and recovery-code set
-  in one transaction; `src/lib/auth/factorCodec.ts` mirrors the provider's
+  in one transaction that also re-checks that the attempt is still pending
+  and the factor still the one it was bound to; cancelling names its attempt
+  and never closes a newer one in its place; `src/lib/auth/factorCodec.ts` mirrors the provider's
   secret, code and recovery-code formats with public exports only, proven by
   real provider login tests. Disabling is permitted only when neither the staff
   role nor the stored policy requires a factor. New recovery codes are shown
@@ -451,8 +500,8 @@ composed in `app/_/navigation.ts` and may hold pages of several modules.
 - The message is an array of generic snapshot blocks, declared and rendered
   by the logs module only. A block is complete on its own: rendering makes
   no lookup. A new action composes existing blocks.
-- The service that performed the action writes the entry with
-  `recordStaffLog`, after the action is confirmed and outside its
+- The operation that performed the action writes the entry with
+  `recordStaffLog`, after the action is confirmed and outside any lock or
   transaction; one action is one entry. If the write fails the action
   stands and the staff member is told it was not logged. The action builder
   persists nothing.
@@ -530,8 +579,8 @@ the settings pages are described under "Account settings". Password reset
 revokes sessions and preserves existing 2FA; its completion runs through the
 guarded public operation `auth.passwordReset.complete` (the provider's direct
 `reset-password` POST is hidden, the emailed link's GET callback is not), so it
-shares the account lock with the settings lifecycles and honours the reset
-cutoff. Recovery codes replace the second factor, not the password.
+shares the account security lock with the settings lifecycles and honours the
+reset cutoff. Recovery codes replace the second factor, not the password.
 
 `/auth/setup` is available only when the installation table is empty and no users
 exist. After setup, the installation row stores the root user's ID and creation
@@ -545,12 +594,16 @@ without an installation record blocks setup as well as normal application access
 The setup transaction rechecks both tables to reject duplicate submissions.
 
 The setup flow starts in `app/(AuthModule)/_/operations/setup.ts`:
-`setupRootAdmin` requires a guest and delegates account creation to
-`createRootAdminAccount` in `db/setupService.ts`. The service requires an empty installation table and no users. It binds the existing Better Auth
-configuration to a Drizzle transaction and calls the server-only `createUser` API.
-Better Auth owns IDs, password hashing and credential records. An advisory lock
-serializes competing submissions; account creation and the installation marker
-commit together. No custom TOTP secret, challenge cookie or Redis enrollment
+`setupRootAdmin` requires a guest, refuses anything but an empty installation
+(no installation record and no users) and chooses what root is: an admin who
+must enroll a factor. It runs inside `withInstallationTransaction`
+(`db/setup/installationTransaction.ts`), which takes the installation's
+advisory lock before anything is read, binds the existing Better Auth
+configuration to that Drizzle transaction and calls the server-only
+`createUser` API. This is the one place where the provider writes inside an
+application transaction. Better Auth owns IDs, password hashing and credential
+records; account creation and the installation marker commit together, and a
+provider failure rolls both back. No custom TOTP secret, challenge cookie or Redis enrollment
 record exists.
 
 The admin initially has `twoFactorRequired=true` and `twoFactorEnabled=false`.

@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useAction, type ActionOutcome } from "@/src/lib/actions";
 import type { ServerAction } from "@/src/lib/auth/builders/adapters";
 import { useSessionRedirect } from "@/app/(AuthModule)/_/hooks/useSessionRedirect";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 import type { UserMutationOutcome } from "@/app/(AuthModule)/admin/_/types";
 import { feedbackFor, type Feedback, type MutationKind } from "@/app/(AuthModule)/admin/_/hooks/feedback";
+import { useAccountRefresh } from "@/app/(AuthModule)/admin/_/hooks/useAccountRefresh";
 
 export type UserMutationOptions = {
   /** Receives the outcome's feedback; busy and cancelled produce none. */
@@ -27,7 +27,7 @@ export function useUserMutation<I>(
   action: ServerAction<I, UserMutationOutcome>,
   { onSettled }: UserMutationOptions,
 ) {
-  const router = useRouter();
+  const refresh = useAccountRefresh();
   const redirect = useSessionRedirect();
   // Feedback is presented by the section; the shared alert stays quiet.
   const { execute, isPending } = useAction<I, UserMutationOutcome>(action, { onError: () => true });
@@ -46,10 +46,10 @@ export function useUserMutation<I>(
       onSettled(feedback);
       const changed = result.status === "success" && result.data.status !== "unchanged";
       const vanished = result.status === "error" && result.error.reason === "NOT_FOUND";
-      if (changed || vanished) router.refresh();
+      if (changed || vanished) refresh();
       return result;
     },
-    [execute, kind, onSettled, redirect, router],
+    [execute, kind, onSettled, redirect, refresh],
   );
 
   return { run, pending: isPending };

@@ -70,7 +70,7 @@ function renderDetail(user, listUrl = "/admin/users", role = "admin") {
   return render(
     <ViewerProvider viewer={{ name: "Viewer", email: "v@example.com", image: null, role }}>
       <ActionProvider>
-        <UserDetail user={user} listUrl={listUrl} readAt="2026-09-20T14:32:00.000Z" />
+        <UserDetail user={user} listUrl={listUrl} />
         <ConfirmDialogRoot />
       </ActionProvider>
     </ViewerProvider>,
@@ -402,6 +402,45 @@ test("the account's staff log is read for an admin, by the account's ID alone", 
     actions: [],
   });
   expect(await screen.findByText("No staff actions have been logged here.")).toBeTruthy();
+});
+
+test("the staff log is read again after a confirmed change, and never because the page was rendered again", async () => {
+  listStaffLogsAction.mockClear();
+  const view = renderDetail(userOf());
+  await screen.findByText("No staff actions have been logged here.");
+  expect(listStaffLogsAction).toHaveBeenCalledTimes(1);
+
+  // The server renders the page again after any Server Action that touched a
+  // cookie, the log's own read included. That is not news about the log.
+  for (const name of ["Grace Hopper", "Grace B. Hopper"]) {
+    view.rerender(
+      <ViewerProvider viewer={{ name: "Viewer", email: "v@example.com", image: null, role: "admin" }}>
+        <ActionProvider>
+          <UserDetail user={userOf({ name })} listUrl="/admin/users" />
+          <ConfirmDialogRoot />
+        </ActionProvider>
+      </ViewerProvider>,
+    );
+    await act(async () => {});
+  }
+  expect(listStaffLogsAction).toHaveBeenCalledTimes(1);
+
+  // An action that changed nothing is not news either.
+  actions.sendPasswordResetAction.mockImplementationOnce(async () => ok({ status: "unchanged", userId: "u-target" }));
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Send password-reset email" }));
+  });
+  await waitFor(() => expect(actions.sendPasswordResetAction).toHaveBeenCalledTimes(1));
+  expect(listStaffLogsAction).toHaveBeenCalledTimes(1);
+
+  // A confirmed one is: once.
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Send password-reset email" }));
+  });
+  await waitFor(() => expect(listStaffLogsAction).toHaveBeenCalledTimes(2));
+  expect(refresh).toHaveBeenCalledTimes(1);
+  await act(async () => {});
+  expect(listStaffLogsAction).toHaveBeenCalledTimes(2);
 });
 
 test("a moderator sees no staff log section and nothing is read for them", async () => {
