@@ -1,5 +1,9 @@
 import { expect, test } from "bun:test";
 import { navigation, visibleNavigation } from "../../app/_/navigation";
+import { adminRoutes } from "../../app/(AdminModule)/_/routes";
+import { authRoutes } from "../../app/(AuthModule)/_/routes";
+import { logsRoutes } from "../../app/(LogsModule)/_/routes";
+import { appRoutes } from "../../app/_/routes";
 
 const hrefs = (viewer) =>
   visibleNavigation(viewer).map((group) => [group.label, group.items.map((item) => item.href)]);
@@ -7,7 +11,7 @@ const hrefs = (viewer) =>
 test("admin receives both groups; moderator receives General only", () => {
   expect(hrefs({ role: "admin" })).toEqual([
     ["General", ["/admin", "/admin/users"]],
-    ["System", ["/admin/audit-logs", "/admin/email-logs"]],
+    ["System", ["/admin/staff-logs", "/admin/email-logs"]],
   ]);
   expect(hrefs({ role: "moderator" })).toEqual([["General", ["/admin", "/admin/users"]]]);
 });
@@ -29,4 +33,17 @@ test("navigation items are serializable declarations with icon identifiers", () 
       expect(JSON.parse(JSON.stringify(item))).toEqual(item);
     }
   }
+});
+
+test("the System category lists the logs module's pages; categories do not follow module names", () => {
+  const system = navigation.find((group) => group.label === "System");
+  expect(system.items).toEqual([logsRoutes.staffLogs, logsRoutes.emailLogs]);
+  expect(navigation.some((group) => group.label === "Logs")).toBe(false);
+});
+
+test("every declared path is owned by exactly one route table", () => {
+  const hrefs = [appRoutes, adminRoutes, authRoutes, logsRoutes].flatMap((table) =>
+    Object.values(table).map((route) => route.href),
+  );
+  expect(new Set(hrefs).size).toBe(hrefs.length);
 });

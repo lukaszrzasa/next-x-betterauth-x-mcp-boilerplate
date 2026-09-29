@@ -37,6 +37,7 @@ let mailerBroken = false;
 mock.module("server-only", () => ({}));
 mock.module("next/cache", () => ({ revalidatePath: () => {} }));
 mock.module("../../src/lib/email/index.tsx", () => ({
+  EmailDeliveryError: class EmailDeliveryError extends Error {},
   sendVerificationEmail: async (message) => {
     sent.verification.push(message);
   },

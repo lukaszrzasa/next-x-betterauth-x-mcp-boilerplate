@@ -6,7 +6,6 @@ import type {
   StepUpCondition,
   StepUpProof,
 } from "@/src/lib/auth/stepUpPolicy";
-import type { AuditEvent } from "./actionAudit";
 import type { AuthedCtx, PublicCtx } from "./context";
 
 /** Request metadata stays separate from the action's validated input. */
@@ -28,10 +27,6 @@ export type BaseConfig<TCtx, TInput, TOutput, TRawInput = TInput> = {
   name: string;
   /** Omit for actions without input; the handler receives undefined. */
   schema?: ZodType<TInput, TRawInput>;
-  auditLog?: (
-    ctx: TCtx,
-    event: AuditEvent<TInput, TOutput>,
-  ) => string | Promise<string>;
   handler: (ctx: TCtx, input: TInput) => TOutput | Promise<TOutput>;
 };
 

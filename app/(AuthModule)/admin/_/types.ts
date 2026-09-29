@@ -110,17 +110,19 @@ export type FailedEffect = {
  * The payload of every user mutation. `partial` is truthful about what did
  * and did not happen: a committed row write whose follow-up effects failed,
  * or a standalone revocation that may have removed some sessions
- * (`committed: false`). Nothing here implies a rollback.
+ * (`committed: false`). Nothing here implies a rollback. `unrecorded` means
+ * the action happened but its staff log entry could not be written.
  */
 export type UserMutationOutcome =
   | { status: "unchanged"; userId: string }
-  | { status: "completed"; userId: string; selfSignedOut?: boolean }
+  | { status: "completed"; userId: string; selfSignedOut?: boolean; unrecorded?: true }
   | {
       status: "partial";
       userId: string;
       committed: boolean;
       effectsMayHaveApplied: true;
       failedEffects: FailedEffect[];
+      unrecorded?: true;
     };
 
 /** `ActionError.data` for `INVALID_INPUT`/`CONFLICT` refusals a form can attribute to a field. */

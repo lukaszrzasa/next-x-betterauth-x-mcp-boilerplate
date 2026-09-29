@@ -113,7 +113,7 @@ const { defineAction } =
   await import("../../src/lib/auth/builders/actionBuilder.ts");
 const { toRouteHandler, toServerAction, assertMcpEligible } =
   await import("../../src/lib/auth/builders/adapters/index.ts");
-const { Ctx } = await import("../../src/lib/auth/builders/context/index.ts");
+const { Ctx, currentOperationContext } = await import("../../src/lib/auth/builders/context/index.ts");
 const { ActionError } = await import("../../src/lib/auth/errors.ts");
 const { sendStepUpEmail } = await import("../../src/lib/auth/stepUpActions.ts");
 const { hasGrant } = await import("../../src/lib/auth/stepUp.ts");
@@ -225,8 +225,7 @@ describe("action pipeline", () => {
 
   test.each(["mcp", undefined, "unknown"])("MCP-excluded operations deny unapproved provenance: %s", async (entryPoint) => {
     const handler = mock(() => "done");
-    const auditLog = mock(() => "denied");
-    const run = action({ mcpAllowed: false, stepUp: "five_minutes", handler, auditLog });
+    const run = action({ mcpAllowed: false, stepUp: "five_minutes", handler });
     stored.set("stepup:grant:user-1:session-1", grant());
     await denied(run(undefined, {
       ...meta, entryPoint, stepUp: { method: "totp", code: "123456" },
@@ -234,7 +233,6 @@ describe("action pipeline", () => {
     expect(handler).not.toHaveBeenCalled();
     expect(verifyTOTP).not.toHaveBeenCalled();
     expect(redis.get).not.toHaveBeenCalled();
-    expect(auditLog).toHaveBeenCalledTimes(1);
   });
 
   test("step-up remains required despite admin permissions", async () => {
@@ -372,22 +370,15 @@ describe("action pipeline", () => {
   ])("authorization refuses before step-up: %j", async (changes, reason) => {
     Object.assign(resolved.user, changes.user);
     Object.assign(resolved.session, changes.session);
-    const auditLog = mock(() => "denied");
     const handler = mock();
     const run = action({
       permissions: "user.delete",
       stepUp: "five_minutes",
-      auditLog,
       handler,
     });
     await denied(run(undefined, meta), reason);
     expect(handler).not.toHaveBeenCalled();
     expect(redis.get).not.toHaveBeenCalled();
-    expect(auditLog.mock.calls[0][0].stepUp).toBeNull();
-    expect(auditLog.mock.calls[0][1]).toMatchObject({
-      outcome: "denied",
-      reason,
-    });
   });
 
   test("permission connectors and optional permissions retain their behavior", async () => {
@@ -441,8 +432,7 @@ describe("action pipeline", () => {
       "stepup:chal:user-1:session-1",
       createHash("sha256").update("123456").digest("hex"),
     );
-    const auditLog = mock(async () => "verified");
-    const run = action({ stepUp: "every_time", auditLog });
+    const run = action({ stepUp: "every_time" });
     expect(
       await run(undefined, {
         ...meta,
@@ -450,7 +440,6 @@ describe("action pipeline", () => {
       }),
     ).toBe("done");
     expect(redis.set).not.toHaveBeenCalled();
-    expect(auditLog.mock.calls[0][0].stepUp).toBe("every_time");
     await denied(run(undefined, meta), "TWO_FACTOR_REQUIRED");
   });
 
@@ -615,12 +604,10 @@ describe("action pipeline", () => {
   });
 
   test.each([null, undefined])(
-    "failed handlers audit valid %j input and hide internal details",
+    "failed handlers hide internal details for valid %j input",
     async (input) => {
-      const auditLog = mock(() => "failure");
       const run = action({
         schema: z.unknown(),
-        auditLog,
         handler: () => {
           throw new Error("service context", {
             cause: new Error("secret database details"),
@@ -631,7 +618,6 @@ describe("action pipeline", () => {
         reason: "INTERNAL",
         message: "INTERNAL",
       });
-      expect(auditLog.mock.calls[0][1]).toEqual({ outcome: "failed", input });
       const failure = logs.find(
         (entry) => entry.outcome === "failed" && entry.level === "error",
       );
@@ -660,17 +646,23 @@ describe("action pipeline", () => {
     expect(logs.some((entry) => entry.outcome === "failed")).toBe(true);
   });
 
-  test("audit hook failure cannot fail a completed action", async () => {
-    expect(
-      await action({
-        auditLog: async () => {
-          throw new Error("audit unavailable");
-        },
-      })(undefined, meta),
-    ).toBe("done");
-    expect(logs.some((entry) => entry.message === "audit hook threw")).toBe(
-      true,
+  test("handlers and step-up run inside their operation's context; nothing leaks outside", async () => {
+    let seen;
+    const run = action({
+      stepUp: "every_time",
+      handler: (ctx) => {
+        seen = { ctx, current: currentOperationContext() };
+        return "done";
+      },
+    });
+    stored.set(
+      "stepup:chal:user-1:session-1",
+      createHash("sha256").update("123456").digest("hex"),
     );
+    await run(undefined, { ...meta, stepUp: { method: "email", code: "123456" } });
+    expect(seen.current).toBe(seen.ctx);
+    expect(seen.ctx.stepUp).toBe("every_time");
+    expect(currentOperationContext()).toBeNull();
   });
 
   test.each([() => redirect("/login"), () => notFound()])(

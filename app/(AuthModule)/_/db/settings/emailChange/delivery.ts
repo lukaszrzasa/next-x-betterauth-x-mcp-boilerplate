@@ -34,12 +34,12 @@ export async function deliverLink(ctx: AuthedCtx, link: Link): Promise<Delivery>
     await sendEmailChangeConfirmationEmail({
       to: link.to,
       url: await confirmationUrl(link.token),
+      token: link.token,
       purpose: link.purpose,
       expiresAtLabel: formatUtcDateTime(link.expiresAt),
       name: ctx.user.name,
+      recipient: { userId: ctx.user.id, name: ctx.user.name },
     });
-    // TODO(audit): Persist settings.email_request.link_sent (purpose, request
-    // ID, actor user ID, UTC time, accepted-not-delivered). Never the token or URL.
     return { delivery: "sent" };
   } catch (error) {
     ctx.log.error(`email change link (${link.purpose}) could not be sent`, { error: errorMessage(error) });

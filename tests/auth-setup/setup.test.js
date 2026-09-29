@@ -57,6 +57,7 @@ mock.module("../../src/lib/redis/index.ts", () => ({
   },
 }));
 mock.module("../../src/lib/email/index.tsx", () => ({
+  EmailDeliveryError: class EmailDeliveryError extends Error {},
   sendVerificationEmail: async () => {},
   sendPasswordResetEmail: async () => {},
   sendTwoFactorOtpEmail: async () => {},

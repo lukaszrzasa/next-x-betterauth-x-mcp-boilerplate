@@ -141,12 +141,14 @@ export const auth = betterAuth({
         allowedAttempts: 5,
         // Hashed: codes are only ever compared, never re-read or re-sent.
         storeOTP: "hashed",
-        sendOTP: async ({ user, otp }) => {
+        sendOTP: async ({ user, otp }, endpoint) => {
           await sendTwoFactorOtpEmail({
             to: user.email,
             code: otp,
             name: user.name,
             expiresInMinutes: TWO_FACTOR_OTP_EXPIRES_IN_MINUTES,
+            recipient: { userId: user.id, name: user.name },
+            providerRequest: endpoint?.headers,
           });
         },
       },
@@ -169,8 +171,15 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     revokeSessionsOnPasswordReset: true,
-    sendResetPassword: async ({ user, url }) => {
-      await sendPasswordResetEmail({ to: user.email, url, name: user.name });
+    sendResetPassword: async ({ user, url, token }, request) => {
+      await sendPasswordResetEmail({
+        to: user.email,
+        url,
+        token,
+        name: user.name,
+        recipient: { userId: user.id, name: user.name },
+        providerRequest: request?.headers,
+      });
     },
   },
   rateLimit: { enabled: true, storage: "secondary-storage" },
@@ -206,13 +215,20 @@ export const auth = betterAuth({
         );
       }
     },
-    sendVerificationEmail: async ({ user, url, token }) => {
+    sendVerificationEmail: async ({ user, url, token }, request) => {
       // Better Auth's own `url` targets its API; the app confirms on its own page.
       const confirmation = new URL(
         buildRoute(authRoutes.emailConfirmation.href, undefined, { token }),
         url,
       );
-      await sendVerificationEmail({ to: user.email, url: confirmation.toString(), name: user.name });
+      await sendVerificationEmail({
+        to: user.email,
+        url: confirmation.toString(),
+        token,
+        name: user.name,
+        recipient: { userId: user.id, name: user.name },
+        providerRequest: request?.headers,
+      });
     },
   },
 });

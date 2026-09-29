@@ -41,7 +41,6 @@ export async function cancelPendingSetupRequests(
       .delete(twoFactor)
       .where(and(eq(twoFactor.id, row.currentFactorId), eq(twoFactor.userId, userId), eq(twoFactor.verified, false)));
   }
-  // TODO(audit): Persist settings.factor_setup.cancelled per row (kind, UTC time).
   return rows.length;
 }
 
@@ -76,8 +75,6 @@ export async function insertSetup(ctx: AuthedCtx, values: NewSetup): Promise<Set
         ...values,
       })
       .returning();
-    // TODO(audit): Persist settings.factor_setup.started (request ID, kind,
-    // actor user ID, UTC time). Never the secret, URI or fingerprint source.
     return row;
   });
 }

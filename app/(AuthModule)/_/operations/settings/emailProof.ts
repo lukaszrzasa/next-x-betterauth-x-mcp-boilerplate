@@ -26,8 +26,4 @@ export const confirmEmailProofOperation = defineAction({
   schema: emailProofSchema,
   mcpAllowed: false,
   handler: (ctx, input) => confirmEmailProof(ctx, input),
-  // TODO(audit): subject is established by the verified proof, never an actor;
-  // record proof-recorded and account-committed as distinct events. Never the token.
-  auditLog: (ctx, event) =>
-    `${ctx.requestId}: ${event.outcome}${event.outcome === "success" ? ` (${event.output.status})` : ""}`,
 });

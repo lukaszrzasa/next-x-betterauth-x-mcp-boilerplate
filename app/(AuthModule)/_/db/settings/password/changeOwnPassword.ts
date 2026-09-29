@@ -46,9 +46,6 @@ export async function changeOwnPassword(ctx: AuthedCtx, input: ChangePasswordSch
 
   return withUserAccountLock(ctx, ctx.user.id, async (reads) => {
     await assertSecurityStateCurrent(reads, ctx.user.id, securityVersionOf(ctx.user));
-    // TODO(audit): Persist settings.security_state.retired (reason: credentials)
-    // with ctx.requestId, actor user ID, UTC time and the counts of cancelled
-    // email/factor requests. Never include passwords or tokens.
     await retirePendingSecurityState(ctx, ctx.user.id, "credentials");
 
     try {
@@ -70,12 +67,8 @@ export async function changeOwnPassword(ctx: AuthedCtx, input: ChangePasswordSch
       ctx.log.error("password changed but the provider's session renewal was not confirmed", {
         error: errorMessage(error),
       });
-      // TODO(audit): Persist settings.password.changed (renewal unconfirmed).
       return { status: "partial", committed: true, failedEffects: ["session-renewal"] };
     }
-    // TODO(audit): Persist settings.password.changed after this confirmed write
-    // with ctx.requestId, actor user ID, UTC time, outcome and whether other
-    // sessions were revoked. Never include either password.
 
     const failed: SettingsEffect[] = [];
     if (input.revokeOtherSessions && (await otherSessionsRemain(ctx))) failed.push("session-revocation");

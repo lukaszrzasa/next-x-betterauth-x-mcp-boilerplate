@@ -23,8 +23,6 @@ import {
  * re-requires it when the grant has lapsed. Nothing here is MCP-eligible.
  */
 
-const describe = (ctx: { user: { id: string } }, event: { outcome: string }) => `${ctx.user.id}: ${event.outcome}`;
-
 export const beginEnrollmentOperation = defineAction({
   name: "settings.authenticator.beginEnrollment",
   schema: currentPasswordOnlySchema,
@@ -32,7 +30,6 @@ export const beginEnrollmentOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => beginEnrollment(ctx, input),
-  auditLog: describe,
 });
 
 export const confirmEnrollmentOperation = defineAction({
@@ -42,7 +39,6 @@ export const confirmEnrollmentOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => confirmEnrollment(ctx, input),
-  auditLog: describe,
 });
 
 export const beginReplacementOperation = defineAction({
@@ -53,7 +49,6 @@ export const beginReplacementOperation = defineAction({
   stepUp: "five_minutes",
   stepUpWhen: "two_factor_enabled",
   handler: (ctx, input) => beginReplacement(ctx, input),
-  auditLog: describe,
 });
 
 export const confirmReplacementOperation = defineAction({
@@ -64,7 +59,6 @@ export const confirmReplacementOperation = defineAction({
   stepUp: "five_minutes",
   stepUpWhen: "two_factor_enabled",
   handler: (ctx, input) => confirmReplacement(ctx, input),
-  auditLog: describe,
 });
 
 /** Abandons the actor's own attempt; the active factor is never written. */
@@ -74,7 +68,6 @@ export const cancelSetupOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => cancelSetup(ctx, input),
-  auditLog: describe,
 });
 
 export const disableAuthenticatorOperation = defineAction({
@@ -85,7 +78,6 @@ export const disableAuthenticatorOperation = defineAction({
   stepUp: "five_minutes",
   stepUpWhen: "two_factor_enabled",
   handler: (ctx, input) => disableAuthenticator(ctx, input),
-  auditLog: describe,
 });
 
 /** Refreshes committed provider user copies only; permitted after disabling, when no factor exists. */
@@ -94,5 +86,4 @@ export const retryFactorSessionRefreshOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx) => retryFactorSessionRefresh(ctx),
-  auditLog: describe,
 });

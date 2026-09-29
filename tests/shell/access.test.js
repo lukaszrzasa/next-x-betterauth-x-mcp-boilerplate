@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { authorize, isRouteActive } from "../../src/lib/access/routes";
 import { adminRoutes } from "../../app/(AdminModule)/_/routes";
 import { authRoutes } from "../../app/(AuthModule)/_/routes";
-import { systemRoutes } from "../../app/(SystemModule)/_/routes";
+import { logsRoutes } from "../../app/(LogsModule)/_/routes";
 import { can } from "../../src/lib/auth/permissions";
 
 const viewer = (role) => ({ role });
@@ -33,15 +33,15 @@ test("a permission grant does not admit a role outside the declared role list", 
 test("declared dashboard pages: moderator reaches Dashboard and Users, not System", () => {
   expect(authorize(viewer("moderator"), adminRoutes.dashboard.access)).toBe(true);
   expect(authorize(viewer("moderator"), authRoutes.adminUsers.access)).toBe(true);
-  expect(authorize(viewer("moderator"), systemRoutes.auditLogs.access)).toBe(false);
-  expect(authorize(viewer("moderator"), systemRoutes.emailLogs.access)).toBe(false);
-  expect(authorize(viewer("admin"), systemRoutes.auditLogs.access)).toBe(true);
+  expect(authorize(viewer("moderator"), logsRoutes.staffLogs.access)).toBe(false);
+  expect(authorize(viewer("moderator"), logsRoutes.emailLogs.access)).toBe(false);
+  expect(authorize(viewer("admin"), logsRoutes.staffLogs.access)).toBe(true);
 });
 
 test("comma-separated roles are honoured", () => {
   expect(authorize(viewer("user,moderator"), authRoutes.adminUsers.access)).toBe(true);
-  expect(authorize(viewer("user,moderator"), systemRoutes.auditLogs.access)).toBe(false);
-  expect(authorize(viewer("moderator,admin"), systemRoutes.auditLogs.access)).toBe(true);
+  expect(authorize(viewer("user,moderator"), logsRoutes.staffLogs.access)).toBe(false);
+  expect(authorize(viewer("moderator,admin"), logsRoutes.staffLogs.access)).toBe(true);
   expect(authorize(viewer(" user , guest "), adminRoutes.dashboard.access)).toBe(false);
 });
 

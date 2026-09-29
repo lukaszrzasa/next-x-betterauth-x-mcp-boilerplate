@@ -1,33 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { CheckIcon, CopyIcon, InfoIcon } from "lucide-react";
+import { InfoIcon } from "lucide-react";
+import { CopyButton } from "@/src/components/actions/CopyButton";
 import { DetailRow, DetailSection } from "@/src/components/detail/DetailSection";
-import { Button } from "@/src/components/ui/button";
-import { copyText } from "@/src/lib/browser/clipboard";
 import { formatUtcDateTime, toIsoInstant } from "@/src/lib/date/format";
 import type { UserDetail } from "@/app/(AuthModule)/admin/_/types";
-
-function CopyButton({ value, label }: { value: string; label: string }) {
-  const [copied, setCopied] = useState(false);
-
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="icon-sm"
-      aria-label={copied ? "Copied" : label}
-      onClick={async () => {
-        // When the clipboard is unavailable the ID remains selectable.
-        if (!(await copyText(value))) return;
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2_000);
-      }}
-    >
-      {copied ? <CheckIcon /> : <CopyIcon />}
-    </Button>
-  );
-}
 
 function Timestamp({ value }: { value: string }) {
   return <time dateTime={toIsoInstant(value)}>{formatUtcDateTime(value)}</time>;

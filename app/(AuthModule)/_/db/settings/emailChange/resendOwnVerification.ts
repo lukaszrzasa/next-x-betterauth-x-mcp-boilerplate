@@ -26,6 +26,5 @@ export async function resendOwnVerification(ctx: AuthedCtx): Promise<{ status: "
   }
   // With the actor's headers the provider insists the address is the session's own.
   await auth.api.sendVerificationEmail({ body: { email: owner.email }, headers: ctx.getRequestHeaders() });
-  // TODO(audit): Persist settings.verification.requested (actor user ID, UTC time; accepted, not delivered).
   return { status: "completed" };
 }

@@ -24,9 +24,6 @@ export async function recordCurrentProof(requestId: string, hash: string): Promi
       .update(emailChangeRequest)
       .set({ state: "awaiting_new_address", currentConfirmedAt: now, currentTokenHash: null })
       .where(eq(emailChangeRequest.id, row.id));
-    // TODO(audit): Persist settings.email_request.current_confirmed (request ID,
-    // subject user ID established by the token, UTC time). No actor: mailbox
-    // proof is not a staff action. Never the token or its digest.
     return { status: "current-confirmed" };
   });
 }

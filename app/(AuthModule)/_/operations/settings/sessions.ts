@@ -13,8 +13,6 @@ import { listSessionsSchema, sessionTargetSchema } from "@/app/(AuthModule)/_/sc
  * actor before anything is looked up by token.
  */
 
-const describe = (ctx: { user: { id: string } }, event: { outcome: string }) => `${ctx.user.id}: ${event.outcome}`;
-
 export const listSessionsOperation = defineAction({
   name: "settings.sessions.list",
   schema: listSessionsSchema,
@@ -29,7 +27,6 @@ export const revokeSessionOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => revokeOwnSession(ctx, input),
-  auditLog: describe,
 });
 
 export const revokeOtherSessionsOperation = defineAction({
@@ -37,7 +34,6 @@ export const revokeOtherSessionsOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx) => revokeOtherOwnSessions(ctx),
-  auditLog: describe,
 });
 
 export const revokeAllSessionsOperation = defineAction({
@@ -45,5 +41,4 @@ export const revokeAllSessionsOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx) => revokeAllOwnSessions(ctx),
-  auditLog: describe,
 });

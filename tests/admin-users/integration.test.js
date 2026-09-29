@@ -34,6 +34,7 @@ const sent = { verification: [], reset: [], otp: [], emailChange: [] };
 mock.module("server-only", () => ({}));
 mock.module("next/cache", () => ({ revalidatePath: () => {} }));
 mock.module("../../src/lib/email/index.tsx", () => ({
+  EmailDeliveryError: class EmailDeliveryError extends Error {},
   sendVerificationEmail: async (message) => {
     sent.verification.push(message);
   },
@@ -133,6 +134,15 @@ async function row(id) {
   return found ?? null;
 }
 
+/** The staff log entries about one account, oldest first; the ID alone finds them. */
+const staffLogEntries = async (resourceId, action) =>
+  (
+    await adminPool.query(
+      "select * from staff_log where resource_id = $1 and ($2::text is null or action = $2) order by created_at, id",
+      [resourceId, action ?? null],
+    )
+  ).rows;
+
 const activeSessions = async (id) => (await auth.$context).internalAdapter.listSessions(id, { onlyActiveSessions: true });
 const denied = (promise, reason) => expect(promise).rejects.toMatchObject({ reason });
 
@@ -141,6 +151,7 @@ describe.skipIf(!configured)("admin users integration", () => {
     await migrate(db, { migrationsFolder: "drizzle" });
     await adminPool.query('TRUNCATE "user" CASCADE');
     await adminPool.query("TRUNCATE installation");
+    await adminPool.query("TRUNCATE staff_log, email_log");
     await redis.flushdb();
     await loadInstallationState();
 
@@ -202,11 +213,25 @@ describe.skipIf(!configured)("admin users integration", () => {
       status: "unchanged",
       userId: actors.user.id,
     });
+    // Logged once - the no-op changed nothing - by the admin, about the account, with both names.
+    const [entry, ...rest] = await staffLogEntries(actors.user.id, "user.name.updated");
+    expect(rest).toEqual([]);
+    expect(entry).toMatchObject({ actor_id: actors.root.id, resource_type: "user", resource_id: actors.user.id });
+    expect(entry.message).toEqual([
+      { type: "text", value: "Changed name from " },
+      { type: "value", value: before.name },
+      { type: "text", value: " to " },
+      { type: "user", id: actors.user.id, label: "Renamed User" },
+    ]);
+    expect(entry.message_text).toBe(`Changed name from ${before.name} to Renamed User`);
   });
 
   test("root and self rules are enforced from the installation record, not the browser", async () => {
     await denied(run(actors.admin, mutations.updateUserNameOperation, { userId: actors.root.id, name: "Hijack" }), "FORBIDDEN");
     await denied(run(actors.admin, mutations.updateUserNameOperation, { userId: actors.admin.id, name: "Me" }), "FORBIDDEN");
+    // A refused action changed nothing and is not logged.
+    expect(await staffLogEntries(actors.root.id)).toEqual([]);
+    expect(await staffLogEntries(actors.admin.id)).toEqual([]);
     await grantStepUp(actors.root);
     await denied(run(actors.root, mutations.updateUserEmailOperation, { userId: actors.root.id, email: "new-root@example.com" }), "FORBIDDEN");
     await denied(run(actors.root, mutations.banUserOperation, { userId: actors.root.id, duration: "24h", reason: "self ban" }), "FORBIDDEN");
@@ -535,6 +560,13 @@ describe.skipIf(!configured)("admin users integration", () => {
     await redis.del(`admin-email:target:verification:${targetId}`);
     expect(await run(actors.root, mutations.retryEmailChangeEffectsOperation, { userId: targetId })).toEqual({ status: "completed", userId: targetId });
     expect(sent.verification.at(-1).to).toBe("mailfail-new@example.com");
+
+    // One entry for the change, with both addresses; only the retry that finished is logged,
+    // and the pending requests the change retired are part of it, not entries of their own.
+    const entries = await staffLogEntries(targetId);
+    expect(entries.map((entry) => entry.action)).toEqual(["user.email.updated", "user.sessions.retried"]);
+    expect(entries[0].actor_id).toBe(actors.root.id);
+    expect(entries[0].message_text).toMatch(/^Changed email of .+ from mailfail@example\.com to mailfail-new@example\.com$/);
   });
 
   test("a Redis outage fails email throttling closed instead of sending", async () => {

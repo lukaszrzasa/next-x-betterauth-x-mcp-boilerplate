@@ -13,6 +13,4 @@ export const regenerateRecoveryCodesOperation = defineAction({
   stepUp: "five_minutes",
   stepUpWhen: "two_factor_enabled",
   handler: (ctx, input) => regenerateRecoveryCodes(ctx, input),
-  // TODO(audit): refusals/failures; the accepted regeneration is recorded in the service. Never the codes.
-  auditLog: (ctx, event) => `${ctx.user.id}: ${event.outcome}`,
 });

@@ -13,7 +13,6 @@ export async function revokeAllOwnSessions(ctx: AuthedCtx): Promise<SyncOutcome>
       revokeCurrentUserSessions(ctx.user.id),
     );
     if (!confirmed) return unconfirmedRevocation;
-    // TODO(audit): Persist settings.sessions.revoked (actor user ID, UTC time, confirmed).
     return { status: "completed", selfSignedOut: true };
   });
 }

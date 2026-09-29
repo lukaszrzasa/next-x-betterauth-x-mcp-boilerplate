@@ -20,8 +20,6 @@ export async function updateDisplayName(ctx: AuthedCtx, input: UpdateDisplayName
 
     // Exactly one field reaches the provider; it applies its own input filter too.
     await auth.api.updateUser({ body: { name: input.name }, headers: ctx.getRequestHeaders() });
-    // TODO(audit): Persist settings.profile.name_updated after this confirmed
-    // write (ctx.requestId, actor user ID, UTC time, before/after name).
 
     if (!(await refreshUserSessions(ctx, "name updated but cached session copies were not refreshed"))) {
       return { status: "partial", committed: true, failedEffects: ["session-refresh"] };

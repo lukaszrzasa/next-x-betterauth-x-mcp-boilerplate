@@ -3,7 +3,7 @@ import { defineAction } from "@/src/lib/auth/builders/actionBuilder";
 import { toServerAction, toServerQuery } from "@/src/lib/auth/builders/adapters";
 import type { AuthedCtx, PublicCtx } from "@/src/lib/auth/builders/context";
 
-// Compile-only checks: callers use raw input; handlers and audits use parsed input.
+// Compile-only checks: callers use raw input; handlers use parsed input.
 export function checkActionTypes(headers: Headers) {
   // @ts-expect-error MCP operations cannot require step-up.
   defineAction({ name: "invalid", mcpAllowed: true, stepUp: "five_minutes", handler: () => {} });
@@ -17,14 +17,6 @@ export function checkActionTypes(headers: Headers) {
       const authenticated: AuthedCtx = ctx;
       const number: number = input;
       return { userId: authenticated.user.id, number };
-    },
-    auditLog: async (ctx, event) => {
-      const authenticated: AuthedCtx = ctx;
-      if (event.outcome === "success") {
-        const number: number = event.input;
-        return `${authenticated.user.id}: ${number}`;
-      }
-      return event.outcome;
     },
   });
   const result: Promise<{ userId: string; number: number }> = transformed(

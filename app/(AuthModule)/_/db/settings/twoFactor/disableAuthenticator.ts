@@ -47,8 +47,6 @@ export async function disableAuthenticator(ctx: AuthedCtx, input: CurrentPasswor
       await incrementSecurityVersion(tx, ctx.user.id);
     });
     await disableThroughProvider(ctx, input.currentPassword);
-    // TODO(audit): Persist settings.factor.disabled after the confirmed write
-    // (actor user ID, UTC time). Never include the password.
     await discardStepUpState(ctx);
     return { status: "completed" };
   });

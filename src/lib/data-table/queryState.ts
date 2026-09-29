@@ -43,9 +43,20 @@ export function readSingle(raw: RawSearchParams, key: string): string | undefine
   return typeof value === "string" ? value : undefined;
 }
 
-/** Trimmed text, truncated to `maxLength`; absent or repeated resolves to "". */
+const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F]+/g;
+
+/**
+ * Trimmed text, truncated to `maxLength`; absent or repeated resolves to "".
+ * Control characters become spaces (PostgreSQL text cannot even hold U+0000),
+ * the cut never splits a surrogate pair, and the result is trimmed again, so
+ * parsing a canonical value yields the same value.
+ */
 export function parseText(value: string | undefined, maxLength: number): string {
-  return (value ?? "").trim().slice(0, maxLength);
+  const text = (value ?? "").replace(CONTROL_CHARACTERS, " ").trim();
+  if (text.length <= maxLength) return text;
+  const unit = text.charCodeAt(maxLength - 1);
+  const cut = unit >= 0xd800 && unit <= 0xdbff ? maxLength - 1 : maxLength;
+  return text.slice(0, cut).trim();
 }
 
 /** One of `allowed`, otherwise `fallback`. */

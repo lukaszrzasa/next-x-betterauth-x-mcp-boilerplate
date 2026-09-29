@@ -15,9 +15,7 @@ export async function cancelActiveEmailRequests(
   userId: string,
   reason: EmailChangeCancelReason,
 ): Promise<number> {
-  const cancelled = await cancelActiveRequestsWhere(tx, userId, reason);
-  // TODO(audit): Persist settings.email_request.cancelled per row (reason, UTC time).
-  return cancelled;
+  return cancelActiveRequestsWhere(tx, userId, reason);
 }
 
 /**

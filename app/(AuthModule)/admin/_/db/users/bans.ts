@@ -22,6 +22,7 @@ import {
 } from "@/app/(AuthModule)/admin/_/types";
 import { attemptEffect, conclude, confirmCommitted, unchanged } from "./outcomes";
 import { effectivelyBanned, hasRoleToken } from "./reads";
+import { banned, logged, sessionsRetried, unbanned, type UserLogEntry } from "./staffLog";
 import { authorizeTargetAction, loadTarget } from "./targets";
 
 /**
@@ -46,7 +47,8 @@ function lastAdminError(): ActionError {
 }
 
 export async function banUser(ctx: AuthedCtx, input: BanUserSchema): Promise<UserMutationOutcome> {
-  return withUserAccountLock(
+  let entry: UserLogEntry | undefined;
+  const outcome = await withUserAccountLock(
     ctx,
     input.userId,
     async (reads) => {
@@ -96,19 +98,16 @@ export async function banUser(ctx: AuthedCtx, input: BanUserSchema): Promise<Use
       if (after.accessStatus !== expected) {
         throw new Error(`Ban write left user ${target.id} in state ${after.accessStatus}.`);
       }
-      // TODO(audit): Persist users.ban.applied or users.ban.replaced (replaced
-      // when a prior effective ban existed) after this confirmed write. Include
-      // ctx.requestId, actor user ID, target user ID, UTC time, outcome, and a
-      // diff of effective status, reason and expiry, plus whether it replaced a
-      // prior ban. Record session-revocation failure separately from the
-      // committed ban. Never include request headers, cookies, tokens or secrets.
 
       const failed: FailedEffect[] = [];
       await attemptEffect(ctx, "session-revocation", () => revokeCurrentUserSessions(target.id), failed);
+      // The ban as observed, not as requested.
+      entry = banned(target, { replacing, expires: after.banExpires, reason: after.banReason });
       return conclude(target.id, true, failed);
     },
     { adminBan: true },
   );
+  return logged(ctx, outcome, entry);
 }
 
 /** Recovery after a partial ban: revoke sessions; expiry and reason are untouched. */
@@ -116,7 +115,8 @@ export async function retryBanSessions(
   ctx: AuthedCtx,
   input: UserTargetSchema,
 ): Promise<UserMutationOutcome> {
-  return withUserAccountLock(ctx, input.userId, async (reads) => {
+  let entry: UserLogEntry | undefined;
+  const outcome = await withUserAccountLock(ctx, input.userId, async (reads) => {
     const { target } = await authorizeTargetAction(ctx, reads, input.userId, "ban");
     if (!isEffectivelyBanned(target.accessStatus)) {
       throw new ActionError("FORBIDDEN", {
@@ -126,14 +126,15 @@ export async function retryBanSessions(
     }
     const failed: FailedEffect[] = [];
     await attemptEffect(ctx, "session-revocation", () => revokeCurrentUserSessions(target.id), failed);
-    // TODO(audit): Persist users.session_sync.retried (effect: session-revocation)
-    // with ctx.requestId, actor and target user IDs, UTC time and outcome only.
+    if (failed.length === 0) entry = sessionsRetried(target, "session sign-out");
     return conclude(target.id, false, failed);
   });
+  return logged(ctx, outcome, entry);
 }
 
 export async function unbanUser(ctx: AuthedCtx, input: UserTargetSchema): Promise<UserMutationOutcome> {
-  return withUserAccountLock(ctx, input.userId, async (reads) => {
+  let entry: UserLogEntry | undefined;
+  const outcome = await withUserAccountLock(ctx, input.userId, async (reads) => {
     const { target, unchanged: active } = await authorizeTargetAction(ctx, reads, input.userId, "unban");
     if (active) return unchanged(target.id);
 
@@ -145,22 +146,21 @@ export async function unbanUser(ctx: AuthedCtx, input: UserTargetSchema): Promis
     } catch (error) {
       await confirmCommitted(reads, target.id, (current) => current.accessStatus === "active", error);
     }
-    // TODO(audit): Persist users.ban.removed after this confirmed write. Include
-    // ctx.requestId, actor user ID, target user ID, UTC time, outcome, and the
-    // lifted ban's reason and expiry. Never include request headers, cookies,
-    // tokens or secrets.
 
     const failed: FailedEffect[] = [];
     await attemptEffect(ctx, "session-refresh", () => refreshCommittedUserSessions(target.id), failed);
+    entry = unbanned(target);
     return conclude(target.id, true, failed);
   });
+  return logged(ctx, outcome, entry);
 }
 
 export async function retryUnbanSessionRefresh(
   ctx: AuthedCtx,
   input: UserTargetSchema,
 ): Promise<UserMutationOutcome> {
-  return withUserAccountLock(ctx, input.userId, async (reads) => {
+  let entry: UserLogEntry | undefined;
+  const outcome = await withUserAccountLock(ctx, input.userId, async (reads) => {
     const { target } = await authorizeTargetAction(ctx, reads, input.userId, "unban");
     if (target.accessStatus !== "active") {
       throw new ActionError("FORBIDDEN", {
@@ -170,8 +170,8 @@ export async function retryUnbanSessionRefresh(
     }
     const failed: FailedEffect[] = [];
     await attemptEffect(ctx, "session-refresh", () => refreshCommittedUserSessions(target.id), failed);
-    // TODO(audit): Persist users.session_sync.retried (effect: session-refresh)
-    // with ctx.requestId, actor and target user IDs, UTC time and outcome only.
+    if (failed.length === 0) entry = sessionsRetried(target, "session refresh");
     return conclude(target.id, false, failed);
   });
+  return logged(ctx, outcome, entry);
 }

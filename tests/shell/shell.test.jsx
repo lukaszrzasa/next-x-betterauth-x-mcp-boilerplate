@@ -172,7 +172,7 @@ test("admin routes add the sidebar with filtered groups and an active link; othe
 
   navigate("/panel");
   expect(trigger()).toBeNull();
-  expect(screen.queryByRole("link", { name: "Audit logs" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Staff log" })).toBeNull();
 });
 
 test("moderator navigation omits the System group", () => {
@@ -191,7 +191,7 @@ test("desktop collapse persists as a cookie and survives navigation; mobile leav
   expect(sidebar().getAttribute("data-state")).toBe("collapsed");
   expect(document.cookie).toContain("sidebar_state=false");
 
-  navigate("/admin/audit-logs");
+  navigate("/admin/staff-logs");
   expect(sidebar().getAttribute("data-state")).toBe("collapsed");
 
   await act(async () => setMobile(true));

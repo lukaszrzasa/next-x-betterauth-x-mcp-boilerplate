@@ -18,8 +18,6 @@ import {
  * cancel. The service re-reads ownership and stage on every step.
  */
 
-const describe = (ctx: { user: { id: string } }, event: { outcome: string }) => `${ctx.user.id}: ${event.outcome}`;
-
 export const beginEmailChangeOperation = defineAction({
   name: "settings.emailChange.begin",
   schema: beginEmailChangeSchema,
@@ -28,7 +26,6 @@ export const beginEmailChangeOperation = defineAction({
   stepUp: "five_minutes",
   stepUpWhen: "two_factor_enabled",
   handler: (ctx, input) => beginEmailChange(ctx, input),
-  auditLog: describe,
 });
 
 /** Authorization was recorded at initiation; within the request window no password is repeated. */
@@ -38,7 +35,6 @@ export const selectNewEmailOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => selectNewEmailAddress(ctx, input),
-  auditLog: describe,
 });
 
 export const resendEmailRequestOperation = defineAction({
@@ -47,7 +43,6 @@ export const resendEmailRequestOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => resendEmailRequest(ctx, input),
-  auditLog: describe,
 });
 
 /** Withdrawing a pending change needs no proof: nothing is committed by it. */
@@ -57,7 +52,6 @@ export const cancelEmailRequestOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => cancelEmailRequest(ctx, input),
-  auditLog: describe,
 });
 
 /** The ordinary verification email for the actor's own unverified address; no proof, throttled. */
@@ -66,5 +60,4 @@ export const resendVerificationOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx) => resendOwnVerification(ctx),
-  auditLog: describe,
 });

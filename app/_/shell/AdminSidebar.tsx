@@ -31,7 +31,7 @@ import { useViewer } from "./ViewerProvider";
 const ICONS: Record<RouteIcon, LucideIcon> = {
   dashboard: LayoutDashboardIcon,
   users: UsersIcon,
-  auditLogs: ScrollTextIcon,
+  staffLogs: ScrollTextIcon,
   emailLogs: MailIcon,
 };
 

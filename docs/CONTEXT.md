@@ -24,3 +24,10 @@ An operation's requirement for additional identity verification, either reusable
 
 **Required second factor**:
 A policy that a user must enroll a second verification method, distinct from whether enrollment is complete or a particular sign-in requires a fresh challenge.
+
+**Staff log**:
+The record of what staff changed: one entry per staff action that succeeded, saying who acted, on what, and what happened in a sentence built from snapshot blocks. It does not hold refused or failed attempts, actions of users on their own account, or sent emails.
+_Avoid_: Audit log, activity log
+
+**Block**:
+One part of a staff log message, such as a piece of text, a user, a date or a value. A block is a snapshot: it shows what was true when the action happened and needs nothing else to be displayed.

@@ -1,26 +1,17 @@
 import "server-only";
 
-import { describeTargetedAudit } from "@/src/lib/auth/builders/actionAudit";
 import { defineAction } from "@/src/lib/auth/builders/actionBuilder";
 import { STAFF_ROLES } from "@/src/lib/auth/permissions";
 import { sendPasswordReset, sendVerification } from "@/app/(AuthModule)/admin/_/db/users/emails";
 import { userTargetSchema } from "@/app/(AuthModule)/admin/_/schema";
-import type { UserMutationOutcome } from "@/app/(AuthModule)/admin/_/types";
 
 /**
  * The two email actions. Neither needs step-up: a verification message
  * proves nothing by itself, and the public forgot-password flow already
  * exists; the buttons still require their own declared permissions and the
- * server-side throttle. Not MCP-eligible.
+ * server-side throttle. Not MCP-eligible. Neither writes a staff log entry:
+ * nothing on the account changes, and the message is in the email log.
  */
-
-// TODO(audit): the operation-level integration point for users.verification.requested
-// and users.password_reset.requested refusals and failures; the accepted-send
-// events are recorded at the write sites in db/users/emails.ts.
-const auditLog = describeTargetedAudit<{ userId: string }, UserMutationOutcome>({
-  target: (input) => input.userId,
-  result: (output) => output.status,
-});
 
 export const sendVerificationOperation = defineAction({
   name: "users.sendVerification",
@@ -30,7 +21,6 @@ export const sendVerificationOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => sendVerification(ctx, input),
-  auditLog,
 });
 
 export const sendPasswordResetOperation = defineAction({
@@ -41,5 +31,4 @@ export const sendPasswordResetOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => sendPasswordReset(ctx, input),
-  auditLog,
 });

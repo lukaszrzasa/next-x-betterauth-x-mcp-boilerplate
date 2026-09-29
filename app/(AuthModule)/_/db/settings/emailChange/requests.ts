@@ -43,7 +43,6 @@ export async function markExpired(executor: RequestWriter, requestId: string): P
     .update(emailChangeRequest)
     .set({ state: "expired", ...erasedDigests })
     .where(and(eq(emailChangeRequest.id, requestId), inArray(emailChangeRequest.state, ACTIVE_STATES)));
-  // TODO(audit): Persist settings.email_request.expired (request ID, user ID, UTC time).
 }
 
 export async function markCancelled(
@@ -57,8 +56,6 @@ export async function markCancelled(
     .set({ state: "cancelled", cancelReason: reason, cancelledAt: now, ...erasedDigests })
     .where(and(eq(emailChangeRequest.id, requestId), inArray(emailChangeRequest.state, ACTIVE_STATES)))
     .returning({ id: emailChangeRequest.id });
-  // TODO(audit): Persist settings.email_request.cancelled (request ID, user ID,
-  // reason, UTC time; actor user ID when authenticated).
   return rows.length > 0;
 }
 
@@ -135,9 +132,6 @@ export async function createRequest(ctx: AuthedCtx, values: NewRequest): Promise
         ...values,
       })
       .returning();
-    // TODO(audit): Persist settings.email_request.created (request ID, kind,
-    // actor user ID, UTC time, original address and, for a correction, the
-    // corrected address). Never include the token or its digest.
     return row;
   });
 }

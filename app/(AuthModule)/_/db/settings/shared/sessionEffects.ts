@@ -40,6 +40,5 @@ export async function retrySessionRefresh(ctx: AuthedCtx): Promise<SyncOutcome> 
   if (!(await refreshUserSessions(ctx, "session refresh retry failed"))) {
     return { status: "partial", committed: false, failedEffects: ["session-refresh"] };
   }
-  // TODO(audit): Persist settings.session_sync.retried (effect: session-refresh).
   return { status: "completed" };
 }

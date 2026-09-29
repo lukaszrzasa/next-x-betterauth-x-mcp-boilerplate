@@ -76,8 +76,6 @@ export async function confirmReplacement(ctx: AuthedCtx, input: ConfirmSetupSche
       now,
     });
     if (!swapped) throw setupReplacedError();
-    // TODO(audit): Persist settings.factor.replaced after this commit (request
-    // ID, actor user ID, UTC time; recovery codes replaced). Never secrets/codes.
 
     const refreshed = await refreshUserSessions(ctx, "factor replaced but cached user copies were not refreshed");
     await discardStepUpState(ctx);

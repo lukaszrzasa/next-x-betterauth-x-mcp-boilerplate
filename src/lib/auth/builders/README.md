@@ -16,7 +16,7 @@ One concept, three words in the wild. Here is the strict breakdown:
 2. **Input Validation:** Parses input via Zod (including async refinements). Crucially, input is validated *before* step-up verification. This ensures that invalid requests neither prompt for a second factor nor consume a verification proof.
 3. **Authorization Check:** Rejects unknown entry points and enforces MCP opt-in policies. It then sequentially checks impersonation rules, verified email status, role admission, and granular permissions. Accounts outside admitted roles are rejected with `NOT_FOUND` to prevent revealing internal endpoints.
 4. **Step-Up Verification (MFA):** Satisfies the declared step-up policy (e.g., requiring 2FA).
-5. **Execution & Auditing:** Calls the handler and records the outcome. Audit hooks only run after a valid context exists.
+5. **Execution:** Runs step-up and the handler inside the operation's context (`currentOperationContext()` for provider callbacks such as Better Auth's email hooks) and writes the outcome to the application log. The builder persists nothing: a staff action's entry in the staff log is written by its service once the action is confirmed (`app/(LogsModule)`).
 
 ## 3. Polymorphic Adapters
 

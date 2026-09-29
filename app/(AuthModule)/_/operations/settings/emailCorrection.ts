@@ -17,6 +17,4 @@ export const beginEmailCorrectionOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => beginEmailCorrection(ctx, input),
-  // TODO(audit): refusals/failures of settings.emailCorrection.begin; never the password or code.
-  auditLog: (ctx, event) => `${ctx.user.id}: ${event.outcome}`,
 });

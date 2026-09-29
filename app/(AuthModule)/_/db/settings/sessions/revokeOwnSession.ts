@@ -20,8 +20,6 @@ export async function revokeOwnSession(ctx: AuthedCtx, input: SessionTargetSchem
       await revokeSessionsByToken([target.token]);
     });
     if (!confirmed) return unconfirmedRevocation;
-    // TODO(audit): Persist settings.session.revoked (actor user ID, revoked
-    // session ID, UTC time). Never the token.
     return { status: "completed" };
   });
 }

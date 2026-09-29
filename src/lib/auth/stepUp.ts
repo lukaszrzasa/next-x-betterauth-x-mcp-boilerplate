@@ -225,6 +225,7 @@ export async function issueEmailChallenge(
     code,
     name: user.name,
     expiresInMinutes: CHALLENGE_TTL_SECONDS / 60,
+    recipient: { userId: user.id, name: user.name },
   });
 }
 

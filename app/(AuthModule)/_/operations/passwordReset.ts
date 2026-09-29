@@ -15,7 +15,5 @@ export const completePasswordResetOperation = defineAction({
   auth: "public",
   schema: completePasswordResetSchema,
   mcpAllowed: false,
-  // TODO(audit): subject established by the reset token; never the token or password.
-  auditLog: (ctx, event) => `${ctx.requestId}: ${event.outcome}`,
   handler: (ctx, input) => completePasswordReset(ctx, input),
 });

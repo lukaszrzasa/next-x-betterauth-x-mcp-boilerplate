@@ -20,7 +20,7 @@ Inspected source: `/Users/lukaszrzasa/WebstormProjects/torzeszowapi-2-agent`.
 Inspected starter: `/Users/lukaszrzasa/WebstormProjects/next-x-betterauth-x-mcp-template`.
 
 - One Better Auth instance consumes shared role definitions. The custom admin bypass and plugin evaluation still need matching semantics.
-- The action builder centralizes validation, authorization, verification, and audit behavior, but its session-based identity path does not establish MCP identity automatically.
+- The action builder centralizes validation, authorization and verification, but its session-based identity path does not establish MCP identity automatically.
 - Redis holds authentication state and verification data. Treating every Redis operation as optional would undermine those guarantees.
 - Multiple step-up pools add policy complexity. One fixed verification window provides a simpler default.
 
@@ -91,3 +91,66 @@ Observations:
 
 Full `EXPLAIN (ANALYZE, BUFFERS)` output is in
 `docs/evidence/admin-users-explain-2026-09-25.txt`.
+
+## Logs lists: scale check (2026-09-27)
+
+Setup: disposable database `app_scale` on PostgreSQL 18.4 (embedded-postgres
+build), migrations 0000–0006, seeded directly in SQL (synthetic, never
+through the recorders and never in an application database) with 100,000
+`email_log` rows - 90,000 initial attempts over 365 days (~64% accepted, 18%
+failed, 9% unknown, 9% sending; 5,000 recipients, 80% with a user ID, five
+subject templates) plus 10,000 retries forming attempt 2 of 10,000 chains.
+`ANALYZE` run. Hardware: 2 vCPU
+Intel Xeon @ 2.10GHz, 7 GB RAM, sandbox container; `work_mem` 4MB,
+`shared_buffers` 128MB; warm cache. The SQL is exactly what the admin query
+services emitted through their guarded operations (captured with
+`log_statement = 'all'`). Timings are representative of plan shape, not an
+SLA.
+
+| Query | Plan | Time |
+| --- | --- | --- |
+| E1. email default (30 days, newest first), count | Index Only Scan using email_log_started_at_id_idx | 1.731 ms |
+| E1. email default, rows | Index Scan using email_log_started_at_id_idx | 0.103 ms |
+| E2. email selective search "Template 42" (all time), count | Bitmap Index Scan on email_log_search_text_trgm_idx | 4.991 ms |
+| E2. email selective search, rows | top-N heapsort, Bitmap Index Scan on email_log_search_text_trgm_idx | 4.743 ms |
+| E3. email two-character search "pe" (all time), count | Seq Scan on email_log | 137.385 ms |
+| E3. email two-character search, rows | Index Scan using email_log_started_at_id_idx (filter) | 0.126 ms |
+| E4. email exact recipient (all time), count | Index Only Scan using email_log_recipient_email_started_at_id_idx | 0.080 ms |
+| E4. email exact recipient, rows | quicksort, Bitmap Index Scan on email_log_recipient_email_started_at_id_idx | 0.144 ms |
+| E5. email exact recipient user ID (all time), count | Index Only Scan using email_log_recipient_user_started_at_id_idx | 0.065 ms |
+| E5. email exact recipient user ID, rows | quicksort, Bitmap Index Scan on email_log_recipient_user_started_at_id_idx | 0.191 ms |
+| E6. email status failed (30 days), count | Index Only Scan using email_log_status_started_at_id_idx | 0.220 ms |
+| E6. email status failed, rows | Index Scan using email_log_status_started_at_id_idx | 0.119 ms |
+| E7. email deep page 3000 of 4000 (all time), count | Index Only Scan using email_log_chain_attempt_idx | 12.756 ms |
+| E7. email deep page 3000, rows | external merge sort, Parallel Seq Scan on email_log | 115.209 ms |
+| E8. email detail, row | Index Scan using email_log_pkey | 0.057 ms |
+| E8. email detail, chain count | BitmapOr of email_log_pkey and email_log_chain_attempt_idx | 0.087 ms |
+| E8. email detail, chain page | quicksort, BitmapOr of email_log_pkey and email_log_chain_attempt_idx | 0.104 ms |
+
+Observations:
+
+- The default 30-day pages, the status filter and every exact lookup
+  (recipient, recipient user) are served by the documented
+  `(…, time DESC, id DESC)` indexes, as ordered scans or small bitmap scans:
+  well under a millisecond for rows, a few milliseconds for the 30-day count.
+- Selective metadata search uses the `search_text` trigram indexes (~5 ms).
+  A two-character search cannot use trigrams and counts with a sequential
+  scan (~140 ms here), the same documented `pg_trgm` limitation as the user
+  list; literal substring semantics are kept rather than rejecting short
+  queries, and the 5-second statement timeout bounds larger tables.
+- The email retry chain is a `BitmapOr` of the primary key and the unique
+  `(original_log_id, attempt_number)` index.
+- Deep OFFSET pages grow linearly with the offset. At page 3,000 of all-time
+  email logs the planner prefers a parallel sequential scan with a disk sort
+  (~115 ms, `work_mem` 4MB) over walking 75,000 index entries. Numbered
+  pagination remains the
+  accepted first-release trade-off, and the default 30-day window keeps
+  ordinary pages small.
+- Unfiltered all-time counts are full index-only scans (~13 ms at this
+  size) and grow with the data.
+
+Full `EXPLAIN (ANALYZE, BUFFERS)` output is in
+`docs/evidence/logs-explain-2026-09-27.txt`. That run also measured an
+`audit_log` table, which the staff log has since replaced; its sections of
+the file describe a table that no longer exists. The staff log's queries
+(`staff_log`, the same index shapes) have not been measured at scale.

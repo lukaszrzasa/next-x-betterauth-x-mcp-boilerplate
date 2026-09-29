@@ -54,8 +54,6 @@ export async function selectNewEmailAddress(
       .where(and(eq(emailChangeRequest.id, request.id), eq(emailChangeRequest.state, "awaiting_new_address")))
       .returning();
     if (!updated) throw inactiveRequestError();
-    // TODO(audit): Persist settings.email_request.destination_selected (request
-    // ID, actor user ID, UTC time, new address). Never the token or digest.
     return updated;
   });
 

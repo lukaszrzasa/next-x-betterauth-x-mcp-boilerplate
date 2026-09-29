@@ -30,6 +30,11 @@ const actions = {
   retryUnbanSessionRefreshAction: mock(async () => completed()),
 };
 mock.module("../../app/(AuthModule)/admin/_/actions.ts", () => actions);
+// The account's staff log is the logs module's widget; its own suite covers it.
+const emptyStaffLog = (query) =>
+  ok({ items: [], total: 0, page: 1, pageSize: query.pageSize, query, asOf: "2026-09-20T14:32:00.000Z", range: { from: null, until: null } });
+const listStaffLogsAction = mock(async (query) => emptyStaffLog(query));
+mock.module("../../app/(LogsModule)/admin/_/actions.ts", () => ({ listStaffLogsAction, getEmailLogAction: mock() }));
 
 const React = await import("react");
 const { render, fireEvent, screen, cleanup, waitFor, within, act } = await import("@testing-library/react");
@@ -61,11 +66,11 @@ const userOf = (overrides = {}) => ({
   ...overrides,
 });
 
-function renderDetail(user, listUrl = "/admin/users") {
+function renderDetail(user, listUrl = "/admin/users", role = "admin") {
   return render(
-    <ViewerProvider viewer={{ name: "Viewer", email: "v@example.com", image: null, role: "admin" }}>
+    <ViewerProvider viewer={{ name: "Viewer", email: "v@example.com", image: null, role }}>
       <ActionProvider>
-        <UserDetail user={user} listUrl={listUrl} />
+        <UserDetail user={user} listUrl={listUrl} readAt="2026-09-20T14:32:00.000Z" />
         <ConfirmDialogRoot />
       </ActionProvider>
     </ViewerProvider>,
@@ -91,7 +96,7 @@ test("the header and sections present the account; controls follow capabilities,
   expect(screen.getByRole("heading", { level: 1, name: "Grace Hopper" })).toBeTruthy();
   expect(screen.getByRole("link", { name: "Back to users" }).getAttribute("href")).toBe("/admin/users");
   const headings = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
-  expect(headings).toEqual(["Profile", "Security", "Access", "Account details"]);
+  expect(headings).toEqual(["Profile", "Security", "Access", "Account details", "Staff log"]);
   for (const name of ["Edit name", "Edit email", "Send verification email", "Send password-reset email", "Sign out of all devices", "Ban user"])
     expect(screen.getByRole("button", { name })).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Remove ban" })).toBeNull();
@@ -383,4 +388,35 @@ test("root signing themselves out is routed to sign-in; a vanished target asks f
     fireEvent.click(screen.getByRole("button", { name: "Send password-reset email" }));
   });
   await screen.findByText("This user no longer exists");
+});
+
+test("the account's staff log is read for an admin, by the account's ID alone", async () => {
+  listStaffLogsAction.mockClear();
+  renderDetail(userOf());
+  expect(screen.getByRole("heading", { name: "Staff log" })).toBeTruthy();
+  await waitFor(() => expect(listStaffLogsAction).toHaveBeenCalled());
+  expect(listStaffLogsAction.mock.calls[0][0]).toMatchObject({
+    resourceId: "u-target",
+    resourceType: "",
+    actorId: "",
+    actions: [],
+  });
+  expect(await screen.findByText("No staff actions have been logged here.")).toBeTruthy();
+});
+
+test("a moderator sees no staff log section and nothing is read for them", async () => {
+  listStaffLogsAction.mockClear();
+  renderDetail(userOf(), "/admin/users", "moderator");
+  expect(screen.queryByRole("heading", { name: "Staff log" })).toBeNull();
+  expect(listStaffLogsAction).not.toHaveBeenCalled();
+});
+
+test("an action that was not written to the staff log says so, as a warning", async () => {
+  actions.revokeUserSessionsAction.mockImplementationOnce(async () =>
+    ok({ status: "completed", userId: "u-target", unrecorded: true }),
+  );
+  renderDetail(userOf());
+  fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
+  fireEvent.click(await screen.findByRole("button", { name: "Sign out everywhere" }));
+  expect(await screen.findByText(/was not written to the staff log/)).toBeTruthy();
 });

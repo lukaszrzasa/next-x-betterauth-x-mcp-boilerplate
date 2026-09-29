@@ -30,7 +30,7 @@ export type Access =
     };
 
 /** Serializable icon identifiers; the sidebar maps them to components. */
-export type RouteIcon = "dashboard" | "users" | "auditLogs" | "emailLogs";
+export type RouteIcon = "dashboard" | "users" | "staffLogs" | "emailLogs";
 
 export type RouteDef = {
   href: string;

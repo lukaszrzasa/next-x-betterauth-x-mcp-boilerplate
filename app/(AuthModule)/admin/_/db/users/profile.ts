@@ -16,6 +16,7 @@ import type {
 import type { FailedEffect, UserMutationOutcome } from "@/app/(AuthModule)/admin/_/types";
 import { requestVerificationEmail } from "./emails";
 import { attemptEffect, conclude, confirmCommitted, unchanged } from "./outcomes";
+import { emailUpdated, logged, nameUpdated, sessionsRetried, type UserLogEntry } from "./staffLog";
 import { authorizeTargetAction, type Target } from "./targets";
 import { consumeAdminEmailAttempt } from "./throttle";
 
@@ -29,7 +30,8 @@ export async function updateUserName(
   ctx: AuthedCtx,
   input: UpdateUserNameSchema,
 ): Promise<UserMutationOutcome> {
-  return withUserAccountLock(ctx, input.userId, async (reads) => {
+  let entry: UserLogEntry | undefined;
+  const outcome = await withUserAccountLock(ctx, input.userId, async (reads) => {
     const { target } = await authorizeTargetAction(ctx, reads, input.userId, "updateName");
     if (target.name === input.name) return unchanged(target.id);
 
@@ -42,33 +44,30 @@ export async function updateUserName(
     } catch (error) {
       await confirmCommitted(reads, target.id, (current) => current.name === input.name, error);
     }
-    // TODO(audit): Persist users.name.updated after this confirmed write. Include
-    // ctx.requestId, actor user ID, target user ID, UTC time, outcome, and an
-    // allowlisted before/after diff for name. Record partial failure separately
-    // from committed success. Never include request headers, cookies,
-    // passwords, session/reset/verification tokens, OTP values, or
-    // factor/recovery secrets.
 
     const failed: FailedEffect[] = [];
     await attemptEffect(ctx, "session-refresh", () => refreshCommittedUserSessions(target.id), failed);
+    entry = nameUpdated({ id: target.id, name: input.name }, target.name);
     return conclude(target.id, true, failed);
   });
+  // Logged after the lock: the write is confirmed, and the entry must not hold up the account.
+  return logged(ctx, outcome, entry);
 }
 
 export async function retryNameSessionRefresh(
   ctx: AuthedCtx,
   input: UserTargetSchema,
 ): Promise<UserMutationOutcome> {
-  return withUserAccountLock(ctx, input.userId, async (reads) => {
+  let entry: UserLogEntry | undefined;
+  const outcome = await withUserAccountLock(ctx, input.userId, async (reads) => {
     const { target } = await authorizeTargetAction(ctx, reads, input.userId, "updateName");
     const failed: FailedEffect[] = [];
     await attemptEffect(ctx, "session-refresh", () => refreshCommittedUserSessions(target.id), failed);
-    // TODO(audit): Persist users.session_sync.retried (effect: session-refresh)
-    // with ctx.requestId, actor and target user IDs, UTC time and outcome only.
+    if (failed.length === 0) entry = sessionsRetried(target, "session refresh");
     return conclude(target.id, false, failed);
   });
+  return logged(ctx, outcome, entry);
 }
-
 
 /** After a committed address change: revoke, then verify the *new* address. */
 async function runEmailChangeEffects(
@@ -123,23 +122,20 @@ export async function updateUserEmail(
     } catch (error) {
       await confirmCommitted(reads, target.id, (current) => current.email === input.email, error);
     }
-    // TODO(audit): Persist users.email.updated after this confirmed write. Include
-    // ctx.requestId, actor user ID, target user ID, UTC time, outcome, and the
-    // old and new email address (deliberately classified audit PII), plus that
-    // verification was reset. Record partial failure of the follow-up effects
-    // separately from the committed change. Never include request headers,
-    // cookies, passwords, session/reset/verification tokens, OTP values, or
-    // factor/recovery secrets.
 
     const changed = { ...target, email: input.email, emailVerified: false };
     await runEmailChangeEffects(ctx, changed, failed);
-    return changed;
+    return { before: target, changed };
   });
   if (!committed) return unchanged(input.userId);
 
   // Outside the lock: sending mail must never hold up other account actions.
-  await requestVerificationForCurrentEmail(ctx, committed, failed);
-  return conclude(committed.id, true, failed);
+  await requestVerificationForCurrentEmail(ctx, committed.changed, failed);
+  return logged(
+    ctx,
+    conclude(committed.changed.id, true, failed),
+    emailUpdated(committed.changed, committed.before.email, input.email),
+  );
 }
 
 /**
@@ -159,8 +155,9 @@ export async function retryEmailChangeEffects(
     return target;
   });
   if (!target.emailVerified) await requestVerificationForCurrentEmail(ctx, target, failed);
-  // TODO(audit): Persist users.session_sync.retried (effects: session-revocation,
-  // verification-email) with ctx.requestId, actor and target user IDs, UTC time
-  // and per-effect outcome only.
-  return conclude(target.id, false, failed);
+  return logged(
+    ctx,
+    conclude(target.id, false, failed),
+    failed.length === 0 ? sessionsRetried(target, "session sign-out") : undefined,
+  );
 }

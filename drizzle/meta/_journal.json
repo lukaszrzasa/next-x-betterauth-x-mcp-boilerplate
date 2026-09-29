@@ -43,6 +43,13 @@
       "when": 1790383529781,
       "tag": "0005_settings_requests_and_security_version",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790632790523,
+      "tag": "0006_logs_email_and_staff",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,488 @@
+Logs module list and detail queries: EXPLAIN (ANALYZE, BUFFERS), 2026-09-27
+
+Environment: disposable database app_scale on PostgreSQL 18.4 (embedded-postgres
+build, x86_64), 2 vCPU Intel Xeon @ 2.10GHz, 7 GB RAM, sandbox container;
+work_mem 4MB, shared_buffers 128MB (defaults); warm cache.
+Data: migrations 0000-0006, then the synthetic seed described in
+docs/evidence.md ("Logs lists: scale check"): 100,000 email_log rows (90,000
+initial attempts and 10,000 retries) and 100,000 audit_log rows spread over
+365 days; ANALYZE run.
+Method: the SQL is exactly what the admin query services emitted when run
+through their guarded operations (captured with log_statement = 'all'); the
+bind parameters from each statement's log DETAIL line are inlined as literals
+for EXPLAIN. Timings are representative of plan shape, not an SLA.
+
+-- E1 email default (30 days, newest first) [count]
+-- select count(*) from "email_log" where ("email_log"."started_at" >= '2026-08-28 23:56:41.532+02' and "email_log"."started_at" < '2026-09-27 23:56:41.533+02')
+Aggregate  (cost=451.40..451.41 rows=1 width=8) (actual time=1.687..1.688 rows=1.00 loops=1)
+  Buffers: shared hit=77
+  ->  Index Only Scan using email_log_started_at_id_idx on email_log  (cost=0.42..427.96 rows=9377 width=0) (actual time=0.013..1.206 rows=9424.00 loops=1)
+        Index Cond: ((started_at >= '2026-08-28 23:56:41.532+02'::timestamp with time zone) AND (started_at < '2026-09-27 23:56:41.533+02'::timestamp with time zone))
+        Heap Fetches: 0
+        Index Searches: 1
+        Buffers: shared hit=77
+Planning:
+  Buffers: shared hit=218
+Planning Time: 0.694 ms
+Execution Time: 1.731 ms
+
+-- E1 email default (30 days, newest first) [rows]
+-- select "id", "started_at", "recipient_email", "recipient_user_id", "recipient_label", "subject", "status", "attempt_number", "original_log_id", "requester_kind", "requester_id", "requester_label" from "email_log" where ("email_log"."started_at" >= '2026-08-28 23:56:41.532+02' and "email_log"."started_at" < '2026-09-27 23:56:41.533+02') order by "email_log"."started_at" desc, "email_log"."id" desc limit '25'
+Limit  (cost=0.42..56.23 rows=25 width=148) (actual time=0.019..0.052 rows=25.00 loops=1)
+  Buffers: shared hit=16
+  ->  Index Scan using email_log_started_at_id_idx on email_log  (cost=0.42..20933.90 rows=9377 width=148) (actual time=0.017..0.047 rows=25.00 loops=1)
+        Index Cond: ((started_at >= '2026-08-28 23:56:41.532+02'::timestamp with time zone) AND (started_at < '2026-09-27 23:56:41.533+02'::timestamp with time zone))
+        Index Searches: 1
+        Buffers: shared hit=16
+Planning:
+  Buffers: shared hit=272
+Planning Time: 0.760 ms
+Execution Time: 0.103 ms
+
+-- E2 email selective search Template 42 (all time) [count]
+-- select count(*) from "email_log" where "email_log"."search_text" ILIKE '%Template 42%' ESCAPE '\'
+Aggregate  (cost=150.45..150.46 rows=1 width=8) (actual time=4.908..4.909 rows=1.00 loops=1)
+  Buffers: shared hit=593
+  ->  Bitmap Heap Scan on email_log  (cost=111.19..150.43 rows=10 width=0) (actual time=2.116..4.884 rows=207.00 loops=1)
+        Recheck Cond: (search_text ~~* '%Template 42%'::text)
+        Rows Removed by Index Recheck: 437
+        Heap Blocks: exact=467
+        Buffers: shared hit=593
+        ->  Bitmap Index Scan on email_log_search_text_trgm_idx  (cost=0.00..111.19 rows=10 width=0) (actual time=2.033..2.033 rows=644.00 loops=1)
+              Index Cond: (search_text ~~* '%Template 42%'::text)
+              Index Searches: 1
+              Buffers: shared hit=126
+Planning:
+  Buffers: shared hit=200
+Planning Time: 0.954 ms
+Execution Time: 4.991 ms
+
+-- E2 email selective search Template 42 (all time) [rows]
+-- select "id", "started_at", "recipient_email", "recipient_user_id", "recipient_label", "subject", "status", "attempt_number", "original_log_id", "requester_kind", "requester_id", "requester_label" from "email_log" where "email_log"."search_text" ILIKE '%Template 42%' ESCAPE '\' order by "email_log"."started_at" desc, "email_log"."id" desc limit '25'
+Limit  (cost=150.59..150.62 rows=10 width=148) (actual time=4.539..4.545 rows=25.00 loops=1)
+  Buffers: shared hit=599
+  ->  Sort  (cost=150.59..150.62 rows=10 width=148) (actual time=4.536..4.539 rows=25.00 loops=1)
+        Sort Key: started_at DESC, id DESC
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=599
+        ->  Bitmap Heap Scan on email_log  (cost=111.19..150.43 rows=10 width=148) (actual time=2.063..4.456 rows=207.00 loops=1)
+              Recheck Cond: (search_text ~~* '%Template 42%'::text)
+              Rows Removed by Index Recheck: 437
+              Heap Blocks: exact=467
+              Buffers: shared hit=593
+              ->  Bitmap Index Scan on email_log_search_text_trgm_idx  (cost=0.00..111.19 rows=10 width=0) (actual time=1.988..1.988 rows=644.00 loops=1)
+                    Index Cond: (search_text ~~* '%Template 42%'::text)
+                    Index Searches: 1
+                    Buffers: shared hit=126
+Planning:
+  Buffers: shared hit=270
+Planning Time: 1.033 ms
+Execution Time: 4.743 ms
+
+-- E3 email short search pe (all time) [count]
+-- select count(*) from "email_log" where "email_log"."search_text" ILIKE '%pe%' ESCAPE '\'
+Aggregate  (cost=12749.98..12749.99 rows=1 width=8) (actual time=137.319..137.321 rows=1.00 loops=1)
+  Buffers: shared hit=1479 read=9771
+  ->  Seq Scan on email_log  (cost=0.00..12500.00 rows=99990 width=0) (actual time=0.019..132.078 rows=100000.00 loops=1)
+        Filter: (search_text ~~* '%pe%'::text)
+        Buffers: shared hit=1479 read=9771
+Planning:
+  Buffers: shared hit=200
+Planning Time: 0.943 ms
+Execution Time: 137.385 ms
+
+-- E3 email short search pe (all time) [rows]
+-- select "id", "started_at", "recipient_email", "recipient_user_id", "recipient_label", "subject", "status", "attempt_number", "original_log_id", "requester_kind", "requester_id", "requester_label" from "email_log" where "email_log"."search_text" ILIKE '%pe%' ESCAPE '\' order by "email_log"."started_at" desc, "email_log"."id" desc limit '25'
+Limit  (cost=0.42..10.75 rows=25 width=148) (actual time=0.024..0.076 rows=25.00 loops=1)
+  Buffers: shared hit=16
+  ->  Index Scan using email_log_started_at_id_idx on email_log  (cost=0.42..41344.08 rows=99990 width=148) (actual time=0.023..0.072 rows=25.00 loops=1)
+        Filter: (search_text ~~* '%pe%'::text)
+        Index Searches: 1
+        Buffers: shared hit=16
+Planning:
+  Buffers: shared hit=270
+Planning Time: 1.037 ms
+Execution Time: 0.126 ms
+
+-- E4 email exact recipient (all time) [count]
+-- select count(*) from "email_log" where "email_log"."recipient_email" = 'person4242@example1.test'
+Aggregate  (cost=4.56..4.57 rows=1 width=8) (actual time=0.035..0.036 rows=1.00 loops=1)
+  Buffers: shared hit=4
+  ->  Index Only Scan using email_log_recipient_email_started_at_id_idx on email_log  (cost=0.42..4.54 rows=7 width=0) (actual time=0.029..0.030 rows=7.00 loops=1)
+        Index Cond: (recipient_email = 'person4242@example1.test'::text)
+        Heap Fetches: 0
+        Index Searches: 1
+        Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=203
+Planning Time: 0.529 ms
+Execution Time: 0.080 ms
+
+-- E4 email exact recipient (all time) [rows]
+-- select "id", "started_at", "recipient_email", "recipient_user_id", "recipient_label", "subject", "status", "attempt_number", "original_log_id", "requester_kind", "requester_id", "requester_label" from "email_log" where "email_log"."recipient_email" = 'person4242@example1.test' order by "email_log"."started_at" desc, "email_log"."id" desc limit '25'
+Limit  (cost=32.13..32.15 rows=7 width=148) (actual time=0.101..0.103 rows=7.00 loops=1)
+  Buffers: shared hit=16
+  ->  Sort  (cost=32.13..32.15 rows=7 width=148) (actual time=0.099..0.100 rows=7.00 loops=1)
+        Sort Key: started_at DESC, id DESC
+        Sort Method: quicksort  Memory: 26kB
+        Buffers: shared hit=16
+        ->  Bitmap Heap Scan on email_log  (cost=4.47..32.04 rows=7 width=148) (actual time=0.035..0.071 rows=7.00 loops=1)
+              Recheck Cond: ((recipient_email)::text = 'person4242@example1.test'::text)
+              Heap Blocks: exact=7
+              Buffers: shared hit=10
+              ->  Bitmap Index Scan on email_log_recipient_email_started_at_id_idx  (cost=0.00..4.47 rows=7 width=0) (actual time=0.020..0.020 rows=7.00 loops=1)
+                    Index Cond: ((recipient_email)::text = 'person4242@example1.test'::text)
+                    Index Searches: 1
+                    Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=260
+Planning Time: 0.706 ms
+Execution Time: 0.144 ms
+
+-- E5 email exact recipient user ID (all time) [count]
+-- select count(*) from "email_log" where "email_log"."recipient_user_id" = 'user-4242'
+Aggregate  (cost=4.82..4.83 rows=1 width=8) (actual time=0.033..0.033 rows=1.00 loops=1)
+  Buffers: shared hit=4
+  ->  Index Only Scan using email_log_recipient_user_started_at_id_idx on email_log  (cost=0.42..4.77 rows=20 width=0) (actual time=0.025..0.027 rows=21.00 loops=1)
+        Index Cond: (recipient_user_id = 'user-4242'::text)
+        Heap Fetches: 0
+        Index Searches: 1
+        Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=203
+Planning Time: 0.515 ms
+Execution Time: 0.065 ms
+
+-- E5 email exact recipient user ID (all time) [rows]
+-- select "id", "started_at", "recipient_email", "recipient_user_id", "recipient_label", "subject", "status", "attempt_number", "original_log_id", "requester_kind", "requester_id", "requester_label" from "email_log" where "email_log"."recipient_user_id" = 'user-4242' order by "email_log"."started_at" desc, "email_log"."id" desc limit '25'
+Limit  (cost=82.72..82.77 rows=20 width=148) (actual time=0.156..0.159 rows=21.00 loops=1)
+  Buffers: shared hit=30
+  ->  Sort  (cost=82.72..82.77 rows=20 width=148) (actual time=0.154..0.155 rows=21.00 loops=1)
+        Sort Key: started_at DESC, id DESC
+        Sort Method: quicksort  Memory: 30kB
+        Buffers: shared hit=30
+        ->  Bitmap Heap Scan on email_log  (cost=4.57..82.29 rows=20 width=148) (actual time=0.033..0.129 rows=21.00 loops=1)
+              Recheck Cond: ((recipient_user_id)::text = 'user-4242'::text)
+              Heap Blocks: exact=21
+              Buffers: shared hit=24
+              ->  Bitmap Index Scan on email_log_recipient_user_started_at_id_idx  (cost=0.00..4.57 rows=20 width=0) (actual time=0.018..0.018 rows=21.00 loops=1)
+                    Index Cond: ((recipient_user_id)::text = 'user-4242'::text)
+                    Index Searches: 1
+                    Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=260
+Planning Time: 0.498 ms
+Execution Time: 0.191 ms
+
+-- E6 email status failed (30 days) [count]
+-- select count(*) from "email_log" where ("email_log"."started_at" >= '2026-08-28 23:56:41.782+02' and "email_log"."started_at" < '2026-09-27 23:56:41.783+02' and "email_log"."status" = 'failed')
+Aggregate  (cost=106.54..106.55 rows=1 width=8) (actual time=0.192..0.192 rows=1.00 loops=1)
+  Buffers: shared hit=18
+  ->  Index Only Scan using email_log_status_started_at_id_idx on email_log  (cost=0.42..102.73 rows=1525 width=0) (actual time=0.023..0.140 rows=1346.00 loops=1)
+        Index Cond: ((status = 'failed'::text) AND (started_at >= '2026-08-28 23:56:41.782+02'::timestamp with time zone) AND (started_at < '2026-09-27 23:56:41.783+02'::timestamp with time zone))
+        Heap Fetches: 0
+        Index Searches: 1
+        Buffers: shared hit=18
+Planning:
+  Buffers: shared hit=227
+Planning Time: 0.560 ms
+Execution Time: 0.220 ms
+
+-- E6 email status failed (30 days) [rows]
+-- select "id", "started_at", "recipient_email", "recipient_user_id", "recipient_label", "subject", "status", "attempt_number", "original_log_id", "requester_kind", "requester_id", "requester_label" from "email_log" where ("email_log"."started_at" >= '2026-08-28 23:56:41.782+02' and "email_log"."started_at" < '2026-09-27 23:56:41.783+02' and "email_log"."status" = 'failed') order by "email_log"."started_at" desc, "email_log"."id" desc limit '25'
+Limit  (cost=0.42..87.25 rows=25 width=148) (actual time=0.028..0.094 rows=25.00 loops=1)
+  Buffers: shared hit=18
+  ->  Index Scan using email_log_status_started_at_id_idx on email_log  (cost=0.42..5297.33 rows=1525 width=148) (actual time=0.026..0.089 rows=25.00 loops=1)
+        Index Cond: (((status)::text = 'failed'::text) AND (started_at >= '2026-08-28 23:56:41.782+02'::timestamp with time zone) AND (started_at < '2026-09-27 23:56:41.783+02'::timestamp with time zone))
+        Index Searches: 1
+        Buffers: shared hit=18
+Planning:
+  Buffers: shared hit=272
+Planning Time: 0.605 ms
+Execution Time: 0.119 ms
+
+-- E7 email deep page 3000 (all time) [count]
+-- select count(*) from "email_log"
+Aggregate  (cost=2394.29..2394.30 rows=1 width=8) (actual time=12.710..12.711 rows=1.00 loops=1)
+  Buffers: shared hit=161
+  ->  Index Only Scan using email_log_chain_attempt_idx on email_log  (cost=0.29..2144.29 rows=100000 width=0) (actual time=0.028..7.967 rows=100000.00 loops=1)
+        Heap Fetches: 0
+        Index Searches: 1
+        Buffers: shared hit=161
+Planning:
+  Buffers: shared hit=216
+Planning Time: 0.552 ms
+Execution Time: 12.756 ms
+
+-- E7 email deep page 3000 (all time) [rows]
+-- select "id", "started_at", "recipient_email", "recipient_user_id", "recipient_label", "subject", "status", "attempt_number", "original_log_id", "requester_kind", "requester_id", "requester_label" from "email_log" order by "email_log"."started_at" desc, "email_log"."id" desc limit '25' offset '74975'
+Limit  (cost=27732.00..27734.91 rows=25 width=148) (actual time=110.527..114.749 rows=25.00 loops=1)
+  Buffers: shared hit=1665 read=9677, temp read=1661 written=1856
+  ->  Gather Merge  (cost=18999.93..30646.58 rows=100000 width=148) (actual time=87.772..112.037 rows=75000.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=1665 read=9677, temp read=1661 written=1856
+        ->  Sort  (cost=17999.90..18104.07 rows=41667 width=148) (actual time=84.076..87.381 rows=25243.00 loops=3)
+              Sort Key: started_at DESC, id DESC
+              Sort Method: external merge  Disk: 4808kB
+              Buffers: shared hit=1665 read=9677, temp read=1661 written=1856
+              Worker 0:  Sort Method: external merge  Disk: 4664kB
+              Worker 1:  Sort Method: external merge  Disk: 5328kB
+              ->  Parallel Seq Scan on email_log  (cost=0.00..11666.67 rows=41667 width=148) (actual time=0.130..61.303 rows=33333.33 loops=3)
+                    Buffers: shared hit=1573 read=9677
+Planning:
+  Buffers: shared hit=255
+Planning Time: 0.578 ms
+Execution Time: 115.209 ms
+
+-- A1 audit default (30 days, newest first) [count]
+-- select count(*) from "audit_log" where ("audit_log"."occurred_at" >= '2026-08-28 23:56:41.917+02' and "audit_log"."occurred_at" < '2026-09-27 23:56:41.918+02')
+Aggregate  (cost=347.93..347.94 rows=1 width=8) (actual time=1.081..1.082 rows=1.00 loops=1)
+  Buffers: shared hit=44
+  ->  Index Only Scan using audit_log_occurred_at_id_idx on audit_log  (cost=0.42..327.54 rows=8156 width=0) (actual time=0.011..0.776 rows=8228.00 loops=1)
+        Index Cond: ((occurred_at >= '2026-08-28 23:56:41.917+02'::timestamp with time zone) AND (occurred_at < '2026-09-27 23:56:41.918+02'::timestamp with time zone))
+        Heap Fetches: 0
+        Index Searches: 1
+        Buffers: shared hit=44
+Planning:
+  Buffers: shared hit=240
+Planning Time: 0.591 ms
+Execution Time: 1.119 ms
+
+-- A1 audit default (30 days, newest first) [rows]
+-- select "id", "occurred_at", "event_name", "outcome", "actor_kind", "actor_id", "actor_label", "subject_type", "subject_id", "subject_label", "message_preview" from "audit_log" where ("audit_log"."occurred_at" >= '2026-08-28 23:56:41.917+02' and "audit_log"."occurred_at" < '2026-09-27 23:56:41.918+02') order by "audit_log"."occurred_at" desc, "audit_log"."id" desc limit '25'
+Limit  (cost=0.42..35.00 rows=25 width=174) (actual time=0.015..0.037 rows=25.00 loops=1)
+  Buffers: shared hit=6
+  ->  Index Scan using audit_log_occurred_at_id_idx on audit_log  (cost=0.42..11281.66 rows=8156 width=174) (actual time=0.014..0.032 rows=25.00 loops=1)
+        Index Cond: ((occurred_at >= '2026-08-28 23:56:41.917+02'::timestamp with time zone) AND (occurred_at < '2026-09-27 23:56:41.918+02'::timestamp with time zone))
+        Index Searches: 1
+        Buffers: shared hit=6
+Planning:
+  Buffers: shared hit=285
+Planning Time: 0.644 ms
+Execution Time: 0.069 ms
+
+-- A2 audit selective search Member 4242 (all time) [count]
+-- select count(*) from "audit_log" where "audit_log"."search_text" ILIKE '%Member 4242%' ESCAPE '\'
+Aggregate  (cost=162.82..162.83 rows=1 width=8) (actual time=3.454..3.455 rows=1.00 loops=1)
+  Buffers: shared hit=232
+  ->  Bitmap Heap Scan on audit_log  (cost=123.57..162.80 rows=10 width=0) (actual time=3.341..3.448 rows=20.00 loops=1)
+        Recheck Cond: (search_text ~~* '%Member 4242%'::text)
+        Heap Blocks: exact=20
+        Buffers: shared hit=232
+        ->  Bitmap Index Scan on audit_log_search_text_trgm_idx  (cost=0.00..123.57 rows=10 width=0) (actual time=3.310..3.310 rows=20.00 loops=1)
+              Index Cond: (search_text ~~* '%Member 4242%'::text)
+              Index Searches: 1
+              Buffers: shared hit=212
+Planning:
+  Buffers: shared hit=246
+Planning Time: 1.044 ms
+Execution Time: 3.527 ms
+
+-- A2 audit selective search Member 4242 (all time) [rows]
+-- select "id", "occurred_at", "event_name", "outcome", "actor_kind", "actor_id", "actor_label", "subject_type", "subject_id", "subject_label", "message_preview" from "audit_log" where "audit_log"."search_text" ILIKE '%Member 4242%' ESCAPE '\' order by "audit_log"."occurred_at" desc, "audit_log"."id" desc limit '25'
+Limit  (cost=162.96..162.99 rows=10 width=174) (actual time=3.045..3.049 rows=20.00 loops=1)
+  Buffers: shared hit=238
+  ->  Sort  (cost=162.96..162.99 rows=10 width=174) (actual time=3.043..3.045 rows=20.00 loops=1)
+        Sort Key: occurred_at DESC, id DESC
+        Sort Method: quicksort  Memory: 30kB
+        Buffers: shared hit=238
+        ->  Bitmap Heap Scan on audit_log  (cost=123.57..162.80 rows=10 width=174) (actual time=2.898..3.003 rows=20.00 loops=1)
+              Recheck Cond: (search_text ~~* '%Member 4242%'::text)
+              Heap Blocks: exact=20
+              Buffers: shared hit=232
+              ->  Bitmap Index Scan on audit_log_search_text_trgm_idx  (cost=0.00..123.57 rows=10 width=0) (actual time=2.871..2.871 rows=20.00 loops=1)
+                    Index Cond: (search_text ~~* '%Member 4242%'::text)
+                    Index Searches: 1
+                    Buffers: shared hit=212
+Planning:
+  Buffers: shared hit=313
+Planning Time: 1.127 ms
+Execution Time: 3.127 ms
+
+-- A3 audit exact actor ID (all time) [count]
+-- select count(*) from "audit_log" where "audit_log"."actor_id" = 'user-4242'
+Aggregate  (cost=4.82..4.83 rows=1 width=8) (actual time=0.030..0.031 rows=1.00 loops=1)
+  Buffers: shared hit=3
+  ->  Index Only Scan using audit_log_actor_occurred_at_id_idx on audit_log  (cost=0.42..4.77 rows=20 width=0) (actual time=0.027..0.027 rows=0.00 loops=1)
+        Index Cond: (actor_id = 'user-4242'::text)
+        Heap Fetches: 0
+        Index Searches: 1
+        Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=219
+Planning Time: 0.648 ms
+Execution Time: 0.065 ms
+
+-- A3 audit exact actor ID (all time) [rows]
+-- select "id", "occurred_at", "event_name", "outcome", "actor_kind", "actor_id", "actor_label", "subject_type", "subject_id", "subject_label", "message_preview" from "audit_log" where "audit_log"."actor_id" = 'user-4242' order by "audit_log"."occurred_at" desc, "audit_log"."id" desc limit '25'
+Limit  (cost=82.71..82.76 rows=20 width=174) (actual time=0.048..0.049 rows=0.00 loops=1)
+  Buffers: shared hit=9
+  ->  Sort  (cost=82.71..82.76 rows=20 width=174) (actual time=0.046..0.047 rows=0.00 loops=1)
+        Sort Key: occurred_at DESC, id DESC
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=9
+        ->  Bitmap Heap Scan on audit_log  (cost=4.57..82.28 rows=20 width=174) (actual time=0.027..0.027 rows=0.00 loops=1)
+              Recheck Cond: ((actor_id)::text = 'user-4242'::text)
+              Buffers: shared hit=3
+              ->  Bitmap Index Scan on audit_log_actor_occurred_at_id_idx  (cost=0.00..4.57 rows=20 width=0) (actual time=0.022..0.022 rows=0.00 loops=1)
+                    Index Cond: ((actor_id)::text = 'user-4242'::text)
+                    Index Searches: 1
+                    Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=273
+Planning Time: 0.607 ms
+Execution Time: 0.083 ms
+
+-- A4 audit exact subject (all time) [count]
+-- select count(*) from "audit_log" where ("audit_log"."subject_type" in ('user') and "audit_log"."subject_id" = 'user-4242')
+Aggregate  (cost=4.78..4.79 rows=1 width=8) (actual time=0.045..0.046 rows=1.00 loops=1)
+  Buffers: shared hit=4
+  ->  Index Only Scan using audit_log_subject_occurred_at_id_idx on audit_log  (cost=0.42..4.74 rows=16 width=0) (actual time=0.037..0.039 rows=20.00 loops=1)
+        Index Cond: ((subject_type = 'user'::text) AND (subject_id = 'user-4242'::text))
+        Heap Fetches: 0
+        Index Searches: 1
+        Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=222
+Planning Time: 0.556 ms
+Execution Time: 0.079 ms
+
+-- A4 audit exact subject (all time) [rows]
+-- select "id", "occurred_at", "event_name", "outcome", "actor_kind", "actor_id", "actor_label", "subject_type", "subject_id", "subject_label", "message_preview" from "audit_log" where ("audit_log"."subject_type" in ('user') and "audit_log"."subject_id" = 'user-4242') order by "audit_log"."occurred_at" desc, "audit_log"."id" desc limit '25'
+Limit  (cost=0.42..35.55 rows=16 width=174) (actual time=0.072..0.173 rows=20.00 loops=1)
+  Buffers: shared hit=23
+  ->  Index Scan using audit_log_subject_occurred_at_id_idx on audit_log  (cost=0.42..35.55 rows=16 width=174) (actual time=0.070..0.169 rows=20.00 loops=1)
+        Index Cond: (((subject_type)::text = 'user'::text) AND ((subject_id)::text = 'user-4242'::text))
+        Index Searches: 1
+        Buffers: shared hit=23
+Planning:
+  Buffers: shared hit=273
+Planning Time: 0.653 ms
+Execution Time: 0.203 ms
+
+-- A5 audit entity_refs containment (all time) [count]
+-- select count(*) from "audit_log" where "audit_log"."entity_refs" @> '[{"id": "user-4242", "type": "user"}]'::jsonb
+Aggregate  (cost=60.81..60.82 rows=1 width=8) (actual time=0.392..0.393 rows=1.00 loops=1)
+  Buffers: shared hit=53
+  ->  Bitmap Heap Scan on audit_log  (cost=21.56..60.79 rows=10 width=0) (actual time=0.312..0.388 rows=20.00 loops=1)
+        Recheck Cond: (entity_refs @> '[{"id": "user-4242", "type": "user"}]'::jsonb)
+        Heap Blocks: exact=20
+        Buffers: shared hit=53
+        ->  Bitmap Index Scan on audit_log_entity_refs_idx  (cost=0.00..21.56 rows=10 width=0) (actual time=0.296..0.296 rows=20.00 loops=1)
+              Index Cond: (entity_refs @> '[{"id": "user-4242", "type": "user"}]'::jsonb)
+              Index Searches: 1
+              Buffers: shared hit=33
+Planning:
+  Buffers: shared hit=213
+Planning Time: 0.590 ms
+Execution Time: 0.433 ms
+
+-- A5 audit entity_refs containment (all time) [rows]
+-- select "id", "occurred_at", "event_name", "outcome", "actor_kind", "actor_id", "actor_label", "subject_type", "subject_id", "subject_label", "message_preview" from "audit_log" where "audit_log"."entity_refs" @> '[{"id": "user-4242", "type": "user"}]'::jsonb order by "audit_log"."occurred_at" desc, "audit_log"."id" desc limit '25'
+Limit  (cost=60.95..60.98 rows=10 width=174) (actual time=0.464..0.467 rows=20.00 loops=1)
+  Buffers: shared hit=59
+  ->  Sort  (cost=60.95..60.98 rows=10 width=174) (actual time=0.462..0.464 rows=20.00 loops=1)
+        Sort Key: occurred_at DESC, id DESC
+        Sort Method: quicksort  Memory: 30kB
+        Buffers: shared hit=59
+        ->  Bitmap Heap Scan on audit_log  (cost=21.56..60.79 rows=10 width=174) (actual time=0.317..0.437 rows=20.00 loops=1)
+              Recheck Cond: (entity_refs @> '[{"id": "user-4242", "type": "user"}]'::jsonb)
+              Heap Blocks: exact=20
+              Buffers: shared hit=53
+              ->  Bitmap Index Scan on audit_log_entity_refs_idx  (cost=0.00..21.56 rows=10 width=0) (actual time=0.300..0.300 rows=20.00 loops=1)
+                    Index Cond: (entity_refs @> '[{"id": "user-4242", "type": "user"}]'::jsonb)
+                    Index Searches: 1
+                    Buffers: shared hit=33
+Planning:
+  Buffers: shared hit=280
+Planning Time: 0.602 ms
+Execution Time: 0.519 ms
+
+-- A6 audit deep page 3000 (all time) [count]
+-- select count(*) from "audit_log"
+Aggregate  (cost=3302.42..3302.43 rows=1 width=8) (actual time=19.796..19.798 rows=1.00 loops=1)
+  Buffers: shared hit=387
+  ->  Index Only Scan using audit_log_pkey on audit_log  (cost=0.42..3052.42 rows=100000 width=0) (actual time=0.026..12.494 rows=100000.00 loops=1)
+        Heap Fetches: 0
+        Index Searches: 1
+        Buffers: shared hit=387
+Planning:
+  Buffers: shared hit=233
+Planning Time: 0.562 ms
+Execution Time: 19.892 ms
+
+-- A6 audit deep page 3000 (all time) [rows]
+-- select "id", "occurred_at", "event_name", "outcome", "actor_kind", "actor_id", "actor_label", "subject_type", "subject_id", "subject_label", "message_preview" from "audit_log" order by "audit_log"."occurred_at" desc, "audit_log"."id" desc limit '25' offset '74975'
+Limit  (cost=21882.76..21890.06 rows=25 width=174) (actual time=51.306..51.323 rows=25.00 loops=1)
+  Buffers: shared hit=8938
+  ->  Index Scan using audit_log_occurred_at_id_idx on audit_log  (cost=0.42..29186.60 rows=100000 width=174) (actual time=0.015..48.530 rows=75000.00 loops=1)
+        Index Searches: 1
+        Buffers: shared hit=8938
+Planning:
+  Buffers: shared hit=268
+Planning Time: 0.590 ms
+Execution Time: 51.364 ms
+
+-- E8 email detail with its retry chain [rows]
+-- select "id", "started_at", "recipient_email", "recipient_user_id", "recipient_label", "subject", "status", "attempt_number", "original_log_id", "requester_kind", "requester_id", "requester_label", "created_at", "updated_at", "completed_at", "content_text", "provider", "provider_message_id", "previous_attempt_id", "request_id", "error_code", "error_message", "stack_trace", "redaction_version" from "email_log" where "email_log"."id" = '01a0e4dd-e9e8-72a6-9774-7747d4f5e260' limit '1'
+Limit  (cost=0.42..8.44 rows=1 width=740) (actual time=0.018..0.018 rows=1.00 loops=1)
+  Buffers: shared hit=4
+  ->  Index Scan using email_log_pkey on email_log  (cost=0.42..8.44 rows=1 width=740) (actual time=0.016..0.016 rows=1.00 loops=1)
+        Index Cond: (id = '01a0e4dd-e9e8-72a6-9774-7747d4f5e260'::uuid)
+        Index Searches: 1
+        Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=295
+Planning Time: 0.713 ms
+Execution Time: 0.057 ms
+
+-- E8 email detail with its retry chain [count]
+-- select count(*) from "email_log" where ("email_log"."id" = '01a0e4dd-cfe1-709c-bc3d-9332f76a212e' or "email_log"."original_log_id" = '01a0e4dd-cfe1-709c-bc3d-9332f76a212e')
+Aggregate  (cost=16.68..16.69 rows=1 width=8) (actual time=0.039..0.040 rows=1.00 loops=1)
+  Buffers: shared hit=7
+  ->  Bitmap Heap Scan on email_log  (cost=8.73..16.68 rows=2 width=0) (actual time=0.030..0.033 rows=2.00 loops=1)
+        Recheck Cond: ((id = '01a0e4dd-cfe1-709c-bc3d-9332f76a212e'::uuid) OR (original_log_id = '01a0e4dd-cfe1-709c-bc3d-9332f76a212e'::uuid))
+        Heap Blocks: exact=2
+        Buffers: shared hit=7
+        ->  BitmapOr  (cost=8.73..8.73 rows=2 width=0) (actual time=0.022..0.023 rows=0.00 loops=1)
+              Buffers: shared hit=5
+              ->  Bitmap Index Scan on email_log_pkey  (cost=0.00..4.43 rows=1 width=0) (actual time=0.012..0.012 rows=1.00 loops=1)
+                    Index Cond: (id = '01a0e4dd-cfe1-709c-bc3d-9332f76a212e'::uuid)
+                    Index Searches: 1
+                    Buffers: shared hit=3
+              ->  Bitmap Index Scan on email_log_chain_attempt_idx  (cost=0.00..4.30 rows=1 width=0) (actual time=0.010..0.010 rows=1.00 loops=1)
+                    Index Cond: (original_log_id = '01a0e4dd-cfe1-709c-bc3d-9332f76a212e'::uuid)
+                    Index Searches: 1
+                    Buffers: shared hit=2
+Planning:
+  Buffers: shared hit=218
+Planning Time: 0.761 ms
+Execution Time: 0.087 ms
+
+-- E8 email detail with its retry chain [rows]
+-- select "id", "started_at", "status", "attempt_number", "requester_kind", "requester_id", "requester_label" from "email_log" where ("email_log"."id" = '01a0e4dd-cfe1-709c-bc3d-9332f76a212e' or "email_log"."original_log_id" = '01a0e4dd-cfe1-709c-bc3d-9332f76a212e') order by "email_log"."attempt_number" asc, "email_log"."id" asc limit '20'
+Limit  (cost=16.69..16.69 rows=2 width=61) (actual time=0.056..0.058 rows=2.00 loops=1)
+  Buffers: shared hit=13
+  ->  Sort  (cost=16.69..16.69 rows=2 width=61) (actual time=0.055..0.055 rows=2.00 loops=1)
+        Sort Key: attempt_number, id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=13
+        ->  Bitmap Heap Scan on email_log  (cost=8.73..16.68 rows=2 width=61) (actual time=0.030..0.034 rows=2.00 loops=1)
+              Recheck Cond: ((id = '01a0e4dd-cfe1-709c-bc3d-9332f76a212e'::uuid) OR (original_log_id = '01a0e4dd-cfe1-709c-bc3d-9332f76a212e'::uuid))
+              Heap Blocks: exact=2
+              Buffers: shared hit=7
+              ->  BitmapOr  (cost=8.73..8.73 rows=2 width=0) (actual time=0.021..0.021 rows=0.00 loops=1)
+                    Buffers: shared hit=5
+                    ->  Bitmap Index Scan on email_log_pkey  (cost=0.00..4.43 rows=1 width=0) (actual time=0.010..0.010 rows=1.00 loops=1)
+                          Index Cond: (id = '01a0e4dd-cfe1-709c-bc3d-9332f76a212e'::uuid)
+                          Index Searches: 1
+                          Buffers: shared hit=3
+                    ->  Bitmap Index Scan on email_log_chain_attempt_idx  (cost=0.00..4.30 rows=1 width=0) (actual time=0.010..0.010 rows=1.00 loops=1)
+                          Index Cond: (original_log_id = '01a0e4dd-cfe1-709c-bc3d-9332f76a212e'::uuid)
+                          Index Searches: 1
+                          Buffers: shared hit=2
+Planning:
+  Buffers: shared hit=265
+Planning Time: 0.621 ms
+Execution Time: 0.104 ms

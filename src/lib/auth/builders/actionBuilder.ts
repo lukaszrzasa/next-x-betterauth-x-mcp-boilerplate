@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { unstable_rethrow } from "next/navigation";
 
 import { ActionError } from "@/src/lib/auth/errors";
+import { describeErrorSafely } from "@/src/lib/errorMessage";
 import { resolveAuthoritativeSession } from "@/src/lib/auth/sessionAuthority";
 import {
   STEP_UP_CONDITIONS,
@@ -11,11 +12,10 @@ import {
   type StepUpCondition,
   type StepUpPolicy,
 } from "@/src/lib/auth/stepUpPolicy";
-import { Ctx, createLogger, type Session, type User } from "./context";
+import { Ctx, clientIp, createLogger, runInOperationContext, type Session, type User } from "./context";
 import { parseInput } from "./actionInput";
 import { checkAuthorization } from "./actionAuthorization";
 import { ensureStepUp } from "./actionStepUp";
-import { writeAudit, type AuditDescription } from "./actionAudit";
 import type { Action, ActionMeta, AuthedConfig, PublicConfig } from "./actionTypes";
 
 const OUTCOME_LOG_LEVELS = { success: "info", denied: "warn", failed: "error" } as const;
@@ -62,9 +62,6 @@ export function defineAction<TInput, TOutput, TRawInput>(
     const requestId = randomUUID();
     const log = createLogger({ requestId, action: config.name });
     let ctx: Ctx<User | null> | undefined;
-    // A wrapper distinguishes unparsed input from valid null/undefined input.
-    let parsed: { input: TInput } | undefined;
-    let describeAudit: AuditDescription<TInput, TOutput> | undefined;
 
     const logOutcome = (
       outcome: "success" | "denied" | "failed",
@@ -84,7 +81,6 @@ export function defineAction<TInput, TOutput, TRawInput>(
 
       // Reject bad input before prompting for 2FA or consuming a one-time grant.
       const input = await parseInput(config.schema, rawInput);
-      parsed = { input };
       const baseCtx = {
         requestId,
         ip: clientIp(meta.headers),
@@ -103,22 +99,13 @@ export function defineAction<TInput, TOutput, TRawInput>(
           session: null,
         });
         ctx = publicCtx;
-        // Narrow the hook together with its config, without casting contexts.
-        const publicAudit = resolved.config.auditLog;
-        if (publicAudit)
-          describeAudit = (event) => publicAudit(publicCtx, event);
         checkEntryPoint(meta, mcpAllowed);
-        output = await resolved.config.handler(publicCtx, input);
+        const handler = resolved.config.handler;
+        output = await runInOperationContext(publicCtx, () => handler(publicCtx, input));
       } else {
         const { config: authedConfig, user, session } = resolved;
-        // The audit hook sees whichever context is current when it runs: a
-        // denial before step-up gets a context that claims none; success gets
-        // the verified one the handler received.
         let authedCtx = Ctx.create<User>({ ...baseCtx, user, session });
         ctx = authedCtx;
-        const authedAudit = authedConfig.auditLog;
-        if (authedAudit)
-          describeAudit = (event) => authedAudit(authedCtx, event);
 
         checkEntryPoint(meta, mcpAllowed);
         // The effective policy is computed once from the fresh user and used
@@ -138,7 +125,9 @@ export function defineAction<TInput, TOutput, TRawInput>(
         );
 
         if (effectiveStepUp !== "none") {
-          await ensureStepUp(authedCtx, meta, effectiveStepUp);
+          const challenged = authedCtx;
+          // Inside the context: an emailed code is logged as requested by this user.
+          await runInOperationContext(challenged, () => ensureStepUp(challenged, meta, effectiveStepUp));
           authedCtx = authedCtx.withStepUp(effectiveStepUp);
           ctx = authedCtx;
         } else if (stepUp !== "none" && meta.stepUp !== undefined) {
@@ -149,39 +138,25 @@ export function defineAction<TInput, TOutput, TRawInput>(
             message: "Verification proof is not expected for this account; submit again without it.",
           });
         }
-        output = await authedConfig.handler(authedCtx, input);
+        const verifiedCtx = authedCtx;
+        const handler = authedConfig.handler;
+        output = await runInOperationContext(verifiedCtx, () => handler(verifiedCtx, input));
       }
 
       logOutcome("success");
-      await writeAudit(describeAudit, log, {
-        outcome: "success",
-        input,
-        output,
-      });
       return output;
     } catch (error) {
       unstable_rethrow(error);
-      // Anonymous traffic is deliberately not part of the audit stream.
+      // Anonymous traffic is deliberately not part of the outcome log.
       if (ActionError.is(error) && error.reason === "UNAUTHENTICATED")
         throw error;
 
       if (ActionError.is(error) && error.reason !== "INTERNAL") {
         logOutcome("denied", { reason: error.reason, status: error.status });
-        await writeAudit(describeAudit, log, {
-          outcome: "denied",
-          input: parsed ? parsed.input : null,
-          reason: error.reason,
-        });
         throw error;
       }
 
       logOutcome("failed", { error: describeError(error) });
-      if (parsed) {
-        await writeAudit(describeAudit, log, {
-          outcome: "failed",
-          input: parsed.input,
-        });
-      }
       // Never expose unexpected error details, even from an explicit INTERNAL.
       throw new ActionError("INTERNAL", { cause: error });
     }
@@ -237,18 +212,16 @@ function describeError(error: unknown): string {
   const seen = new Set<unknown>();
   for (let current = error; current !== undefined && !seen.has(current); ) {
     seen.add(current);
-    parts.push(current instanceof Error ? (current.stack ?? current.message) : String(current));
+    if (current instanceof Error) {
+      // Never a query's bound parameters (hashes, digests), even in the application log.
+      const safe = describeErrorSafely(current);
+      parts.push(safe.stack ?? `${current.name}: ${safe.message}`);
+    } else {
+      parts.push(String(current));
+    }
     current = current instanceof Error ? current.cause : undefined;
   }
   return parts.join("\nCaused by: ");
-}
-
-/** Proxy-provided IPs are audit metadata, never authorization evidence. */
-function clientIp(headers: Headers): string | null {
-  return (
-    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    headers.get("x-real-ip")
-  );
 }
 
 /**

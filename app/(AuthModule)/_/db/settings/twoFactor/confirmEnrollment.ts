@@ -61,8 +61,6 @@ export async function confirmEnrollment(ctx: AuthedCtx, input: ConfirmSetupSchem
     await incrementSecurityVersion(db, ctx.user.id);
     await verifyThroughProvider(ctx, input.code);
     await spendCode(request.id, input.code);
-    // TODO(audit): Persist settings.factor.enrolled after the provider's
-    // confirmed write (request ID, actor user ID, UTC time). Never codes/secrets.
 
     await markSetupCompleted(request.id, now).catch((error: unknown) =>
       ctx.log.error("enrollment completed but the setup record could not be closed", { error: errorMessage(error) }),

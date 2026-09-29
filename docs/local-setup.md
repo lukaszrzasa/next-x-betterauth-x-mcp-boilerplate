@@ -39,6 +39,8 @@ Migration `0004_user_admin_search_indexes.sql` introduces the `pg_trgm` extensio
 
 *Note on scaling:* The migration installs the extension transactionally. For massive, live `user` tables in production, this should be executed during a maintenance window or replaced with a reviewed `CREATE INDEX CONCURRENTLY` script to prevent table locks.
 
+Migration `0006_logs_email_and_staff.sql` adds the `email_log` and `staff_log` tables behind `/admin/email-logs` and `/admin/staff-logs` (admin only). It requires **PostgreSQL 18+** (the shared `uuidv7()` ID default, as in `compose.yml`) and `pg_trgm`. Its extension statement and its triggers are hand-written additions to the drizzle-kit output; keep them when regenerating. The contracts are in [`app/(LogsModule)/_/README.md`](../app/(LogsModule)/_/README.md). A database that already applied an earlier, uncommitted version of migration 0006 (with `audit_log`) must be reset before migrating.
+
 ## 5. Enterprise-Grade Validation
 
 **"A skipped suite is not evidence."**
@@ -48,4 +50,5 @@ I rely on isolated integration testing rather than just unit tests. Run the stan
 **Deep Integration Testing:**
 *   When `DATABASE_URL` is present, the setup integration suite runs. It creates and drops an **isolated PostgreSQL schema** to test atomic bootstrapping, concurrent submissions, and provider 2FA compatibility without polluting application tables.
 *   When `TEST_DATABASE_URL` and `TEST_REDIS_URL` are provided, the user-administration and account-settings suites execute against completely distinct, isolated databases.
+*   The logs integration suite needs only `TEST_DATABASE_URL` (a test-only PostgreSQL 18 database): it runs the email recorders and the staff log with genuine contexts, the migration's constraints and triggers, concurrency and redaction checks, and the admin reads.
 *   If isolation cannot be guaranteed (e.g., missing test DB variables), the test runner explicitly skips these suites and logs a warning. False positives are worse than failed tests.

@@ -36,8 +36,6 @@ export async function regenerateRecoveryCodes(
     await assertSecurityStateCurrent(reads, ctx.user.id, securityVersionOf(ctx.user));
     await incrementSecurityVersion(db, ctx.user.id);
     const recoveryCodes = await generateThroughProvider(ctx, input.currentPassword);
-    // TODO(audit): Persist settings.recovery_codes.regenerated after the
-    // provider's write (actor user ID, UTC time). Never the codes.
     await discardStepUpState(ctx);
     return { status: "completed", recoveryCodes, issuedAt: new Date().toISOString(), failedEffects: [] };
   });

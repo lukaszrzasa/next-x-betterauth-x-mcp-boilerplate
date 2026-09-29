@@ -66,9 +66,9 @@ test("enrolling staff reach only enrollment pages; the cache answers first", asy
 });
 
 test("page access is not decided here: guests and any role pass through", async () => {
-  expect((await proxy(request("/admin/audit-logs"))).status).toBe(200);
+  expect((await proxy(request("/admin/staff-logs"))).status).toBe(200);
   cachedUser = { role: "user" };
-  expect((await proxy(request("/admin/audit-logs"))).status).toBe(200);
+  expect((await proxy(request("/admin/staff-logs"))).status).toBe(200);
 });
 
 test("an expired cache is re-issued from the store and the cookies survive", async () => {

@@ -118,10 +118,6 @@ async function commitNewAddress(ctx: PublicCtx, requestId: string, hash: string,
       })
       .where(eq(emailChangeRequest.id, row.id));
     await cancelPendingSetupRequests(ctx, tx, account.id);
-    // TODO(audit): Persist settings.email.changed after this commit: request
-    // ID, subject user ID (token-established, no actor), UTC time, old and
-    // new address (audit PII), that the reset cutoff moved and that session
-    // revocation is pending. Record the revocation itself separately.
     return {
       outcome: { status: "completed", sessionRevocationPending: true },
       commit: { userId: account.id, version },
@@ -138,8 +134,6 @@ async function revokeAfterCommit(ctx: PublicCtx, commit: Commit): Promise<EmailP
   try {
     await revokeCurrentUserSessions(commit.userId);
     await clearRevocationBarrier(commit.userId, commit.version);
-    // TODO(audit): Persist settings.sessions.revoked (subject user ID, UTC time,
-    // confirmed) as a separate event from the committed email change.
     return { status: "completed", sessionRevocationPending: false };
   } catch (error) {
     ctx.log.error("email changed; session revocation not confirmed, barrier retained", { error: errorMessage(error) });

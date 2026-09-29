@@ -18,7 +18,6 @@ export async function revokeOtherOwnSessions(ctx: AuthedCtx): Promise<SyncOutcom
       revokeSessionsByToken(tokens),
     );
     if (!confirmed) return unconfirmedRevocation;
-    // TODO(audit): Persist settings.sessions.others_revoked (actor user ID, count, UTC time).
     return { status: "completed" };
   });
 }

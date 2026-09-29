@@ -1,0 +1,67 @@
+import { notFound, redirect } from "next/navigation";
+import { page, redirectRefused } from "@/app/_/access";
+import { AppBreadcrumbs } from "@/app/_/shell/AppBreadcrumbs";
+import { adminRoutes } from "@/app/(AdminModule)/_/routes";
+import { logsRoutes } from "@/app/(LogsModule)/_/routes";
+import { StaffLogsList } from "@/app/(LogsModule)/admin/_/components/staffLogs/StaffLogsList";
+import { listStaffLogFilterOptionsQuery, listStaffLogsQuery } from "@/app/(LogsModule)/admin/_/queries";
+import {
+  parseStaffLogsSearch,
+  serializeStaffLogsSearch,
+  staffLogsUrl,
+} from "@/app/(LogsModule)/admin/_/queryState";
+import type { StaffLogFilterOptions, StaffLogsPage } from "@/app/(LogsModule)/admin/_/types";
+import { ActionError } from "@/src/lib/auth/errors";
+import { serializeRawSearchParams } from "@/src/lib/data-table/queryState";
+
+/**
+ * The staff log. The route rule admits the viewer; the reads then check
+ * admin access again. Only after that is the URL normalized: unknown or
+ * invalid parameters fall back to defaults and the page redirects to the
+ * canonical form, also when the requested page lies past the last one.
+ */
+export default page<PageProps<"/admin/staff-logs">>(logsRoutes.staffLogs, async ({ searchParams }, session) => {
+  const raw = await searchParams;
+
+  let result: StaffLogsPage;
+  let options: StaffLogFilterOptions;
+  try {
+    [result, options] = await Promise.all([
+      listStaffLogsQuery(parseStaffLogsSearch(raw)),
+      listStaffLogFilterOptionsQuery(undefined),
+    ]);
+  } catch (error) {
+    // To a non-admin the read does not exist; the guard already redirected such viewers.
+    if (ActionError.is(error) && error.reason === "NOT_FOUND") notFound();
+    if (ActionError.is(error) && isRefusal(error)) redirectRefused(session);
+    throw error;
+  }
+  if (serializeRawSearchParams(raw) !== serializeStaffLogsSearch(result.query)) {
+    redirect(staffLogsUrl(result.query));
+  }
+
+  return (
+    <>
+      <AppBreadcrumbs
+        items={[{ label: "Admin", href: adminRoutes.dashboard.href }, { label: "System" }, logsRoutes.staffLogs]}
+      />
+      <div className="ui:flex ui:flex-col ui:gap-6">
+        <div className="ui:flex ui:flex-col ui:gap-1">
+          <h1 className="ui:text-2xl ui:font-semibold ui:tracking-tight">Staff log</h1>
+          <p className="ui:text-sm ui:text-muted-foreground">
+            What staff changed, newest first. Names inside an entry are shown as they were at the time.
+          </p>
+        </div>
+        <StaffLogsList page={result} options={options} />
+      </div>
+    </>
+  );
+});
+
+function isRefusal(error: ActionError): boolean {
+  return (
+    error.reason === "UNAUTHENTICATED" ||
+    error.reason === "FORBIDDEN" ||
+    error.reason === "TWO_FACTOR_ENROLLMENT_REQUIRED"
+  );
+}

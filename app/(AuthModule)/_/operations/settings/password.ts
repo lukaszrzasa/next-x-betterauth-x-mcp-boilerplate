@@ -17,7 +17,4 @@ export const changePasswordOperation = defineAction({
   stepUp: "five_minutes",
   stepUpWhen: "two_factor_enabled",
   handler: (ctx, input) => changeOwnPassword(ctx, input),
-  // TODO(audit): refusals/failures of settings.password.change; never the passwords.
-  auditLog: (ctx, event) =>
-    `${ctx.user.id}: ${event.outcome}${event.outcome === "success" ? ` (${event.output.status})` : ""}`,
 });

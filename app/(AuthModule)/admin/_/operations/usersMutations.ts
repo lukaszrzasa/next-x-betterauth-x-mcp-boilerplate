@@ -1,6 +1,5 @@
 import "server-only";
 
-import { describeTargetedAudit } from "@/src/lib/auth/builders/actionAudit";
 import { defineAction } from "@/src/lib/auth/builders/actionBuilder";
 import { STAFF_ROLES } from "@/src/lib/auth/permissions";
 import {
@@ -22,7 +21,6 @@ import {
   updateUserNameSchema,
   userTargetSchema,
 } from "@/app/(AuthModule)/admin/_/schema";
-import type { UserMutationOutcome } from "@/app/(AuthModule)/admin/_/types";
 
 /**
  * The account mutations. `roles` admits staff (anyone else gets NOT_FOUND),
@@ -32,14 +30,6 @@ import type { UserMutationOutcome } from "@/app/(AuthModule)/admin/_/types";
  * their effect-recovery twins - require the five-minute step-up.
  */
 
-// TODO(audit): the operation-level integration point for refusals (`denied`,
-// with the reason) and failures of every user mutation; the confirmed effects
-// are recorded at the write sites in db/users/*.
-const auditLog = describeTargetedAudit<{ userId: string }, UserMutationOutcome>({
-  target: (input) => input.userId,
-  result: (output) => output.status,
-});
-
 export const updateUserNameOperation = defineAction({
   name: "users.updateName",
   schema: updateUserNameSchema,
@@ -48,7 +38,6 @@ export const updateUserNameOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => updateUserName(ctx, input),
-  auditLog,
 });
 
 export const updateUserEmailOperation = defineAction({
@@ -59,7 +48,6 @@ export const updateUserEmailOperation = defineAction({
   mcpAllowed: false,
   stepUp: "five_minutes",
   handler: (ctx, input) => updateUserEmail(ctx, input),
-  auditLog,
 });
 
 export const revokeUserSessionsOperation = defineAction({
@@ -70,7 +58,6 @@ export const revokeUserSessionsOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => revokeUserSessions(ctx, input),
-  auditLog,
 });
 
 export const banUserOperation = defineAction({
@@ -81,7 +68,6 @@ export const banUserOperation = defineAction({
   mcpAllowed: false,
   stepUp: "five_minutes",
   handler: (ctx, input) => banUser(ctx, input),
-  auditLog,
 });
 
 export const unbanUserOperation = defineAction({
@@ -92,7 +78,6 @@ export const unbanUserOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => unbanUser(ctx, input),
-  auditLog,
 });
 
 // ---------------------------------------------------------------------------
@@ -110,7 +95,6 @@ export const retryEmailChangeEffectsOperation = defineAction({
   mcpAllowed: false,
   stepUp: "five_minutes",
   handler: (ctx, input) => retryEmailChangeEffects(ctx, input),
-  auditLog,
 });
 
 export const retryBanSessionsOperation = defineAction({
@@ -121,7 +105,6 @@ export const retryBanSessionsOperation = defineAction({
   mcpAllowed: false,
   stepUp: "five_minutes",
   handler: (ctx, input) => retryBanSessions(ctx, input),
-  auditLog,
 });
 
 export const retryNameSessionRefreshOperation = defineAction({
@@ -132,7 +115,6 @@ export const retryNameSessionRefreshOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => retryNameSessionRefresh(ctx, input),
-  auditLog,
 });
 
 export const retryUnbanSessionRefreshOperation = defineAction({
@@ -143,5 +125,4 @@ export const retryUnbanSessionRefreshOperation = defineAction({
   mcpAllowed: false,
   stepUp: "none",
   handler: (ctx, input) => retryUnbanSessionRefresh(ctx, input),
-  auditLog,
 });

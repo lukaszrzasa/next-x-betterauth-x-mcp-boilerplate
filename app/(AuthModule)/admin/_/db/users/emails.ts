@@ -51,9 +51,7 @@ export async function sendVerification(
 
   await consumeAdminEmailAttempt(ctx, "verification", target.id);
   await requestVerificationEmail(ctx, target.email);
-  // TODO(audit): Persist users.verification.requested after the provider accepted
-  // the request (accepted, not delivered). Include ctx.requestId, actor user ID,
-  // target user ID, UTC time and outcome. Never include tokens or links.
+  // Accepted by the provider, not delivered; the message itself is in the email log.
   return { status: "completed", userId: target.id };
 }
 
@@ -65,9 +63,6 @@ export async function sendPasswordReset(
 
   await consumeAdminEmailAttempt(ctx, "password-reset", target.id);
   await requestPasswordResetEmail(ctx, target.email);
-  // TODO(audit): Persist users.password_reset.requested after the provider
-  // accepted the request (accepted, not delivered; no password, factor or
-  // session changed). Include ctx.requestId, actor user ID, target user ID,
-  // UTC time and outcome. Never include the reset token or link.
+  // Accepted, not delivered; no password, factor or session changed.
   return { status: "completed", userId: target.id };
 }

@@ -143,15 +143,27 @@ function describePartial(
   };
 }
 
+const UNRECORDED = "This action was not written to the staff log. Tell an administrator what you changed.";
+
+/** The action happened; only its staff log entry is missing, and the staff member must know. */
+function withUnrecorded(feedback: Feedback, outcome: UserMutationOutcome): Feedback {
+  if (outcome.status === "unchanged" || !outcome.unrecorded) return feedback;
+  return {
+    ...feedback,
+    tone: "warning",
+    description: feedback.description ? `${feedback.description} ${UNRECORDED}` : UNRECORDED,
+  };
+}
+
 /** The feedback for a successful action call, by the payload's status. */
 export function describeOutcome(kind: MutationKind, outcome: UserMutationOutcome): Feedback {
   switch (outcome.status) {
     case "unchanged":
       return { tone: "info", title: UNCHANGED[kind] ?? "No change" };
     case "completed":
-      return { tone: "success", title: COMPLETED[kind] };
+      return withUnrecorded({ tone: "success", title: COMPLETED[kind] }, outcome);
     case "partial":
-      return describePartial(kind, outcome);
+      return withUnrecorded(describePartial(kind, outcome), outcome);
   }
 }
 

@@ -5,6 +5,7 @@ import { and, asc, count, desc, eq, or, sql, type InferSelectModel, type SQL } f
 import type { AuthedCtx } from "@/src/lib/auth/builders/context";
 import { roleNames } from "@/src/lib/auth/permissions";
 import { db, installation, user } from "@/src/lib/db";
+import { escapeLikePattern } from "@/src/lib/db/like";
 import { lastPage } from "@/src/lib/data-table/queryState";
 import { effectiveAccessStatus, evaluateUserAction } from "@/app/(AuthModule)/admin/_/policy";
 import {
@@ -63,11 +64,6 @@ const utcTimestamp = (instant: Date) => sql`${instant.toISOString()}::timestamp`
 /** `banned IS TRUE AND (ban_expires IS NULL OR ban_expires > asOf)`, null-safe. */
 export function effectivelyBanned(asOf: Date): SQL {
   return sql`(${user.banned} IS TRUE AND (${user.banExpires} IS NULL OR ${user.banExpires} > ${utcTimestamp(asOf)}))`;
-}
-
-/** LIKE treats `%`, `_` and the escape character specially; the search text must not. */
-export function escapeLikePattern(text: string): string {
-  return text.replace(/[\\%_]/g, (character) => `\\${character}`);
 }
 
 function searchPredicate(q: string): SQL | undefined {

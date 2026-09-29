@@ -63,13 +63,8 @@ export async function completePasswordReset(
       throw invalidResetLink();
     }
 
-    // TODO(audit): Persist settings.security_state.retired (reason: credentials,
-    // via password reset) with ctx.requestId, subject user ID and UTC time.
     await retirePendingSecurityState(ctx, proof.userId, "credentials");
     await resetThroughProvider(input);
-    // TODO(audit): Persist auth.password.reset after the provider consumed the
-    // token, with ctx.requestId, subject user ID and UTC time. Never include
-    // the token or the password.
     return { status: "completed" };
   });
 }
