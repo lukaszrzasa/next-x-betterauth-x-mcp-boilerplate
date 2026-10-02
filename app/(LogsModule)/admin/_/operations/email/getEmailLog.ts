@@ -29,7 +29,7 @@ export const getEmailLogOperation = defineAction({
       attemptsPageSize: EMAIL_ATTEMPTS_PAGE_SIZE,
     });
     // A record that does not exist, and one hidden from the caller, are the same answer.
-    if (!found) throw new ActionError("NOT_FOUND", { message: "This log is not available." });
+    if (!found) throw new ActionError("NOT_FOUND", { message: { key: "logsAdmin.errors.logUnavailable" } });
 
     return {
       ...toDetail(found.row),

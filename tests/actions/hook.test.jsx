@@ -52,8 +52,17 @@ mock.module("../../src/lib/auth/stepUpActions", () => ({
 }));
 
 const React = await import("react");
-const { renderHook, render, act, fireEvent, screen, cleanup, waitFor } =
+const { renderHook: baseRenderHook, render: baseRender, act, fireEvent, screen, cleanup, waitFor } =
   await import("@testing-library/react");
+const { withIntl } = await import("../helpers/intl.jsx");
+/** Every tree renders inside the English catalog, as the root layout provides it. */
+const render = (ui, options) => baseRender(ui, { wrapper: withIntl(), ...options });
+const renderHook = (callback, options = {}) => {
+  const Inner = options.wrapper;
+  const Outer = withIntl();
+  const wrapper = Inner ? ({ children }) => <Outer><Inner>{children}</Inner></Outer> : Outer;
+  return baseRenderHook(callback, { ...options, wrapper });
+};
 const { ActionProvider, useAction } = await import("../../src/lib/actions");
 const required = {
   ok: false,

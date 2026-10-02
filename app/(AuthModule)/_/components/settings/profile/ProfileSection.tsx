@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { UserRoundIcon } from "lucide-react";
 import { EditButton } from "@/src/components/actions/EditButton";
 import { DetailRow, DetailSection } from "@/src/components/detail/DetailSection";
@@ -14,32 +15,34 @@ import { DisplayNameForm } from "@/app/(AuthModule)/_/components/settings/profil
 
 /** The Profile page's only section: the display name, edited in a modal. */
 export function ProfileSection({ profile }: { profile: ProfileSettings }) {
+  const t = useTranslations("auth.settings.profile");
+  const tCommon = useTranslations("auth.settings.common");
   const [editing, setEditing] = useState(false);
   const { feedback, setFeedback, dismiss } = useFeedback<Feedback>();
   const retry = useRetryProfileSessionRefresh({ onSettled: setFeedback });
 
   return (
-    <DetailSection title="Profile" description="How you appear across the application." icon={UserRoundIcon}>
+    <DetailSection title={t("title")} description={t("description")} icon={UserRoundIcon}>
       <ActionFeedback
         feedback={feedback}
         onDismiss={dismiss}
         recovery={
           feedback?.recovery === "retryProfileSessionRefresh"
-            ? { label: "Retry", pending: retry.pending, onClick: () => void retry.run() }
+            ? { label: tCommon("retry"), pending: retry.pending, onClick: () => void retry.run() }
             : undefined
         }
       />
       <div>
         <DetailRow
-          label="Display name"
+          label={t("displayName")}
           control={
-            <EditButton onClick={() => { dismiss(); setEditing(true); }}>Edit name</EditButton>
+            <EditButton onClick={() => { dismiss(); setEditing(true); }}>{t("editName")}</EditButton>
           }
         >
           <span className="ui:font-medium">{profile.name}</span>
         </DetailRow>
       </div>
-      <FormDialog open={editing} onOpenChange={setEditing} title="Edit your display name">
+      <FormDialog open={editing} onOpenChange={setEditing} title={t("dialogTitle")}>
         <DisplayNameForm name={profile.name} onCancel={() => setEditing(false)} onSettled={setFeedback} />
       </FormDialog>
     </DetailSection>

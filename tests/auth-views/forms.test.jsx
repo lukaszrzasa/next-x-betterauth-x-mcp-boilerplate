@@ -56,8 +56,11 @@ mock.module("../../src/lib/auth/client.ts", () => ({
   },
 }));
 
-const { render, fireEvent, screen, cleanup, waitFor } =
+const { render: baseRender, fireEvent, screen, cleanup, waitFor } =
   await import("@testing-library/react");
+const { withIntl } = await import("../helpers/intl.jsx");
+/** Every form reads the English catalog through the provider, as in the app. */
+const render = (ui, options) => baseRender(ui, { wrapper: withIntl(), ...options });
 const { SignUpForm } =
   await import("../../app/(AuthModule)/_/components/signUp/SignUpForm");
 const { SignInForm } =

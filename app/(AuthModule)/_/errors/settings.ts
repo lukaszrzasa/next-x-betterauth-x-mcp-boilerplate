@@ -1,6 +1,7 @@
 import "server-only";
 
 import { ActionError } from "@/src/lib/auth/errors";
+import type { MessageDescriptor } from "@/src/lib/i18n";
 import type {
   SettingsFieldError,
   SettingsLifecycleData,
@@ -13,7 +14,7 @@ import type {
  * rate limit or explain a lifecycle state without parsing text.
  */
 
-export function rateLimitedError(retryAfterSeconds: number, message: string): ActionError {
+export function rateLimitedError(retryAfterSeconds: number, message: MessageDescriptor): ActionError {
   const data: SettingsRateLimitedData = { retryAfterSeconds };
   return new ActionError("RATE_LIMITED", { message, data });
 }
@@ -22,7 +23,7 @@ export function fieldError(
   reason: "INVALID_INPUT" | "CONFLICT",
   field: SettingsFieldError["field"],
   code: string,
-  message: string,
+  message: MessageDescriptor,
   cause?: unknown,
 ): ActionError {
   const data: SettingsFieldError = { field, code };
@@ -32,14 +33,14 @@ export function fieldError(
 export function lifecycleError(
   reason: "CONFLICT" | "NOT_FOUND" | "FORBIDDEN",
   code: SettingsLifecycleData["code"],
-  message: string,
+  message: MessageDescriptor,
 ): ActionError {
   const data: SettingsLifecycleData = { code };
   return new ActionError(reason, { message, data });
 }
 
 export const incorrectPasswordError = (cause?: unknown) =>
-  fieldError("INVALID_INPUT", "currentPassword", "INCORRECT_PASSWORD", "That password is not correct.", cause);
+  fieldError("INVALID_INPUT", "currentPassword", "INCORRECT_PASSWORD", { key: "auth.errors.incorrectPassword" }, cause);
 
 export const accountNotFoundError = () =>
-  new ActionError("NOT_FOUND", { message: "This account no longer exists." });
+  new ActionError("NOT_FOUND", { message: { key: "auth.errors.accountNotFound" } });

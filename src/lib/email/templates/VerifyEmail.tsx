@@ -1,3 +1,4 @@
+import type { Locale } from "@/src/lib/i18n/locales";
 import {
   appName,
   EmailButton,
@@ -5,26 +6,24 @@ import {
   EmailHeading,
   EmailLayout,
   EmailText,
+  type EmailTranslator,
 } from "./_components";
 
 export type VerifyEmailProps = {
   url: string;
   name?: string;
+  locale: Locale;
+  t: EmailTranslator;
 };
 
-export default function VerifyEmail({ url, name }: VerifyEmailProps) {
+export default function VerifyEmail({ url, name, locale, t }: VerifyEmailProps) {
+  const greeting = name ? t("greeting", { name }) : "";
   return (
-    <EmailLayout preview={`Verify your email address for ${appName}`}>
-      <EmailHeading>Verify your email address</EmailHeading>
-      <EmailText>
-        {name ? `Hi ${name}, ` : ""}confirm this address to finish setting up your{" "}
-        {appName} account.
-      </EmailText>
-      <EmailButton href={url}>Verify email address</EmailButton>
-      <EmailFallbackLink
-        href={url}
-        note="If you did not create an account, you can ignore this email."
-      />
+    <EmailLayout locale={locale} preview={t("verify.preview", { appName })}>
+      <EmailHeading>{t("verify.heading")}</EmailHeading>
+      <EmailText>{t("verify.body", { greeting, appName })}</EmailText>
+      <EmailButton href={url}>{t("verify.button")}</EmailButton>
+      <EmailFallbackLink href={url} intro={t("layout.fallbackIntro")} note={t("verify.note")} />
     </EmailLayout>
   );
 }

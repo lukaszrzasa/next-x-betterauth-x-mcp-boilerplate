@@ -46,6 +46,12 @@ reject; expected action refusals and transport failures are returned as outcomes
 
 ## Errors and cancellation
 
+`error.message` is already a sentence in the viewer's language: the server adapter
+rendered the operation's message descriptor before answering. `describeFailure(t, error)`
+adds a title and the text for opaque failures from the `errors` namespace; pass it
+the whole-catalog translator (`useTranslations()`).
+
+
 The per-hook `onError` runs first; returning `true` means the caller handled it.
 Otherwise the provider's `onError` runs with the same convention, followed by a
 bare dismissible alert. Configure provider callbacks in a client wrapper (replace

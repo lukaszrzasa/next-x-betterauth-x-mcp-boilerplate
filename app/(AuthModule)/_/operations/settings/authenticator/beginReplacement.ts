@@ -44,7 +44,7 @@ export const beginReplacementOperation = defineAction({
       const account = await requireFactorAccount(ctx);
       const current = await findFactor(ctx);
       if (!account.twoFactorEnabled || current?.verified !== true) {
-        throw lifecycleError("CONFLICT", "INACTIVE", "No authenticator is set up yet. Set one up instead.");
+        throw lifecycleError("CONFLICT", "INACTIVE", { key: "auth.errors.noAuthenticatorToReplace" });
       }
       await assertSecurityStateCurrent(ctx.user.id, securityVersionOf(ctx.user));
       await consumeSetupInitiation(ctx);

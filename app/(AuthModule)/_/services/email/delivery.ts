@@ -1,7 +1,6 @@
 import "server-only";
 
 import type { AuthedCtx } from "@/src/lib/auth/builders/context";
-import { formatUtcDateTime } from "@/src/lib/date/format";
 import { sendEmailChangeConfirmationEmail, type EmailChangePurpose } from "@/src/lib/email";
 import { errorMessage } from "@/src/lib/errorMessage";
 import { acquireCooldown, consumeBudget, isCoolingDown, type ThrottleDecision } from "@/src/lib/throttle";
@@ -47,7 +46,7 @@ export async function sendLink(ctx: AuthedCtx, link: Link): Promise<Delivery> {
       url: await confirmationUrl(link.token),
       token: link.token,
       purpose: link.purpose,
-      expiresAtLabel: formatUtcDateTime(link.expiresAt),
+      expiresAt: link.expiresAt,
       name: ctx.user.name,
       recipient: { userId: ctx.user.id, name: ctx.user.name },
     });

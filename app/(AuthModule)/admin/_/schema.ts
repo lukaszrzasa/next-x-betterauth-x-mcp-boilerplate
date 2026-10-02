@@ -21,40 +21,40 @@ const CONTROL_CHARACTERS_EXCEPT_BREAKS = /[\u0000-\u0008\u000B\u000C\u000E-\u001
 export const userIdSchema = z
   .string()
   .trim()
-  .min(1, "A user ID is required.")
+  .min(1, "authAdmin.validation.userIdRequired")
   .max(128)
-  .refine((value) => !CONTROL_CHARACTERS.test(value), "Invalid user ID.")
-  .refine((value) => !/[/\\]/.test(value), "Invalid user ID.");
+  .refine((value) => !CONTROL_CHARACTERS.test(value), "authAdmin.validation.userIdInvalid")
+  .refine((value) => !/[/\\]/.test(value), "authAdmin.validation.userIdInvalid");
 
 export const userNameSchema = z
   .string()
   .trim()
-  .min(1, "Enter a name.")
-  .max(100, "Use at most 100 characters.")
-  .refine((value) => !CONTROL_CHARACTERS.test(value), "Names cannot contain control characters.");
+  .min(1, "authAdmin.validation.nameRequired")
+  .max(100, "authAdmin.validation.nameTooLong")
+  .refine((value) => !CONTROL_CHARACTERS.test(value), "authAdmin.validation.nameControlCharacters");
 
 /** Trimmed and lowercased before the format check, so padded input is accepted normalized. */
 export const userEmailSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .max(254, "Use at most 254 characters.")
-  .pipe(z.email("Enter a valid email address."));
+  .max(254, "authAdmin.validation.emailTooLong")
+  .pipe(z.email("authAdmin.validation.emailInvalid"));
 
 export const BAN_DURATIONS = ["24h", "7d", "30d", "permanent"] as const;
 
 export const banDurationSchema = z.enum(BAN_DURATIONS, {
-  error: "Choose how long the ban lasts.",
+  error: "authAdmin.validation.banDurationRequired",
 });
 
 export const banReasonSchema = z
   .string()
   .trim()
-  .min(3, "Give a reason of at least 3 characters.")
-  .max(1000, "Use at most 1,000 characters.")
+  .min(3, "authAdmin.validation.reasonTooShort")
+  .max(1000, "authAdmin.validation.reasonTooLong")
   .refine(
     (value) => !CONTROL_CHARACTERS_EXCEPT_BREAKS.test(value),
-    "The reason cannot contain control characters.",
+    "authAdmin.validation.reasonControlCharacters",
   );
 
 // ---------------------------------------------------------------------------

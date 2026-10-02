@@ -47,7 +47,7 @@ export const retryBanSessionsOperation = defineAction({
     const { target } = await authorizeTargetAction(ctx, input.userId, "ban");
     if (!isEffectivelyBanned(target.accessStatus)) {
       throw new ActionError("FORBIDDEN", {
-        message: "This user is not banned; there is nothing to finish.",
+        message: { key: "authAdmin.errors.notBannedNothingToFinish" },
         data: { reason: "not-banned" },
       });
     }
@@ -81,7 +81,7 @@ export const retryUnbanSessionRefreshOperation = defineAction({
     const { target } = await authorizeTargetAction(ctx, input.userId, "unban");
     if (target.accessStatus !== "active") {
       throw new ActionError("FORBIDDEN", {
-        message: "This user is still banned; there is nothing to refresh.",
+        message: { key: "authAdmin.errors.stillBanned" },
         data: { reason: "banned" },
       });
     }

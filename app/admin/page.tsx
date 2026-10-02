@@ -7,5 +7,5 @@ import { appRoutes } from "@/src/lib/app/routes";
  * directly under `app/`; every other admin page is its module's.
  */
 export default page(appRoutes.dashboard, () => (
-  <AppBreadcrumbs items={[{ label: "Admin" }]} />
+  <AppBreadcrumbs items={[{ label: "nav.admin" }]} />
 ));

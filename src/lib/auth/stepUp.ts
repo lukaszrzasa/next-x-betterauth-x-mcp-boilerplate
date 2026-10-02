@@ -57,7 +57,7 @@ const LOCK_DURATION_SECONDS = 15 * 60;
 
 const lockedError = () =>
   new ActionError("STEP_UP_LOCKED", {
-    message: "Too many failed verification attempts. Try again later.",
+    message: { key: "errors.auth.stepUpLocked" },
   });
 
 /**
@@ -189,8 +189,7 @@ export async function issueEmailChallenge(
 
   if (!user.emailVerified) {
     throw new ActionError("EMAIL_VERIFICATION_REQUIRED", {
-      message:
-        "Verify your email address before using email verification codes.",
+      message: { key: "errors.auth.emailCodesRequireVerifiedEmail" },
     });
   }
 
@@ -204,7 +203,7 @@ export async function issueEmailChallenge(
   );
   if (allowed !== "OK") {
     throw new ActionError("RATE_LIMITED", {
-      message: "Wait 30 seconds before requesting another email code.",
+      message: { key: "errors.auth.emailCodeCooldown", values: { seconds: 30 } },
     });
   }
 
@@ -288,14 +287,14 @@ export async function verifyStepUp({
   const parsedProof = stepUpProofSchema.safeParse(rawProof);
   if (!parsedProof.success) {
     throw new ActionError("INVALID_INPUT", {
-      message: "Step-up requires a method and a six-digit code.",
+      message: { key: "errors.auth.stepUpProofShape" },
     });
   }
   const proof = parsedProof.data;
 
   if (!availableMethods(user).includes(proof.method)) {
     throw new ActionError("TWO_FACTOR_ENROLLMENT_REQUIRED", {
-      message: `"${proof.method}" is not available for this account.`,
+      message: { key: "errors.auth.methodUnavailable" },
     });
   }
 
@@ -306,7 +305,7 @@ export async function verifyStepUp({
 
   if (!codeValid) {
     throw new ActionError("STEP_UP_INVALID_CODE", {
-      message: "That verification code is not valid.",
+      message: { key: "errors.auth.invalidCode" },
     });
   }
 
@@ -323,7 +322,7 @@ export async function verifyStepUp({
     );
     if (claimed !== "OK") {
       throw new ActionError("STEP_UP_INVALID_CODE", {
-        message: "That verification code has already been used.",
+        message: { key: "errors.auth.codeAlreadyUsed" },
       });
     }
   }

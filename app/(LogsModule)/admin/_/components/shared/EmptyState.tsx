@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@/src/components/ui/button";
 import { describePeriod, type TimeRangeValue } from "./TimeRangeFilter";
 
@@ -20,7 +21,7 @@ export function EmptyState({
 }: {
   query: TimeRangeValue;
   pending: boolean;
-  /** Plural, e.g. "email attempts". */
+  /** Plural, already translated, e.g. "email attempts". */
   noun: string;
   filteredText: string;
   neverText: string;
@@ -29,14 +30,16 @@ export function EmptyState({
   onClear: () => void;
   onAllTime: () => void;
 }) {
+  const t = useTranslations("logsAdmin.shared");
+  const tActions = useTranslations("common.actions");
   let text = neverText;
   let action: { label: string; run: () => void } | null = null;
   if (filtered) {
     text = filteredText;
-    action = { label: "Clear filters", run: onClear };
+    action = { label: tActions("clearFilters"), run: onClear };
   } else if (query.range !== "all") {
-    text = `No ${noun} were recorded ${describePeriod(query)}.`;
-    action = { label: "Show all time", run: onAllTime };
+    text = t("empty.recorded", { noun, period: describePeriod(query, t) });
+    action = { label: tActions("showAllTime"), run: onAllTime };
   }
 
   return (

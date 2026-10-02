@@ -4,6 +4,7 @@ import { auth, sessionCookieCache } from "@/src/lib/auth";
 import { needsTwoFactorEnrollment } from "@/src/lib/auth/enrollment";
 import { isInstallationComplete } from "@/src/lib/auth/installation";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
+import { LOCALE_HEADER, negotiateLocale } from "@/src/lib/i18n";
 
 /** The cached payload carries this app's user fields, e.g. `twoFactorRequired`. */
 type SessionCookieCache = NonNullable<
@@ -49,6 +50,19 @@ async function getRedirectUser(request: NextRequest) {
   return { user: response?.user ?? null, setCookies: headers.getSetCookie() };
 }
 
+/**
+ * The one place the request's language is decided. The app reads it from
+ * this header everywhere (request config, action adapters, provider hooks),
+ * so the header is always overwritten: a value the client sent never gets
+ * through. The redirect and JSON answers below stay English - they are
+ * machine-facing payloads with status codes, not pages.
+ */
+function continueWithLocale(request: NextRequest) {
+  const headers = new Headers(request.headers);
+  headers.set(LOCALE_HEADER, negotiateLocale(request.headers));
+  return NextResponse.next({ request: { headers } });
+}
+
 function withCookies(response: NextResponse, setCookies: string[]) {
   for (const cookie of setCookies) {
     response.headers.append("set-cookie", cookie);
@@ -63,7 +77,7 @@ export async function proxy(request: NextRequest) {
   const expectsJson = path.startsWith("/api/") || request.method !== "GET";
 
   if (path === authRoutes.setup.href) {
-    return NextResponse.next();
+    return continueWithLocale(request);
   }
 
   if (!(await isInstallationComplete())) {
@@ -100,10 +114,10 @@ export async function proxy(request: NextRequest) {
       );
     }
 
-    return withCookies(NextResponse.next(), setCookies);
+    return withCookies(continueWithLocale(request), setCookies);
   }
 
-  return NextResponse.next();
+  return continueWithLocale(request);
 }
 
 export const config = {

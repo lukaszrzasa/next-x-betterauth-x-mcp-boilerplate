@@ -1,6 +1,7 @@
 "use client";
 
 import { KeySquareIcon, LogOutIcon, MailCheckIcon, ShieldCheckIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { DetailRow, DetailSection } from "@/src/components/detail/DetailSection";
 import { confirm } from "@/src/components/feedback/ConfirmDialog";
 import { Button } from "@/src/components/ui/button";
@@ -21,6 +22,8 @@ import { policyNote } from "@/app/(AuthModule)/admin/_/components/users/detail/p
  * asks for confirmation first; the emails send directly.
  */
 export function UserSecuritySection({ user }: { user: UserDetail }) {
+  const t = useTranslations("authAdmin.detail");
+  const policyT = useTranslations("authAdmin.detail.policy");
   const { feedback, setFeedback, dismiss } = useFeedback<Feedback>();
   const sendVerification = useSendVerification(user.id, { onSettled: setFeedback });
   const sendPasswordReset = useSendPasswordReset(user.id, { onSettled: setFeedback });
@@ -28,7 +31,7 @@ export function UserSecuritySection({ user }: { user: UserDetail }) {
   const anyPending = sendVerification.pending || sendPasswordReset.pending || revokeSessions.pending;
   const capabilities = user.capabilities;
   const blocked = [capabilities.sendVerification, capabilities.sendPasswordReset, capabilities.revokeSessions]
-    .map((capability) => (capability.allowed ? null : policyNote(capability.reason)))
+    .map((capability) => (capability.allowed ? null : policyNote(policyT, capability.reason)))
     .find((note) => note !== null);
 
   const start = (run: () => Promise<unknown>) => {
@@ -38,34 +41,31 @@ export function UserSecuritySection({ user }: { user: UserDetail }) {
 
   const signOutEverywhere = async () => {
     const confirmed = await confirm({
-      title: "Sign this user out of all devices?",
-      description: `Every current session of ${user.name} (${user.email}) ends immediately. This does not ban the account; the user can sign in again.${
-        user.isSelf ? " This is your own account: you will be signed out as well." : ""
-      }`,
-      confirmLabel: "Sign out everywhere",
+      title: t("security.signOutConfirm.title"),
+      description: t(
+        user.isSelf ? "security.signOutConfirm.descriptionSelf" : "security.signOutConfirm.description",
+        { name: user.name, email: user.email },
+      ),
+      confirmLabel: t("security.signOutConfirm.confirm"),
     });
     if (confirmed) start(revokeSessions.run);
   };
 
   return (
-    <DetailSection
-      title="Security"
-      description="Email verification, second factor and session controls."
-      icon={ShieldCheckIcon}
-    >
+    <DetailSection title={t("security.title")} description={t("security.description")} icon={ShieldCheckIcon}>
       <ActionFeedback
-        retryVerb="send again"
+        retryVerb={t("retryVerb")}
         feedback={feedback}
         onDismiss={dismiss}
         recovery={
           feedback?.recovery === "revokeSessions"
-            ? { label: "Retry", pending: revokeSessions.pending, onClick: () => start(revokeSessions.run) }
+            ? { label: t("retry"), pending: revokeSessions.pending, onClick: () => start(revokeSessions.run) }
             : undefined
         }
       />
       <div>
         <DetailRow
-          label="Email verification"
+          label={t("security.emailVerification")}
           control={
             capabilities.sendVerification.allowed ? (
               <Button
@@ -76,17 +76,17 @@ export function UserSecuritySection({ user }: { user: UserDetail }) {
                 onClick={() => start(sendVerification.run)}
               >
                 <MailCheckIcon aria-hidden="true" />
-                {sendVerification.pending ? "Sending…" : "Send verification email"}
+                {sendVerification.pending ? t("security.sending") : t("security.sendVerification")}
               </Button>
             ) : undefined
           }
         >
           <VerificationBadge verified={user.emailVerified} />
         </DetailRow>
-        <DetailRow label="Two-factor required">{user.twoFactorRequired ? "Yes" : "No"}</DetailRow>
-        <DetailRow label="Two-factor enabled">{user.twoFactorEnabled ? "Yes" : "No"}</DetailRow>
+        <DetailRow label={t("security.twoFactorRequired")}>{user.twoFactorRequired ? t("yes") : t("no")}</DetailRow>
+        <DetailRow label={t("security.twoFactorEnabled")}>{user.twoFactorEnabled ? t("yes") : t("no")}</DetailRow>
         <DetailRow
-          label="Password"
+          label={t("security.password")}
           control={
             capabilities.sendPasswordReset.allowed ? (
               <Button
@@ -97,17 +97,15 @@ export function UserSecuritySection({ user }: { user: UserDetail }) {
                 onClick={() => start(sendPasswordReset.run)}
               >
                 <KeySquareIcon aria-hidden="true" />
-                {sendPasswordReset.pending ? "Sending…" : "Send password-reset email"}
+                {sendPasswordReset.pending ? t("security.sending") : t("security.sendPasswordReset")}
               </Button>
             ) : undefined
           }
         >
-          <span className="ui:text-muted-foreground">
-            A reset email lets the user choose a new password. Existing factors stay enabled.
-          </span>
+          <span className="ui:text-muted-foreground">{t("security.passwordNote")}</span>
         </DetailRow>
         <DetailRow
-          label="Sessions"
+          label={t("security.sessions")}
           control={
             capabilities.revokeSessions.allowed ? (
               <Button
@@ -118,14 +116,12 @@ export function UserSecuritySection({ user }: { user: UserDetail }) {
                 onClick={() => void signOutEverywhere()}
               >
                 <LogOutIcon aria-hidden="true" />
-                {revokeSessions.pending ? "Signing out…" : "Sign out of all devices"}
+                {revokeSessions.pending ? t("security.signingOut") : t("security.signOutAll")}
               </Button>
             ) : undefined
           }
         >
-          <span className="ui:text-muted-foreground">
-            Signing out ends every current session. The user can sign in again afterwards.
-          </span>
+          <span className="ui:text-muted-foreground">{t("security.sessionsNote")}</span>
         </DetailRow>
         {blocked && <p className="ui:pt-4 ui:text-xs ui:text-muted-foreground">{blocked}</p>}
       </div>

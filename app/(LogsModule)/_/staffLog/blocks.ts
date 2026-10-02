@@ -1,4 +1,5 @@
 import { formatUtcDateTime } from "@/src/lib/date/format";
+import { DEFAULT_LOCALE, type Locale } from "@/src/lib/i18n/locales";
 
 /**
  * The message of a staff log entry: an ordered array of blocks that reads as
@@ -46,8 +47,12 @@ export const url = (href: string, label: string = href): StaffLogBlock => ({ typ
 /** Kept on one line: a block is part of a sentence. */
 export const value = (content: string): StaffLogBlock => ({ type: "value", value: singleLine(content) });
 
-/** What a block says, as the renderer shows it. */
-export function blockText(block: StaffLogBlock): string {
+/**
+ * What a block says, as the renderer shows it. Only a date block depends on
+ * the locale: the stored search text uses the default (an entry's wording
+ * is fixed when it is written, ADR 0003), the renderer the reader's.
+ */
+export function blockText(block: StaffLogBlock, locale: Locale = DEFAULT_LOCALE): string {
   switch (block.type) {
     case "text":
     case "value":
@@ -56,13 +61,13 @@ export function blockText(block: StaffLogBlock): string {
     case "url":
       return block.label;
     case "date":
-      return formatUtcDateTime(block.value);
+      return formatUtcDateTime(block.value, locale);
   }
 }
 
 /** The message as the plain sentence it renders to: what search matches. */
 export function messageText(message: readonly StaffLogBlock[]): string {
-  return singleLine(message.map(blockText).join(""));
+  return singleLine(message.map((block) => blockText(block)).join(""));
 }
 
 function singleLine(content: string): string {

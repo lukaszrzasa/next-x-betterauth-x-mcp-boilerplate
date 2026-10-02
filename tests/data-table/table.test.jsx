@@ -4,10 +4,13 @@ import { installDom } from "../helpers/dom";
 installDom();
 
 const React = await import("react");
-const { render, fireEvent, screen, cleanup, within } = await import("@testing-library/react");
+const { render: baseRender, fireEvent, screen, cleanup, within } = await import("@testing-library/react");
+const { withIntl } = await import("../helpers/intl.jsx");
 const { DataTable } = await import("../../src/components/data-table/DataTable");
 const { DataTableColumnHeader } = await import("../../src/components/data-table/DataTableColumnHeader");
-const { describeRange } = await import("../../src/components/data-table/DataTablePagination");
+const { pageRange } = await import("../../src/components/data-table/DataTablePagination");
+/** Every tree renders inside the English catalog, as the root layout provides it. */
+const render = (ui, options) => baseRender(ui, { wrapper: withIntl(), ...options });
 
 const rows = [
   { id: "1", name: "Ada", score: 3 },
@@ -106,7 +109,17 @@ test("an empty page shows the empty state and a plain zero count", () => {
   expect(screen.getByText("0 things")).toBeTruthy();
   expect(screen.queryByText(/1–0/)).toBeNull();
   expect(screen.getByText("Page 1 of 1")).toBeTruthy();
-  expect(describeRange({ pageIndex: 0, pageSize: 10 }, 0, "users")).toBe("0 users");
-  expect(describeRange({ pageIndex: 0, pageSize: 10 }, 1, "users")).toBe("1–1 of 1 users");
-  expect(describeRange({ pageIndex: 3, pageSize: 10 }, 1234, "users")).toBe("31–40 of 1,234 users");
+  expect(pageRange({ pageIndex: 0, pageSize: 10 }, 0)).toBeNull();
+  expect(pageRange({ pageIndex: 0, pageSize: 10 }, 1)).toEqual({ first: 1, last: 1 });
+  expect(pageRange({ pageIndex: 3, pageSize: 10 }, 1234)).toEqual({ first: 31, last: 40 });
+});
+
+test("the range formats its total in the viewer's language", () => {
+  const view = render(<Harness rowCount={1234} pagination={{ pageIndex: 3, pageSize: 10 }} />);
+  expect(screen.getByText("31–40 of 1,234 things")).toBeTruthy();
+  view.unmount();
+  baseRender(<Harness rowCount={1234} pagination={{ pageIndex: 3, pageSize: 10 }} itemLabel="wierszy" />, {
+    wrapper: withIntl("pl"),
+  });
+  expect(screen.getByText("31–40 z 1234 (wierszy)")).toBeTruthy();
 });

@@ -1,0 +1,279 @@
+{
+  "breadcrumbs": {
+    "admin": "Administracja",
+    "user": "Użytkownik"
+  },
+  "badges": {
+    "rolesLabel": "Role",
+    "role": {
+      "user": "Użytkownik",
+      "moderator": "Moderator",
+      "admin": "Administrator"
+    },
+    "verified": "Zweryfikowany",
+    "unverified": "Niezweryfikowany",
+    "access": {
+      "active": "Aktywne",
+      "temporarilyBanned": "Zablokowane tymczasowo",
+      "permanentlyBanned": "Zablokowane na stałe"
+    },
+    "banEnds": "Blokada kończy się {date}"
+  },
+  "list": {
+    "title": "Użytkownicy",
+    "description": "Wszystkie konta, w tym zablokowane i konta zespołu. Otwórz użytkownika, aby przejrzeć lub zmienić jego konto.",
+    "loading": "Wczytywanie użytkowników",
+    "loadError": {
+      "title": "Nie udało się wczytać użytkowników",
+      "message": "Coś poszło nie tak podczas wczytywania listy użytkowników. Nic nie zostało zmienione. Spróbuj ponownie za chwilę."
+    },
+    "empty": "Nie ma jeszcze użytkowników.",
+    "emptyFiltered": "Żaden użytkownik nie pasuje do tych filtrów.",
+    "clearFilters": "Wyczyść filtry",
+    "caption": "Użytkownicy z rolami, weryfikacją e-mail, stanem dostępu i datą utworzenia",
+    "itemLabel": "użytkowników",
+    "search": {
+      "label": "Szukaj użytkowników",
+      "placeholder": "Szukaj po nazwie, adresie e-mail lub ID"
+    },
+    "filters": {
+      "role": "Rola",
+      "verification": "Weryfikacja e-mail",
+      "access": "Dostęp",
+      "sort": "Sortuj według",
+      "allRoles": "Wszystkie role",
+      "anyVerification": "Dowolna weryfikacja",
+      "anyAccess": "Dowolny dostęp",
+      "banned": "Zablokowane"
+    },
+    "sort": {
+      "createdAtDesc": "Od najnowszych",
+      "createdAtAsc": "Od najstarszych",
+      "nameAsc": "Nazwa A–Z",
+      "nameDesc": "Nazwa Z–A",
+      "emailAsc": "E-mail A–Z",
+      "emailDesc": "E-mail Z–A"
+    },
+    "columns": {
+      "user": "Użytkownik",
+      "roles": "Role",
+      "verification": "Weryfikacja e-mail",
+      "access": "Dostęp",
+      "created": "Utworzono",
+      "actions": "Akcje"
+    },
+    "viewUser": "Zobacz użytkownika",
+    "viewUserNamed": "Zobacz użytkownika {name}"
+  },
+  "detail": {
+    "loading": "Wczytywanie użytkownika",
+    "loadingText": "Wczytywanie użytkownika…",
+    "loadError": {
+      "title": "Nie udało się wczytać tego użytkownika",
+      "message": "Coś poszło nie tak podczas wczytywania konta. Nic nie zostało zmienione. Spróbuj ponownie za chwilę."
+    },
+    "notFound": {
+      "title": "Nie znaleziono użytkownika",
+      "description": "Nie ma konta o tym ID. Mogło zostać usunięte albo link jest niepełny."
+    },
+    "backToUsers": "Wróć do użytkowników",
+    "rootAccount": "Konto główne",
+    "ownership": {
+      "rootSelf": "To jest konto główne i należy do Ciebie. Możesz tu zmienić jego nazwę, wysłać sobie e-mail weryfikacyjny lub e-mail do resetu hasła oraz wylogować się ze wszystkich urządzeń. Jego adresu e-mail nie można tu zmienić, a konta nie można nigdy zablokować.",
+      "root": "To jest konto główne tej instalacji. Zmienić je może tylko samo konto główne.",
+      "self": "To jest Twoje własne konto. Zmiany administracyjne nie są tu dla niego dostępne."
+    },
+    "policy": {
+      "rootProtected": "Zmienić to może tylko konto główne.",
+      "rootSelfLimit": "Niedostępne dla konta głównego.",
+      "self": "Niedostępne dla Twojego własnego konta.",
+      "staffTarget": "Wymaga uprawnienia do zarządzania zespołem."
+    },
+    "retry": "Ponów",
+    "retryVerb": "wysłać ponownie",
+    "yes": "Tak",
+    "no": "Nie",
+    "profile": {
+      "title": "Profil",
+      "description": "Wyświetlana nazwa konta i adres e-mail do logowania.",
+      "name": "Nazwa",
+      "email": "Adres e-mail",
+      "editName": "Edytuj nazwę",
+      "editEmail": "Edytuj e-mail",
+      "editEmailDialog": "Edytuj adres e-mail",
+      "cancel": "Anuluj",
+      "saving": "Zapisywanie…",
+      "saveName": "Zapisz nazwę",
+      "saveEmail": "Zapisz e-mail",
+      "emailNote": "Zmiana adresu oznacza go jako niezweryfikowany, wylogowuje użytkownika wszędzie i wysyła e-mail weryfikacyjny na nowy adres. Starsze linki do resetu hasła przestają działać.",
+      "emailConfirm": {
+        "title": "Zmienić adres e-mail?",
+        "description": "Adres użytkownika {name} zmieni się z {from} na {to}. Nowy adres zaczyna jako niezweryfikowany, wszystkie bieżące sesje zostaną wylogowane, a na nowy adres zostanie wysłany e-mail weryfikacyjny. Zostaniesz poproszony o potwierdzenie tożsamości.",
+        "confirm": "Zmień e-mail",
+        "cancel": "Zachowaj obecny adres"
+      }
+    },
+    "security": {
+      "title": "Bezpieczeństwo",
+      "description": "Weryfikacja e-mail, drugi składnik i kontrola sesji.",
+      "emailVerification": "Weryfikacja e-mail",
+      "sendVerification": "Wyślij e-mail weryfikacyjny",
+      "sending": "Wysyłanie…",
+      "twoFactorRequired": "Wymagane uwierzytelnianie dwuskładnikowe",
+      "twoFactorEnabled": "Uwierzytelnianie dwuskładnikowe włączone",
+      "password": "Hasło",
+      "sendPasswordReset": "Wyślij e-mail do resetu hasła",
+      "passwordNote": "E-mail do resetu pozwala użytkownikowi wybrać nowe hasło. Istniejące składniki pozostają włączone.",
+      "sessions": "Sesje",
+      "signOutAll": "Wyloguj ze wszystkich urządzeń",
+      "signingOut": "Wylogowywanie…",
+      "sessionsNote": "Wylogowanie kończy wszystkie bieżące sesje. Użytkownik może potem zalogować się ponownie.",
+      "signOutConfirm": {
+        "title": "Wylogować tego użytkownika ze wszystkich urządzeń?",
+        "description": "Wszystkie bieżące sesje użytkownika {name} ({email}) zakończą się natychmiast. Konto nie zostanie zablokowane; użytkownik może zalogować się ponownie.",
+        "descriptionSelf": "Wszystkie bieżące sesje użytkownika {name} ({email}) zakończą się natychmiast. Konto nie zostanie zablokowane; użytkownik może zalogować się ponownie. To jest Twoje własne konto: Ty również zostaniesz wylogowany.",
+        "confirm": "Wyloguj wszędzie"
+      }
+    },
+    "access": {
+      "title": "Dostęp",
+      "description": "Role oraz to, czy konto może się logować.",
+      "roles": "Role",
+      "effectiveAccess": "Obowiązujący dostęp",
+      "banUser": "Zablokuj użytkownika",
+      "updateBan": "Zmień blokadę",
+      "removeBan": "Zdejmij blokadę",
+      "removing": "Zdejmowanie…",
+      "banReason": "Powód blokady",
+      "noReason": "Nie zapisano powodu",
+      "banEnds": "Blokada kończy się",
+      "never": "Nigdy (na stałe)",
+      "removeBanConfirm": {
+        "title": "Zdjąć blokadę?",
+        "description": "{name} ({email}) będzie mógł ponownie się zalogować. Nic więcej się nie zmienia: nie powstaje żadna sesja, adres e-mail pozostaje bez zmian, a role nie są ruszane.",
+        "confirm": "Zdejmij blokadę",
+        "cancel": "Zachowaj blokadę"
+      }
+    },
+    "metadata": {
+      "title": "Szczegóły konta",
+      "userId": "ID użytkownika",
+      "copyUserId": "Kopiuj ID użytkownika",
+      "created": "Utworzono",
+      "lastUpdated": "Ostatnia zmiana",
+      "rootDesignation": "Konto główne",
+      "rootYes": "Tak, konto główne tej instalacji",
+      "rootNo": "Nie"
+    },
+    "staffLog": {
+      "title": "Dziennik zespołu",
+      "description": "Co zespół zmienił na tym koncie, od najnowszych.",
+      "widgetLabel": "Działania zespołu na tym użytkowniku"
+    },
+    "ban": {
+      "title": "Zablokuj użytkownika",
+      "titleReplace": "Zmień blokadę",
+      "submit": "Zablokuj użytkownika",
+      "submitReplace": "Zastąp blokadę",
+      "saving": "Zapisywanie…",
+      "cancel": "Anuluj",
+      "duration": "Czas trwania",
+      "selectDuration": "Wybierz czas trwania",
+      "selectDurationHint": "Wybierz czas trwania, aby zobaczyć, co oznacza.",
+      "reason": "Powód",
+      "reasonPlaceholder": "Dlaczego to konto jest blokowane (3–1000 znaków)",
+      "stateActive": "{who} zostanie wylogowany ze wszystkich urządzeń i nie będzie mógł się logować, dopóki trwa blokada. Dane konta zostają zachowane.",
+      "stateBanned": "{who} jest obecnie {current}. Nowa blokada zastępuje poprzednią, a jej okres zaczyna się teraz, a nie po zakończeniu obecnej. Wszystkie bieżące sesje zostają wylogowane.",
+      "bannedPermanently": "zablokowany na stałe",
+      "bannedUntil": "zablokowany do {date}",
+      "durations": {
+        "24h": "24 godziny",
+        "7d": "7 dni",
+        "30d": "30 dni",
+        "permanent": "Na stałe"
+      },
+      "consequences": {
+        "24h": "Konto nie może się logować przez 24 godziny od teraz.",
+        "7d": "Konto nie może się logować przez 7 dni od teraz.",
+        "30d": "Konto nie może się logować przez 30 dni od teraz.",
+        "permanent": "Konto zachowuje dane, ale nie może się logować, dopóki administrator nie zdejmie blokady."
+      }
+    }
+  },
+  "feedback": {
+    "failureTitle": {
+      "RATE_LIMITED": "Odczekaj chwilę przed wysłaniem kolejnego e-maila",
+      "NOT_FOUND": "Ten użytkownik już nie istnieje"
+    },
+    "completed": {
+      "updateName": "Nazwa zaktualizowana",
+      "updateEmail": "E-mail zaktualizowany. Nowy adres wymaga weryfikacji; użytkownik został wylogowany.",
+      "sendVerification": "Zlecono wysłanie e-maila weryfikacyjnego",
+      "sendPasswordReset": "Zlecono wysłanie e-maila do resetu hasła",
+      "revokeSessions": "Wylogowano ze wszystkich urządzeń",
+      "ban": "Blokada zapisana. Użytkownik został wylogowany.",
+      "unban": "Blokada zdjęta",
+      "retryNameSessionRefresh": "Aktywne sesje zaktualizowane",
+      "retryEmailChangeEffects": "Sesje unieważnione i zlecono weryfikację",
+      "retryBanSessions": "Użytkownik został wylogowany",
+      "retryUnbanSessionRefresh": "Aktywne sesje zaktualizowane"
+    },
+    "unchanged": {
+      "updateName": "Nazwa jest już aktualna",
+      "updateEmail": "Adres e-mail jest już aktualny",
+      "sendVerification": "Ten adres e-mail jest już zweryfikowany",
+      "unban": "Ten użytkownik nie jest zablokowany",
+      "default": "Bez zmian"
+    },
+    "partialTitle": {
+      "updateName": "Nazwa zaktualizowana, ale",
+      "updateEmail": "E-mail zaktualizowany, ale",
+      "ban": "Blokada zapisana, ale",
+      "unban": "Blokada zdjęta, ale",
+      "revokeSessions": "Wylogowanie niepotwierdzone:",
+      "default": "Nie ukończono w całości:"
+    },
+    "partial": "{prefix} {effects}.",
+    "effectJoiner": " oraz ",
+    "effect": {
+      "sessionRefresh": "nie udało się zaktualizować aktywnych sesji użytkownika",
+      "sessionRevocation": "nie udało się w pełni unieważnić sesji",
+      "verificationEmail": "nie udało się wysłać e-maila weryfikacyjnego"
+    },
+    "effectRateLimited": "{label} (odczekaj {seconds, plural, one {# sekundę} few {# sekundy} many {# sekund} other {# sekundy}} i wyślij ponownie)",
+    "hintSignOut": "Ponów, aby dokończyć wylogowywanie użytkownika.",
+    "hintRemaining": "Sama zmiana jest zapisana. Ponów, aby dokończyć pozostałe kroki.",
+    "unrecorded": "Ta akcja nie została zapisana w dzienniku zespołu. Powiedz administratorowi, co zmieniłeś."
+  },
+  "errors": {
+    "denial": {
+      "permission": "Nie masz uprawnień do tej operacji.",
+      "rootProtected": "Konto główne może zmienić tylko konto główne.",
+      "rootSelfLimit": "Ta zmiana nie jest dostępna dla konta głównego.",
+      "self": "Nie możesz tu administrować własnym kontem.",
+      "staffTarget": "Zmiana konta zespołu wymaga uprawnienia do zarządzania zespołem.",
+      "alreadyVerified": "Ten adres e-mail jest już zweryfikowany.",
+      "notBanned": "Ten użytkownik nie jest zablokowany."
+    },
+    "targetNotFound": "Ten użytkownik już nie istnieje.",
+    "emailInUse": "Inne konto używa już tego adresu e-mail.",
+    "lastAdmin": "To ostatnie aktywne konto administratora; nie można go zablokować.",
+    "rateLimited": "Odczekaj {seconds, plural, one {# sekundę} few {# sekundy} many {# sekund} other {# sekundy}} przed wysłaniem kolejnego e-maila do tego użytkownika.",
+    "notBannedNothingToFinish": "Ten użytkownik nie jest zablokowany; nie ma czego kończyć.",
+    "stillBanned": "Ten użytkownik jest nadal zablokowany; nie ma czego odświeżać.",
+    "changeNotConfirmed": "Nie udało się potwierdzić zmiany. Odśwież stronę, zanim spróbujesz ponownie."
+  },
+  "validation": {
+    "userIdRequired": "ID użytkownika jest wymagane.",
+    "userIdInvalid": "Nieprawidłowe ID użytkownika.",
+    "nameRequired": "Wpisz nazwę.",
+    "nameTooLong": "Użyj najwyżej 100 znaków.",
+    "nameControlCharacters": "Nazwa nie może zawierać znaków sterujących.",
+    "emailTooLong": "Użyj najwyżej 254 znaków.",
+    "emailInvalid": "Wpisz poprawny adres e-mail.",
+    "banDurationRequired": "Wybierz, jak długo ma trwać blokada.",
+    "reasonTooShort": "Podaj powód o długości co najmniej 3 znaków.",
+    "reasonTooLong": "Użyj najwyżej 1000 znaków.",
+    "reasonControlCharacters": "Powód nie może zawierać znaków sterujących."
+  }
+}

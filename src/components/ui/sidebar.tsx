@@ -3,6 +3,7 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Slot } from "radix-ui";
 import { Button } from "@/src/components/ui/button";
 import { Separator } from "@/src/components/ui/separator";
@@ -137,6 +138,7 @@ function Sidebar({
   ...props
 }: React.ComponentProps<"div">) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const t = useTranslations("common.shell");
 
   if (isMobile) {
     return (
@@ -150,8 +152,8 @@ function Sidebar({
           style={{ "--sidebar-width": SIDEBAR_WIDTH_MOBILE } as React.CSSProperties}
         >
           <SheetHeader className="ui:sr-only">
-            <SheetTitle>Navigation</SheetTitle>
-            <SheetDescription>Dashboard navigation drawer.</SheetDescription>
+            <SheetTitle>{t("navigation")}</SheetTitle>
+            <SheetDescription>{t("navigationDrawer")}</SheetDescription>
           </SheetHeader>
           <div className="ui:flex ui:h-full ui:w-full ui:flex-col">{children}</div>
         </SheetContent>
@@ -198,6 +200,7 @@ function SidebarTrigger({
   ...props
 }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar } = useSidebar();
+  const t = useTranslations("common.shell");
 
   return (
     <Button
@@ -213,13 +216,14 @@ function SidebarTrigger({
       {...props}
     >
       <PanelLeftIcon />
-      <span className="ui:sr-only">Toggle sidebar</span>
+      <span className="ui:sr-only">{t("toggleSidebar")}</span>
     </Button>
   );
 }
 
 function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
   const { toggleSidebar, isMobile } = useSidebar();
+  const t = useTranslations("common.shell");
 
   if (isMobile) {
     return null;
@@ -229,10 +233,10 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
     <button
       data-sidebar="rail"
       data-slot="sidebar-rail"
-      aria-label="Toggle sidebar"
+      aria-label={t("toggleSidebar")}
       tabIndex={-1}
       onClick={toggleSidebar}
-      title="Toggle sidebar"
+      title={t("toggleSidebar")}
       className={cn(
         "ui:absolute ui:inset-y-0 ui:-right-4 ui:z-20 ui:hidden ui:w-4 ui:cursor-w-resize ui:-translate-x-1/2 ui:transition-all ui:ease-linear ui:group-data-[collapsible=icon]:cursor-e-resize ui:after:absolute ui:after:inset-y-0 ui:after:left-1/2 ui:after:w-[2px] ui:hover:after:bg-sidebar-border ui:sm:flex",
         className,

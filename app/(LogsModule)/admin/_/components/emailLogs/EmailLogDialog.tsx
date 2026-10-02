@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { CopyButton } from "@/src/components/actions/CopyButton";
 import { Button } from "@/src/components/ui/button";
 import { useNowSeconds } from "@/src/lib/hooks/useNow";
@@ -56,6 +57,7 @@ export type EmailLogDialogProps = {
  * pagination is dialog-local and restarts at page 1 for every selection.
  */
 export function EmailLogDialog({ selectedId, list, hrefFor, onSelect, onClose, onCloseAutoFocus }: EmailLogDialogProps) {
+  const t = useTranslations("logsAdmin.emailLogs.dialog");
   const [state, setState] = useState<SelectionState>({ generation: 0, id: selectedId, attemptsPage: 1, retained: null });
   if (state.id !== selectedId) {
     setState({ generation: state.generation + 1, id: selectedId, attemptsPage: 1, retained: null });
@@ -84,8 +86,8 @@ export function EmailLogDialog({ selectedId, list, hrefFor, onSelect, onClose, o
   return (
     <LogDialogFrame
       open={selectedId !== null}
-      title="Email attempt"
-      description="One sending attempt as recorded: metadata, redacted content, its retry chain and diagnostics."
+      title={t("title")}
+      description={t("description")}
       onClose={onClose}
       onCloseAutoFocus={onCloseAutoFocus}
     >
@@ -128,6 +130,8 @@ function EmailLogDetailBody({
   onLoaded: (detail: EmailLogDetail) => void;
   onDiscard: () => void;
 }) {
+  const t = useTranslations("logsAdmin.emailLogs.dialog");
+  const tActions = useTranslations("common.actions");
   const result = useEmailLogDetails(id, attemptsPage);
 
   useEffect(() => {
@@ -138,26 +142,20 @@ function EmailLogDetailBody({
   switch (result.status) {
     case "unavailable":
       return (
-        <LogDialogMessage
-          title="This log is not available"
-          message="It does not exist, or you can no longer view it."
-        />
+        <LogDialogMessage title={t("unavailable.title")} message={t("unavailable.message")} />
       );
     case "refused":
       return (
-        <LogDialogMessage
-          title="You can no longer view this log"
-          message="Your session or access changed. Sign in again, or ask an administrator."
-        />
+        <LogDialogMessage title={t("refused.title")} message={t("refused.message")} />
       );
     case "failed":
       return (
         <LogDialogMessage
-          title="The log could not be loaded"
-          message="Nothing was changed. Try again in a moment."
+          title={t("failed.title")}
+          message={t("failed.message")}
           action={
             <Button type="button" variant="outline" size="sm" onClick={result.retry}>
-              Retry
+              {tActions("retry")}
             </Button>
           }
         />
@@ -165,7 +163,7 @@ function EmailLogDetailBody({
     case "loaded":
     case "loading": {
       const detail = result.status === "loaded" ? result.detail : placeholder;
-      if (!detail) return <LogDialogLoading label="Loading email log" />;
+      if (!detail) return <LogDialogLoading label={t("loading")} />;
       return (
         <EmailLogDetailView
           detail={detail}
@@ -195,6 +193,7 @@ function EmailLogDetailView({
   onSelect: (id: string) => void;
   onAttemptsPage: (page: number) => void;
 }) {
+  const t = useTranslations("logsAdmin.emailLogs.dialog");
   const now = useNowSeconds();
   const unresolved =
     detail.status === "sending" &&
@@ -207,26 +206,26 @@ function EmailLogDetailView({
       {outside && <OutsideCriteriaNote />}
       {unresolved && (
         <p className="ui:rounded-md ui:border ui:px-3 ui:py-2 ui:text-sm">
-          <span className="ui:font-medium">No completion recorded.</span> This attempt started more than 15 minutes
-          ago and its outcome was never recorded. It stays listed as sending.
+          <span className="ui:font-medium">{t("unresolved.lead")}</span>{" "}
+          {t("unresolved.body", { minutes: SENDING_UNRESOLVED_AFTER_SECONDS / 60 })}
         </p>
       )}
 
-      <DialogSection title="Metadata">
+      <DialogSection title={t("metadata")}>
         <DetailFields>
-          <DetailField label="Started">
+          <DetailField label={t("started")}>
             <LogTime value={detail.startedAt} />
           </DetailField>
-          <DetailField label="Completed">
+          <DetailField label={t("completed")}>
             {detail.completedAt ? (
               <LogTime value={detail.completedAt} />
             ) : (
               <span className="ui:text-muted-foreground">
-                {unresolved ? "No completion recorded" : "Not completed yet"}
+                {unresolved ? t("noCompletion") : t("notCompleted")}
               </span>
             )}
           </DetailField>
-          <DetailField label="Recipient">
+          <DetailField label={t("recipient")}>
             <span className="ui:flex ui:flex-col">
               {detail.recipientUserId ? (
                 <EntityLabel
@@ -238,50 +237,52 @@ function EmailLogDetailView({
               {detail.recipientLabel && <span className="ui:text-muted-foreground">{detail.recipientEmail}</span>}
             </span>
           </DetailField>
-          <DetailField label="Status">
+          <DetailField label={t("status")}>
             <span className="ui:flex ui:flex-col ui:items-start ui:gap-1">
               <EmailStatusBadge status={detail.status} />
               {detail.status === "accepted" && (
                 <span className="ui:text-xs ui:text-muted-foreground">
-                  Accepted by the provider. Delivery to the inbox is not tracked.
+                  {t("acceptedNote")}
                 </span>
               )}
             </span>
           </DetailField>
-          <DetailField label="Subject" wide>
+          <DetailField label={t("subject")} wide>
             <span className="ui:whitespace-pre-wrap">{detail.subject}</span>
           </DetailField>
-          <DetailField label="Provider">{detail.provider ?? <span className="ui:text-muted-foreground">Not recorded</span>}</DetailField>
-          <DetailField label="Provider message ID">
+          <DetailField label={t("provider")}>
+            {detail.provider ?? <span className="ui:text-muted-foreground">{t("notRecorded")}</span>}
+          </DetailField>
+          <DetailField label={t("providerMessageId")}>
             {detail.providerMessageId ? (
               <Identifier value={detail.providerMessageId} />
             ) : (
-              <span className="ui:text-muted-foreground">Not recorded</span>
+              <span className="ui:text-muted-foreground">{t("notRecorded")}</span>
             )}
           </DetailField>
-          <DetailField label="Requested by">
+          <DetailField label={t("requestedBy")}>
             <ActorLabel actor={detail.requester} />
           </DetailField>
-          <DetailField label="Request ID">
+          <DetailField label={t("requestId")}>
             <Identifier value={detail.requestId} />
           </DetailField>
-          <DetailField label="Log ID">
+          <DetailField label={t("logId")}>
             <Identifier value={detail.id} />
           </DetailField>
-          <DetailField label="Last updated">
+          <DetailField label={t("lastUpdated")}>
             <LogTime value={detail.updatedAt} />
           </DetailField>
         </DetailFields>
       </DialogSection>
 
-      <DialogSection title="Content">
+      <DialogSection title={t("content")}>
         <div className="ui:flex ui:flex-col ui:gap-2">
           <div className="ui:flex ui:flex-wrap ui:items-center ui:justify-between ui:gap-2">
             <p className="ui:text-xs ui:text-muted-foreground">
-              Plain text as recorded. Codes, links and other sensitive values were removed before storage.
+              {t("contentNote")}
             </p>
-            <CopyButton value={detail.contentText} label="Copy redacted content">
-              Copy redacted content
+            <CopyButton value={detail.contentText} label={t("copyContent")}>
+              {t("copyContent")}
             </CopyButton>
           </div>
           <pre className="ui:max-h-80 ui:overflow-auto ui:rounded-md ui:border ui:bg-muted ui:p-3 ui:font-sans ui:text-sm ui:break-words ui:whitespace-pre-wrap">
@@ -299,15 +300,15 @@ function EmailLogDetailView({
       />
 
       {diagnostics && (
-        <DialogSection title="Diagnostics">
+        <DialogSection title={t("diagnostics")}>
           <DetailFields>
             {detail.errorCode !== null && (
-              <DetailField label="Error code">
+              <DetailField label={t("errorCode")}>
                 <Identifier value={detail.errorCode} />
               </DetailField>
             )}
             {detail.errorMessage !== null && (
-              <DetailField label="Error message" wide>
+              <DetailField label={t("errorMessage")} wide>
                 <span className="ui:whitespace-pre-wrap">{detail.errorMessage}</span>
               </DetailField>
             )}
@@ -347,9 +348,6 @@ function AttemptLink({
   );
 }
 
-const attemptName = (attemptNumber: number) =>
-  attemptNumber === 1 ? "Initial attempt" : `Attempt #${attemptNumber}`;
-
 function AttemptsSection({
   detail,
   loading,
@@ -363,36 +361,39 @@ function AttemptsSection({
   onSelect: (id: string) => void;
   onAttemptsPage: (page: number) => void;
 }) {
+  const t = useTranslations("logsAdmin.emailLogs.dialog");
+  const attemptName = (attemptNumber: number) =>
+    attemptNumber === 1 ? t("attemptName.initial") : t("attemptName.n", { n: attemptNumber });
   const { attempts } = detail;
   const pages = lastPage(attempts.total, attempts.pageSize);
   const first = (attempts.page - 1) * attempts.pageSize + 1;
   const last = Math.min(first + attempts.pageSize - 1, attempts.total);
 
   return (
-    <DialogSection title="Attempts">
+    <DialogSection title={t("attempts")}>
       <DetailFields>
-        <DetailField label="This attempt">{attemptName(detail.attemptNumber)}</DetailField>
-        <DetailField label="Chain">
-          {attempts.total === 1 ? "No retries" : `${attempts.total.toLocaleString("en-US")} attempts`}
+        <DetailField label={t("thisAttempt")}>{attemptName(detail.attemptNumber)}</DetailField>
+        <DetailField label={t("chain")}>
+          {attempts.total === 1 ? t("noRetries") : t("attemptsCount", { count: attempts.total })}
         </DetailField>
         {detail.originalLogId && (
-          <DetailField label="Original attempt">
+          <DetailField label={t("originalAttempt")}>
             <AttemptLink id={detail.originalLogId} hrefFor={hrefFor} onSelect={onSelect}>
-              View the initial attempt
+              {t("viewInitial")}
             </AttemptLink>
           </DetailField>
         )}
         {detail.previousAttemptId && (
-          <DetailField label="Retried attempt">
+          <DetailField label={t("retriedAttempt")}>
             <AttemptLink id={detail.previousAttemptId} hrefFor={hrefFor} onSelect={onSelect}>
-              View the attempt this one retried
+              {t("viewRetried")}
             </AttemptLink>
           </DetailField>
         )}
       </DetailFields>
 
       <div aria-busy={loading || undefined} className={loading ? "ui:opacity-60 ui:transition-opacity" : undefined}>
-        <ol aria-label="Attempts in this chain" className="ui:flex ui:flex-col ui:divide-y ui:rounded-md ui:border">
+        <ol aria-label={t("chainList")} className="ui:flex ui:flex-col ui:divide-y ui:rounded-md ui:border">
           {attempts.items.map((attempt) => {
             const current = attempt.id === detail.id;
             return (
@@ -404,7 +405,7 @@ function AttemptsSection({
                 <span className="ui:sm:w-36">
                   {current ? (
                     <span className="ui:font-medium">
-                      {attemptName(attempt.attemptNumber)} <span className="ui:text-muted-foreground">(shown)</span>
+                      {attemptName(attempt.attemptNumber)} <span className="ui:text-muted-foreground">{t("shown")}</span>
                     </span>
                   ) : (
                     <AttemptLink id={attempt.id} hrefFor={hrefFor} onSelect={onSelect}>
@@ -415,7 +416,7 @@ function AttemptsSection({
                 <LogTime value={attempt.startedAt} className="ui:text-muted-foreground ui:sm:w-48" />
                 <EmailStatusBadge status={attempt.status} />
                 <span className="ui:min-w-0 ui:truncate">
-                  <span className="ui:text-muted-foreground">by </span>
+                  <span className="ui:text-muted-foreground">{t("by")}</span>
                   <ActorLabel actor={attempt.requester} />
                 </span>
               </li>
@@ -423,16 +424,16 @@ function AttemptsSection({
           })}
         </ol>
         {pages > 1 && (
-          <nav aria-label="Attempt pages" className="ui:mt-2 ui:flex ui:items-center ui:justify-between ui:gap-2 ui:text-sm">
+          <nav aria-label={t("attemptPages")} className="ui:mt-2 ui:flex ui:items-center ui:justify-between ui:gap-2 ui:text-sm">
             <p role="status" aria-live="polite" className="ui:text-muted-foreground">
-              Attempts {first}–{last} of {attempts.total.toLocaleString("en-US")}
+              {t("attemptsRange", { first, last, total: attempts.total })}
             </p>
             <div className="ui:flex ui:gap-1">
               <Button
                 type="button"
                 variant="outline"
                 size="icon-sm"
-                aria-label="Previous attempts"
+                aria-label={t("previousAttempts")}
                 disabled={loading || attempts.page <= 1}
                 onClick={() => onAttemptsPage(attempts.page - 1)}
               >
@@ -442,7 +443,7 @@ function AttemptsSection({
                 type="button"
                 variant="outline"
                 size="icon-sm"
-                aria-label="Next attempts"
+                aria-label={t("nextAttempts")}
                 disabled={loading || attempts.page >= pages}
                 onClick={() => onAttemptsPage(attempts.page + 1)}
               >

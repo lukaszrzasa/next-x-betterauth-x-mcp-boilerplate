@@ -1,43 +1,33 @@
+"use client";
+
 import type { ComponentProps } from "react";
 import { CheckCircle2Icon, CircleHelpIcon, ClockIcon, XCircleIcon, type LucideIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/src/components/ui/badge";
-import type { EmailLogStatus } from "@/app/(LogsModule)/_/types";
+import { EMAIL_LOG_STATUSES, type EmailLogStatus } from "@/app/(LogsModule)/_/types";
 
-type Presentation = { label: string; icon: LucideIcon; variant: ComponentProps<typeof Badge>["variant"]; title: string };
+type Presentation = { icon: LucideIcon; variant: ComponentProps<typeof Badge>["variant"] };
 
-/** Text and an icon, never colour alone. `accepted` is the provider's acceptance, not delivery. */
-export const EMAIL_STATUS_PRESENTATION: Record<EmailLogStatus, Presentation> = {
-  sending: { label: "Sending", icon: ClockIcon, variant: "outline", title: "No completion recorded yet" },
-  accepted: {
-    label: "Accepted",
-    icon: CheckCircle2Icon,
-    variant: "secondary",
-    title: "The provider accepted the message; delivery to the inbox is not tracked",
-  },
-  failed: { label: "Failed", icon: XCircleIcon, variant: "destructive", title: "The attempt failed" },
-  unknown: {
-    label: "Unknown",
-    icon: CircleHelpIcon,
-    variant: "outline",
-    title: "The outcome could not be determined",
-  },
+/** An icon beside the text, never colour alone. `accepted` is the provider's acceptance, not delivery. */
+const EMAIL_STATUS_PRESENTATION: Record<EmailLogStatus, Presentation> = {
+  sending: { icon: ClockIcon, variant: "outline" },
+  accepted: { icon: CheckCircle2Icon, variant: "secondary" },
+  failed: { icon: XCircleIcon, variant: "destructive" },
+  unknown: { icon: CircleHelpIcon, variant: "outline" },
 };
 
-export const EMAIL_STATUS_LABELS: Record<EmailLogStatus, string> = {
-  sending: EMAIL_STATUS_PRESENTATION.sending.label,
-  accepted: EMAIL_STATUS_PRESENTATION.accepted.label,
-  failed: EMAIL_STATUS_PRESENTATION.failed.label,
-  unknown: EMAIL_STATUS_PRESENTATION.unknown.label,
-};
+function isKnownStatus(status: string): status is EmailLogStatus {
+  return (EMAIL_LOG_STATUSES as readonly string[]).includes(status);
+}
 
 export function EmailStatusBadge({ status }: { status: string }) {
-  const presentation = (EMAIL_STATUS_PRESENTATION as Record<string, Presentation | undefined>)[status];
-  if (!presentation) return <Badge variant="outline">{status}</Badge>;
-  const Icon = presentation.icon;
+  const t = useTranslations("logsAdmin.emailLogs.status");
+  if (!isKnownStatus(status)) return <Badge variant="outline">{status}</Badge>;
+  const { icon: Icon, variant } = EMAIL_STATUS_PRESENTATION[status];
   return (
-    <Badge variant={presentation.variant} title={presentation.title}>
+    <Badge variant={variant} title={t(`${status}.title`)}>
       <Icon aria-hidden="true" />
-      {presentation.label}
+      {t(`${status}.label`)}
     </Badge>
   );
 }

@@ -1,3 +1,4 @@
+import type { Locale } from "@/src/lib/i18n/locales";
 import {
   appName,
   EmailButton,
@@ -5,6 +6,7 @@ import {
   EmailHeading,
   EmailLayout,
   EmailText,
+  type EmailTranslator,
 } from "./_components";
 
 export type EmailChangePurpose = "current" | "new";
@@ -12,9 +14,11 @@ export type EmailChangePurpose = "current" | "new";
 export type EmailChangeConfirmationProps = {
   url: string;
   purpose: EmailChangePurpose;
-  /** "25 Sep 2026, 14:32 UTC": the fixed deadline of the whole request. */
-  expiresAtLabel: string;
+  /** The fixed deadline of the whole request, rendered in the message's locale. */
+  expiresAt: Date;
   name?: string;
+  locale: Locale;
+  t: EmailTranslator;
 };
 
 /**
@@ -26,40 +30,21 @@ export type EmailChangeConfirmationProps = {
 export default function EmailChangeConfirmation({
   url,
   purpose,
-  expiresAtLabel,
+  expiresAt,
   name,
+  locale,
+  t,
 }: EmailChangeConfirmationProps) {
-  const greeting = name ? `Hi ${name}, ` : "";
-
-  if (purpose === "current") {
-    return (
-      <EmailLayout preview={`Confirm the sign-in email change for your ${appName} account`}>
-        <EmailHeading>Confirm your sign-in email change</EmailHeading>
-        <EmailText>
-          {greeting}a change of the sign-in email address of your {appName} account was requested from
-          your account settings. Confirm from this mailbox to continue; you will then choose the new
-          address in your account settings.
-        </EmailText>
-        <EmailText>This link works until {expiresAtLabel}. Nothing changes until the new address is confirmed as well.</EmailText>
-        <EmailButton href={url}>Confirm email address</EmailButton>
-        <EmailFallbackLink
-          href={url}
-          note="If you did not request this, cancel the request in your account settings and change your password."
-        />
-      </EmailLayout>
-    );
-  }
+  const greeting = name ? t("greeting", { name }) : "";
+  const copy = purpose === "current" ? "emailChange.current" : "emailChange.new";
 
   return (
-    <EmailLayout preview={`Confirm this address as the sign-in email for your ${appName} account`}>
-      <EmailHeading>Confirm your new sign-in email</EmailHeading>
-      <EmailText>
-        {greeting}this address was chosen as the new sign-in email for your {appName} account. Confirming
-        completes the change and signs out every existing session; sign in afterwards with this address.
-      </EmailText>
-      <EmailText>This link works until {expiresAtLabel}.</EmailText>
-      <EmailButton href={url}>Confirm email address</EmailButton>
-      <EmailFallbackLink href={url} note="If you did not expect this email, you can ignore it; nothing changes without confirmation." />
+    <EmailLayout locale={locale} preview={t(`${copy}.preview`, { appName })}>
+      <EmailHeading>{t(`${copy}.heading`)}</EmailHeading>
+      <EmailText>{t(`${copy}.body`, { greeting, appName })}</EmailText>
+      <EmailText>{t(`${copy}.validUntil`, { expiresAt })}</EmailText>
+      <EmailButton href={url}>{t(`${copy}.button`)}</EmailButton>
+      <EmailFallbackLink href={url} intro={t("layout.fallbackIntro")} note={t(`${copy}.note`)} />
     </EmailLayout>
   );
 }

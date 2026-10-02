@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { authClient } from "@/src/lib/auth/client";
 import { enrollmentPasswordSchema } from "@/app/(AuthModule)/_/schema";
 import { unwrapAuthResult } from "@/app/(AuthModule)/_/utils/unwrapAuthResult";
@@ -11,15 +12,15 @@ export type AuthenticatorSetup = {
   backupCodes: string[];
 };
 
-const startFailedMessage = "Unable to start authenticator setup.";
-
 /** Confirms the password, then asks Better Auth for a fresh TOTP secret to enroll. */
 export function useEnrollmentPasswordStep(
   onStarted: (setup: AuthenticatorSetup) => void,
 ) {
+  const t = useTranslations("auth.client");
   const { form, createSubmitHandler } = useSchemaForm(enrollmentPasswordSchema);
 
   const onSubmit = createSubmitHandler(async ({ password }) => {
+    const startFailedMessage = t("startSetupFailed");
     const data = unwrapAuthResult(
       await authClient.twoFactor.enable({ password, method: "totp" }),
       startFailedMessage,

@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { describeFailure, type ActionFailure, type ActionOutcome } from "@/src/lib/actions";
+import type { MessageKey } from "@/src/lib/i18n";
+import type { CatalogTranslator } from "@/src/lib/i18n/useCatalog";
 import type { FeedbackTone } from "@/src/components/feedback/ActionFeedback";
 import type {
   CancelOutcome,
   EmailProofOutcome,
   EmailRequestOutcome,
-  SettingsEffect,
   SettingsFieldError,
   SettingsLifecycleCode,
   SyncOutcome,
@@ -15,10 +16,15 @@ import type {
  * How the settings pages talk about outcomes: pure helpers shared by the
  * form and action hooks, so a partial result is never dressed up as a
  * success, every closed lifecycle refusal has plain-language text, and
- * generic failures come from the shared `describeFailure`.
+ * generic failures come from the shared `describeFailure`. Every helper
+ * takes the whole-catalog translator (`useTranslations()`): the text is the
+ * viewer's language, the helpers stay pure and testable.
  */
 
 export type { FeedbackTone };
+
+/** The whole-catalog translator, from `useCatalog()`. */
+export type Translator = CatalogTranslator;
 
 export type RecoveryKind =
   | "retryProfileSessionRefresh"
@@ -68,72 +74,40 @@ export function readLifecycleCode(error: ActionFailure): SettingsLifecycleCode |
   return parsed.success ? parsed.data.code : null;
 }
 
-const LIFECYCLE_TEXT: Record<SettingsLifecycleCode, { title: string; description: string }> = {
-  EXPIRED: {
-    title: "This request has expired",
-    description: "The 24-hour window has passed. Start again to continue.",
-  },
-  INACTIVE: {
-    title: "This request is no longer active",
-    description: "It was completed, cancelled or replaced. Refresh to see the current state.",
-  },
-  DESTINATION_UNAVAILABLE: {
-    title: "That address cannot be used",
-    description: "Another account uses it. Start again with a different address.",
-  },
-  SECURITY_STATE_CHANGED: {
-    title: "Your security settings changed meanwhile",
-    description: "Verify again and retry.",
-  },
-  SETUP_REPLACED: {
-    title: "This authenticator setup is no longer active",
-    description: "Start the setup again.",
-  },
-};
-
 /** The generic description, with the closed lifecycle codes and rate limits read better for settings. */
-export function describeSettingsFailure(error: ActionFailure): Feedback {
+export function describeSettingsFailure(t: Translator, error: ActionFailure): Feedback {
   const lifecycle = readLifecycleCode(error);
-  if (lifecycle) return { tone: "warning", ...LIFECYCLE_TEXT[lifecycle] };
-  const generic = describeFailure(error);
+  if (lifecycle) {
+    return {
+      tone: "warning",
+      title: t(`auth.settings.feedback.lifecycle.${lifecycle}.title`),
+      description: t(`auth.settings.feedback.lifecycle.${lifecycle}.description`),
+    };
+  }
+  const generic = describeFailure((key) => t(key as MessageKey), error);
   if (error.reason === "RATE_LIMITED") {
-    return { tone: "warning", title: "Please wait before trying again", description: error.message, retryAfterSeconds: generic.retryAfterSeconds };
+    return {
+      tone: "warning",
+      title: t("auth.settings.feedback.rateLimited"),
+      description: error.message,
+      retryAfterSeconds: generic.retryAfterSeconds,
+    };
   }
   return { tone: "error", ...generic };
 }
 
-const EFFECT_LABELS: Record<SettingsEffect, string> = {
-  "session-refresh": "your other sessions could not be updated yet",
-  "session-renewal": "this session could not be renewed",
-  "session-revocation": "signing out could not be confirmed",
-};
+const UNCHANGED_KINDS = ["updateName", "disableAuthenticator", "revokeSession", "revokeOtherSessions"] as const;
+const PARTIAL_TITLE_KINDS = [
+  "updateName",
+  "changePassword",
+  "disableAuthenticator",
+  "revokeSession",
+  "revokeOtherSessions",
+  "revokeAllSessions",
+] as const;
 
-const COMPLETED: Record<SyncKind, string> = {
-  updateName: "Name updated",
-  changePassword: "Password changed",
-  disableAuthenticator: "Authenticator disabled",
-  revokeSession: "Session signed out",
-  revokeOtherSessions: "Other devices signed out",
-  revokeAllSessions: "Signed out everywhere",
-  retryProfileSessionRefresh: "Sessions updated",
-  retryFactorSessionRefresh: "Sessions updated",
-};
-
-const UNCHANGED: Partial<Record<SyncKind, string>> = {
-  updateName: "The name is already up to date",
-  disableAuthenticator: "No authenticator is enabled",
-  revokeSession: "That session is already gone",
-  revokeOtherSessions: "There are no other sessions",
-};
-
-const PARTIAL_TITLES: Partial<Record<SyncKind, string>> = {
-  updateName: "Name updated, but",
-  changePassword: "Password changed, but",
-  disableAuthenticator: "Authenticator disabled, but",
-  revokeSession: "Not confirmed:",
-  revokeOtherSessions: "Not confirmed:",
-  revokeAllSessions: "Not confirmed:",
-};
+const isOneOf = <T extends SyncKind>(kinds: readonly T[], kind: SyncKind): kind is T =>
+  (kinds as readonly SyncKind[]).includes(kind);
 
 const RECOVERY: Partial<Record<SyncKind, RecoveryKind>> = {
   updateName: "retryProfileSessionRefresh",
@@ -144,99 +118,106 @@ const RECOVERY: Partial<Record<SyncKind, RecoveryKind>> = {
   retryFactorSessionRefresh: "retryFactorSessionRefresh",
 };
 
-function partialHint(renewal: boolean, committed: boolean): string {
-  if (renewal) return "Your new password is saved. If this session stops working, sign in again with the new password.";
-  return committed ? "The change itself is saved. Retry to finish the remaining step." : "Retry to finish signing out.";
+function partialHint(t: Translator, renewal: boolean, committed: boolean): string {
+  if (renewal) return t("auth.settings.feedback.hints.renewal");
+  return committed ? t("auth.settings.feedback.hints.committed") : t("auth.settings.feedback.hints.signOut");
 }
 
-function describePartial(kind: SyncKind, outcome: Extract<SyncOutcome, { status: "partial" }>): Feedback {
-  const effects = outcome.failedEffects.map((effect) => EFFECT_LABELS[effect]).join(" and ");
+function describePartial(t: Translator, kind: SyncKind, outcome: Extract<SyncOutcome, { status: "partial" }>): Feedback {
+  const effects = outcome.failedEffects
+    .map((effect) => t(`auth.settings.feedback.effects.${effect}`))
+    .join(t("auth.settings.feedback.effectsJoin"));
   const renewal = outcome.failedEffects.includes("session-renewal");
-  const hint = partialHint(renewal, outcome.committed);
+  const title = isOneOf(PARTIAL_TITLE_KINDS, kind)
+    ? t(`auth.settings.feedback.partialTitles.${kind}`)
+    : t("auth.settings.feedback.partialTitles.default");
   return {
     tone: "warning",
-    title: `${PARTIAL_TITLES[kind] ?? "Not fully completed:"} ${effects}.`,
-    description: hint,
+    title: t("auth.settings.feedback.partialTitle", { title, effects }),
+    description: partialHint(t, renewal, outcome.committed),
     recovery: renewal ? undefined : RECOVERY[kind],
   };
 }
 
-export function describeSyncOutcome(kind: SyncKind, outcome: SyncOutcome): Feedback {
+export function describeSyncOutcome(t: Translator, kind: SyncKind, outcome: SyncOutcome): Feedback {
   switch (outcome.status) {
     case "unchanged":
-      return { tone: "info", title: UNCHANGED[kind] ?? "No change" };
+      return {
+        tone: "info",
+        title: isOneOf(UNCHANGED_KINDS, kind)
+          ? t(`auth.settings.feedback.unchanged.${kind}`)
+          : t("auth.settings.feedback.unchanged.default"),
+      };
     case "completed":
-      return { tone: "success", title: COMPLETED[kind] };
+      return { tone: "success", title: t(`auth.settings.feedback.completed.${kind}`) };
     case "partial":
-      return describePartial(kind, outcome);
+      return describePartial(t, kind, outcome);
   }
 }
 
 /** One place that turns an `execute` outcome into feedback, or nothing for busy/cancelled. */
-export function syncFeedbackFor(kind: SyncKind, result: ActionOutcome<SyncOutcome>): Feedback | null {
-  if (result.status === "success") return describeSyncOutcome(kind, result.data);
-  if (result.status === "error") return describeSettingsFailure(result.error);
+export function syncFeedbackFor(t: Translator, kind: SyncKind, result: ActionOutcome<SyncOutcome>): Feedback | null {
+  if (result.status === "success") return describeSyncOutcome(t, kind, result.data);
+  if (result.status === "error") return describeSettingsFailure(t, result.error);
   return null;
 }
 
-export function describeCancelOutcome(outcome: CancelOutcome, what: string): Feedback {
+export function describeCancelOutcome(t: Translator, outcome: CancelOutcome, what: string): Feedback {
   return outcome.status === "completed"
-    ? { tone: "success", title: `${what} cancelled` }
-    : { tone: "info", title: `${what} was already closed` };
+    ? { tone: "success", title: t("auth.settings.feedback.cancelled", { what }) }
+    : { tone: "info", title: t("auth.settings.feedback.alreadyClosed", { what }) };
 }
 
 /** The request is recorded; the delivery is reported exactly as it went. */
-export function describeEmailRequestOutcome(outcome: EmailRequestOutcome, resent = false): Feedback {
-  const stage = outcome.request.state === "awaiting_current" ? "current address" : "new address";
+export function describeEmailRequestOutcome(t: Translator, outcome: EmailRequestOutcome, resent = false): Feedback {
+  const stage = outcome.request.state === "awaiting_current" ? "current" : "new";
   const verb = resent ? "resent" : "sent";
   switch (outcome.delivery) {
     case "sent":
-      return { tone: "success", title: `Confirmation link ${verb} to your ${stage}`, description: "Open the link in that mailbox to continue. The request keeps its original deadline." };
+      return {
+        tone: "success",
+        title: t("auth.settings.feedback.emailRequest.sent", { verb, stage }),
+        description: t("auth.settings.feedback.emailRequest.sentDescription"),
+      };
     case "not-required":
-      return { tone: "success", title: "Request saved" };
+      return { tone: "success", title: t("auth.settings.feedback.emailRequest.saved") };
     case "rate-limited":
       return {
         tone: "warning",
-        title: "Request saved, but the email was not sent yet",
-        description: "Wait before requesting another link; the request is still active.",
+        title: t("auth.settings.feedback.emailRequest.rateLimitedTitle"),
+        description: t("auth.settings.feedback.emailRequest.rateLimitedDescription"),
         retryAfterSeconds: outcome.retryAfterSeconds,
       };
     case "failed":
       return {
         tone: "warning",
-        title: "Request saved, but the email could not be sent",
-        description: "The request is still active. Use Resend to try delivering the link again.",
+        title: t("auth.settings.feedback.emailRequest.failedTitle"),
+        description: t("auth.settings.feedback.emailRequest.failedDescription"),
       };
   }
 }
 
-export function describeProofOutcome(outcome: EmailProofOutcome): Feedback {
-  switch (outcome.status) {
-    case "current-confirmed":
-      return {
-        tone: "success",
-        title: "Current address confirmed",
-        description: "Return to your account settings, signed in as usual, to enter the new address.",
-      };
-    case "completed":
-      return outcome.sessionRevocationPending
-        ? {
-            tone: "warning",
-            title: "Your email was changed, but signing out existing sessions could not be confirmed.",
-            description: "Sign in with your new email address. Existing sessions are signed out on their next request.",
-          }
-        : {
-            tone: "success",
-            title: "Your sign-in email has been changed",
-            description: "Every existing session was signed out. Sign in with your new email address.",
-          };
-    case "expired":
-      return { tone: "warning", title: "This link has expired", description: "Start the change again from your account settings." };
-    case "destination-unavailable":
-      return { tone: "warning", title: "That address cannot be used", description: "Another account uses it. Start again with a different address." };
-    case "account-changed":
-      return { tone: "warning", title: "This request is no longer valid", description: "Your account changed since it was started. Start again from your account settings." };
-    case "inactive":
-      return { tone: "warning", title: "This link is not active", description: "It was already used, replaced or cancelled." };
+const PROOF_KEYS = {
+  "current-confirmed": "currentConfirmed",
+  expired: "expired",
+  "destination-unavailable": "destinationUnavailable",
+  "account-changed": "accountChanged",
+  inactive: "inactive",
+} as const;
+
+export function describeProofOutcome(t: Translator, outcome: EmailProofOutcome): Feedback {
+  if (outcome.status === "completed") {
+    const key = outcome.sessionRevocationPending ? "completedPending" : "completed";
+    return {
+      tone: outcome.sessionRevocationPending ? "warning" : "success",
+      title: t(`auth.settings.feedback.proof.${key}.title`),
+      description: t(`auth.settings.feedback.proof.${key}.description`),
+    };
   }
+  const key = PROOF_KEYS[outcome.status];
+  return {
+    tone: outcome.status === "current-confirmed" ? "success" : "warning",
+    title: t(`auth.settings.feedback.proof.${key}.title`),
+    description: t(`auth.settings.feedback.proof.${key}.description`),
+  };
 }

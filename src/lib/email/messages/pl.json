@@ -1,0 +1,49 @@
+{
+  "layout": {
+    "fallbackIntro": "Jeśli przycisk nie działa, wklej ten link w przeglądarce:"
+  },
+  "greeting": "Cześć {name}, ",
+  "verify": {
+    "subject": "Zweryfikuj swój adres e-mail",
+    "preview": "Zweryfikuj swój adres e-mail w {appName}",
+    "heading": "Zweryfikuj swój adres e-mail",
+    "body": "{greeting}potwierdź ten adres, aby dokończyć zakładanie konta w {appName}.",
+    "button": "Zweryfikuj adres e-mail",
+    "note": "Jeśli to nie Ty zakładasz konto, zignoruj tę wiadomość."
+  },
+  "reset": {
+    "subject": "Zresetuj swoje hasło",
+    "preview": "Zresetuj swoje hasło do {appName}",
+    "heading": "Zresetuj swoje hasło",
+    "body": "{greeting}otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta w {appName}. Ten link wygasa po godzinie i działa tylko raz.",
+    "button": "Zresetuj hasło",
+    "note": "Jeśli to nie Ty prosisz o zresetowanie hasła, nic nie rób - Twoje hasło pozostaje bez zmian."
+  },
+  "otp": {
+    "subject": "{code} to Twój kod weryfikacyjny",
+    "preview": "Twój kod weryfikacyjny do {appName} to {code}",
+    "heading": "Twój kod weryfikacyjny",
+    "body": "{greeting}wpisz ten kod, aby dokończyć logowanie do {appName}. Wygasa za {minutes, plural, one {# minutę} few {# minuty} many {# minut} other {# minuty}}.",
+    "note": "Jeśli to nie Ty próbujesz się zalogować, ktoś może znać Twoje hasło - zmień je, a ten kod przestanie działać."
+  },
+  "emailChange": {
+    "current": {
+      "subject": "Potwierdź zmianę adresu e-mail do logowania",
+      "preview": "Potwierdź zmianę adresu e-mail do logowania w Twoim koncie {appName}",
+      "heading": "Potwierdź zmianę adresu e-mail do logowania",
+      "body": "{greeting}z ustawień Twojego konta w {appName} zgłoszono zmianę adresu e-mail do logowania. Potwierdź z tej skrzynki, aby kontynuować; następnie wybierzesz nowy adres w ustawieniach konta.",
+      "validUntil": "Ten link działa do {expiresAt, date, dateTime}. Nic się nie zmieni, dopóki nowy adres również nie zostanie potwierdzony.",
+      "button": "Potwierdź adres e-mail",
+      "note": "Jeśli to nie Ty zgłaszasz tę zmianę, anuluj ją w ustawieniach konta i zmień hasło."
+    },
+    "new": {
+      "subject": "Potwierdź nowy adres e-mail do logowania",
+      "preview": "Potwierdź ten adres jako adres e-mail do logowania w Twoim koncie {appName}",
+      "heading": "Potwierdź nowy adres e-mail do logowania",
+      "body": "{greeting}ten adres został wybrany jako nowy adres e-mail do logowania w Twoim koncie {appName}. Potwierdzenie kończy zmianę i wylogowuje wszystkie aktywne sesje; potem zaloguj się tym adresem.",
+      "validUntil": "Ten link działa do {expiresAt, date, dateTime}.",
+      "button": "Potwierdź adres e-mail",
+      "note": "Jeśli nie spodziewasz się tej wiadomości, zignoruj ją; bez potwierdzenia nic się nie zmieni."
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 import { useAction, type ActionOutcome } from "@/src/lib/actions";
 import type { ServerAction } from "@/src/lib/auth/builders/adapters";
 import { useSessionRedirect } from "@/app/(AuthModule)/_/hooks/useSessionRedirect";
@@ -27,13 +28,14 @@ export function useSettingsAction<I>(
   { onSettled }: SettingsActionOptions,
 ) {
   const router = useRouter();
+  const t = useCatalog();
   const redirect = useSessionRedirect();
   const { execute, isPending } = useAction<I, SyncOutcome>(action, { onError: () => true });
 
   const run = useCallback(
     async (input: I): Promise<ActionOutcome<SyncOutcome>> => {
       const result = await execute(input);
-      const feedback = syncFeedbackFor(kind, result);
+      const feedback = syncFeedbackFor(t, kind, result);
       if (!feedback) return result;
 
       if (result.status === "success" && result.data.status === "completed" && result.data.selfSignedOut) {
@@ -47,7 +49,7 @@ export function useSettingsAction<I>(
       if (changed || stale) router.refresh();
       return result;
     },
-    [execute, kind, onSettled, redirect, router],
+    [execute, kind, onSettled, redirect, router, t],
   );
 
   return { run, pending: isPending };

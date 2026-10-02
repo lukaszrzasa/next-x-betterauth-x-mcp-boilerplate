@@ -18,7 +18,7 @@ import { requireFactorAccount } from "./ownedSetup";
 
 const enrollmentRequiredError = () =>
   new ActionError("FORBIDDEN", {
-    message: "Your account is required to keep an authenticator; it cannot be disabled.",
+    message: { key: "auth.errors.authenticatorRequired" },
     data: { reason: "enrollment-required" },
   });
 

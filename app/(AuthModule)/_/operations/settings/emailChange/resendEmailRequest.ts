@@ -29,12 +29,12 @@ export const resendEmailRequestOperation = defineAction({
     const now = new Date();
     const request = await requireOwnedRequest(ctx, input.requestId, now);
     const stage = awaitedMail(request);
-    if (!stage) throw lifecycleError("CONFLICT", "INACTIVE", "There is no email to resend at this step.");
+    if (!stage) throw lifecycleError("CONFLICT", "INACTIVE", { key: "auth.errors.nothingToResend" });
 
     // Read-only first: inside the cooldown nothing is charged or rotated.
     const cooldown = await checkSendCooldown(ctx, stage.purpose);
     if (!cooldown.allowed) {
-      throw rateLimitedError(cooldown.retryAfterSeconds, "Wait a minute before requesting another link.");
+      throw rateLimitedError(cooldown.retryAfterSeconds, { key: "auth.errors.linkCooldown" });
     }
 
     const refusal = await reserveDelivery(ctx, stage.purpose);

@@ -37,8 +37,8 @@ export function invokeAction<T>(
             ok: false,
             reason: "TRANSPORT",
             status: 0,
-            message:
-              "The action could not be completed. Check its result before trying again.",
+            // Not shown as is: `describeFailure` renders TRANSPORT from the catalog.
+            message: "errors.transport",
           });
         } catch (controlFlow) {
           reject(controlFlow);

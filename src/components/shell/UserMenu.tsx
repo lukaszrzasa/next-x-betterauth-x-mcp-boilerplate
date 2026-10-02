@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { LayoutDashboardIcon, LogOutIcon, SettingsIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { Button } from "@/src/components/ui/button";
 import {
@@ -25,11 +26,12 @@ export function UserMenu() {
   const { viewer, can } = useViewer();
   const { signOut, pending, error } = useSignOut();
   const [open, setOpen] = useState(false);
+  const t = useTranslations();
 
   if (!viewer) {
     return (
       <Button size="sm" asChild>
-        <Link href={authRoutes.signIn.href}>Sign in</Link>
+        <Link href={authRoutes.signIn.href}>{t("common.actions.signIn")}</Link>
       </Button>
     );
   }
@@ -48,7 +50,7 @@ export function UserMenu() {
           variant="ghost"
           size="icon"
           className="ui:size-8 ui:rounded-full"
-          aria-label="Account menu"
+          aria-label={t("common.shell.accountMenu")}
         >
           <Avatar className="ui:size-8">
             {viewer.image && <AvatarImage src={viewer.image} alt="" />}
@@ -66,14 +68,14 @@ export function UserMenu() {
           <DropdownMenuItem asChild>
             <Link href={authRoutes.settings.href}>
               <SettingsIcon />
-              Settings
+              {t("nav.settings")}
             </Link>
           </DropdownMenuItem>
           {can(appRoutes.dashboard.access) && (
             <DropdownMenuItem asChild>
               <Link href={appRoutes.dashboard.href}>
                 <LayoutDashboardIcon />
-                Admin
+                {t("common.shell.admin")}
               </Link>
             </DropdownMenuItem>
           )}
@@ -88,7 +90,7 @@ export function UserMenu() {
           }}
         >
           <LogOutIcon />
-          {pending ? "Signing out…" : "Sign out"}
+          {pending ? t("common.actions.signingOut") : t("common.actions.signOut")}
         </DropdownMenuItem>
         {error && (
           <p role="alert" className="ui:px-2 ui:py-1.5 ui:text-xs ui:text-destructive">

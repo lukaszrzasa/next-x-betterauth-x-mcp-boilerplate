@@ -1,5 +1,6 @@
 "use client";
 
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 import { useAction } from "@/src/lib/actions";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
 import { confirmEnrollmentAction, confirmReplacementAction } from "@/app/(AuthModule)/_/actions";
@@ -25,6 +26,7 @@ export function useSetupCodeForm({
   /** The attempt is gone (expired, replaced): the flow must start over. */
   onClosed: (message: string) => void;
 }) {
+  const t = useCatalog();
   const action = kind === "enroll" ? confirmEnrollmentAction : confirmReplacementAction;
   const { form, createSubmitHandler } = useSchemaForm(setupCodeFormSchema);
   const { execute, isPending } = useAction(action, { onError: () => true });
@@ -35,10 +37,10 @@ export function useSetupCodeForm({
       if (attributeFieldError(form, result.error, ["code"])) return;
       const lifecycle = readLifecycleCode(result.error);
       if (lifecycle === "EXPIRED" || lifecycle === "SETUP_REPLACED" || lifecycle === "SECURITY_STATE_CHANGED") {
-        onClosed(rootMessage(result.error));
+        onClosed(rootMessage(t, result.error));
         return;
       }
-      throw new Error(rootMessage(result.error));
+      throw new Error(rootMessage(t, result.error));
     }
     if (result.status !== "success") return;
     form.reset();

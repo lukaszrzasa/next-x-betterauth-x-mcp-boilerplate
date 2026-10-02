@@ -1,8 +1,9 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useLocale, useTranslations } from "next-intl";
 import { useForm, type DefaultValues, type FieldValues } from "react-hook-form";
 import type { z } from "zod";
+import { localizedZodResolver } from "./localizedResolver";
 import { schemaDefaults } from "./schemaDefaults";
 
 /** A react-hook-form instance validated by a Zod schema, with defaults read from the schema. */
@@ -10,8 +11,12 @@ export function useSchemaForm<TInput extends FieldValues, TOutput>(
   schema: z.ZodObject & z.ZodType<TOutput, TInput>,
   defaultValues: DefaultValues<TInput> = schemaDefaults<TInput>(schema),
 ) {
+  const locale = useLocale();
+  const t = useTranslations();
   const form = useForm<TInput, unknown, TOutput>({
-    resolver: zodResolver(schema),
+    resolver: localizedZodResolver<TInput, TOutput>(schema, locale, (key, values) =>
+      t.has(key as Parameters<typeof t.has>[0]) ? t(key as Parameters<typeof t>[0], values) : null,
+    ),
     defaultValues,
   });
 
@@ -24,10 +29,7 @@ export function useSchemaForm<TInput extends FieldValues, TOutput>(
         await submit(input);
       } catch (error) {
         form.setError("root", {
-          message:
-            error instanceof Error
-              ? error.message
-              : "Unable to connect. Please try again.",
+          message: error instanceof Error ? error.message : t("common.form.connectionError"),
         });
       }
     });

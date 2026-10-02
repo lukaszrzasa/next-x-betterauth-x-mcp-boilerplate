@@ -1,6 +1,7 @@
 "use client";
 
 import { Controller } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { FormError } from "@/src/components/forms/FormError";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { Button } from "@/src/components/ui/button";
@@ -12,6 +13,8 @@ import type { Feedback } from "@/app/(AuthModule)/_/hooks/settings/feedback";
 
 /** Current, new and confirm password, plus the default-on other-device sign-out. */
 export function ChangePasswordForm({ onCancel, onSettled }: { onCancel: () => void; onSettled: (feedback: Feedback) => void }) {
+  const t = useTranslations("auth.settings.password.form");
+  const tCommon = useTranslations("auth.settings.common");
   const { form, onSubmit, pending } = useChangePasswordForm({
     onSettled: (feedback) => {
       onSettled(feedback);
@@ -20,13 +23,13 @@ export function ChangePasswordForm({ onCancel, onSettled }: { onCancel: () => vo
   });
 
   return (
-    <form noValidate aria-label="Change password" onSubmit={onSubmit} className="ui:flex ui:flex-col ui:gap-4">
+    <form noValidate aria-label={t("label")} onSubmit={onSubmit} className="ui:flex ui:flex-col ui:gap-4">
       <FieldGroup className="ui:gap-4">
         <FormError message={form.formState.errors.root?.message} />
         <FormInput
           control={form.control}
           name="currentPassword"
-          label="Current password"
+          label={tCommon("currentPassword")}
           type="password"
           autoComplete="current-password"
           maxLength={128}
@@ -35,7 +38,7 @@ export function ChangePasswordForm({ onCancel, onSettled }: { onCancel: () => vo
         <FormInput
           control={form.control}
           name="newPassword"
-          label="New password"
+          label={t("newPassword")}
           type="password"
           autoComplete="new-password"
           maxLength={128}
@@ -44,13 +47,13 @@ export function ChangePasswordForm({ onCancel, onSettled }: { onCancel: () => vo
         <FormInput
           control={form.control}
           name="confirmNewPassword"
-          label="Confirm new password"
+          label={t("confirmNewPassword")}
           type="password"
           autoComplete="new-password"
           maxLength={128}
           disabled={pending}
         />
-        <FieldDescription>Between 8 and 128 characters; a password manager is welcome.</FieldDescription>
+        <FieldDescription>{t("hint")}</FieldDescription>
         <Controller
           control={form.control}
           name="revokeOtherSessions"
@@ -63,7 +66,7 @@ export function ChangePasswordForm({ onCancel, onSettled }: { onCancel: () => vo
                 disabled={pending}
               />
               <Label htmlFor="revoke-other-sessions" className="ui:leading-relaxed">
-                Sign out other devices (recommended)
+                {t("revokeOthers")}
               </Label>
             </div>
           )}
@@ -71,10 +74,10 @@ export function ChangePasswordForm({ onCancel, onSettled }: { onCancel: () => vo
       </FieldGroup>
       <div className="ui:flex ui:flex-wrap ui:justify-end ui:gap-2">
         <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => { form.reset(); onCancel(); }}>
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Changing…" : "Change password"}
+          {pending ? t("submitting") : t("submit")}
         </Button>
       </div>
     </form>

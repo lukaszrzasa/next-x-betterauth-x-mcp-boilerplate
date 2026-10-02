@@ -20,7 +20,7 @@ export async function verifyCurrentPassword(ctx: AuthedCtx, password: string): P
   const { limit, windowSeconds } = CURRENT_PASSWORD_FAILURES;
   const reservation = await reserveAttempt(key, limit, windowSeconds);
   if (!reservation.allowed) {
-    throw rateLimitedError(reservation.retryAfterSeconds, "Too many incorrect passwords. Try again later.");
+    throw rateLimitedError(reservation.retryAfterSeconds, { key: "auth.errors.tooManyIncorrectPasswords" });
   }
   try {
     await auth.api.verifyPassword({ body: { password }, headers: ctx.getRequestHeaders() });

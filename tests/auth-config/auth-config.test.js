@@ -85,6 +85,20 @@ function authRequest(path, body, cookie) {
 }
 function responseCookies(response) { return response.headers.getSetCookie().map((cookie) => cookie.split(";")[0]).join("; "); }
 
+test("provider refusals are rewritten in the request's language, keeping their code", async () => {
+  const english = await authRequest("sign-in/email", { email: "nobody@example.com", password: "wrong-password-123" });
+  expect(english.status).toBe(401);
+  expect(await english.json()).toMatchObject({ code: "INVALID_EMAIL_OR_PASSWORD", message: "That email address or password is not correct." });
+
+  const polish = await auth.handler(new Request("http://localhost:3000/api/auth/sign-in/email", {
+    method: "POST",
+    headers: { origin: "http://localhost:3000", "content-type": "application/json", "x-locale": "pl" },
+    body: JSON.stringify({ email: "nobody@example.com", password: "wrong-password-123" }),
+  }));
+  expect(polish.status).toBe(401);
+  expect(await polish.json()).toMatchObject({ code: "INVALID_EMAIL_OR_PASSWORD", message: "Nieprawidłowy adres e-mail lub hasło." });
+});
+
 test("sign-up sends the application confirmation URL and verification works without a session", async () => {
   const signedUp = await authRequest("sign-up/email", { email: "verify@example.com", name: "Verify", password: "test-password-12345" });
   expect(signedUp.status).toBe(200);
@@ -118,7 +132,7 @@ test("the sign-in email code refuses an unverified address, like step-up does", 
 
   const refused = await authRequest("two-factor/send-otp", {}, challengeCookie);
   expect(refused.status).toBe(403);
-  expect((await refused.json()).code).toBe("EMAIL_NOT_VERIFIED");
+  expect((await refused.json()).code).toBe("EMAIL_NOT_VERIFIED_FOR_OTP");
   expect(mail.sendTwoFactorOtpEmail).not.toHaveBeenCalled();
 
   await ctx.internalAdapter.updateUser(userId, { emailVerified: true });

@@ -26,7 +26,7 @@ export const resendVerificationOperation = defineAction({
       EMAIL_CHANGE_POLICY.verificationResendCooldownSeconds,
     );
     if (!cooldown.allowed) {
-      throw rateLimitedError(cooldown.retryAfterSeconds, "Wait a minute before requesting another verification email.");
+      throw rateLimitedError(cooldown.retryAfterSeconds, { key: "auth.errors.verificationCooldown" });
     }
     // With the actor's headers the provider insists the address is the session's own.
     await auth.api.sendVerificationEmail({ body: { email: owner.email }, headers: ctx.getRequestHeaders() });

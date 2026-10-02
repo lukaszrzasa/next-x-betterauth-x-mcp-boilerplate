@@ -39,6 +39,7 @@ This isn't just a theory; it’s a fully functional application featuring authen
 * **Auth & Security:** Better Auth
 * **Data Layer:** PostgreSQL, Drizzle ORM
 * **Caching & Sessions:** Redis
+* **Localization:** next-intl, ICU catalogs per module scope, refusals and emails rendered in the request's language
 * **Future-proofing:** MCP (Model Context Protocol)
 
 ## Why I Built This
@@ -53,7 +54,7 @@ This architecture is actively evolving. My current focus areas:
 
 - 🚀 **MCP Integration:** Exposing these secure operations as tools via the Model Context Protocol, allowing AI agents to interact with the system safely.
 - 🧹 **Boundary Refactoring:** Untangling the `operation → policy → service` flow and extracting all business logic out of the DB services.
-- 🌍 **Localization & Feedback:** Standardizing how operation results become localized, user-friendly UI messages.
+- 🧭 **Timezone & language preferences:** Localization ships (English and Polish, negotiated per request; see [ADR 0005](docs/adr/0005-localization-at-the-boundary.md)); a stored per-user language, a switcher and timezone presentation are the next steps.
 
 ## Dive Deeper
 

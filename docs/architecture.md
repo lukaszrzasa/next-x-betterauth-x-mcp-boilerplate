@@ -135,9 +135,19 @@ For example, R2 storage is infrastructure, encoding an image is a technical help
 
 Search for an existing implementation before adding a helper. Place a helper by what it is, not by how many callers it has today. A helper with no domain semantics (it only knows a library or a data shape, such as Zod, react-hook-form, or dates) is global and goes in `src/lib` immediately, even with a single consumer; a helper left in a module is invisible to the next developer or agent, who rewrites it months later in another module. Keep a helper local only when it encodes the owning module's rules or vocabulary. Promote a useful existing implementation rather than copying it. Do not combine superficially similar functions whose business meanings differ.
 
-Date formatting should have discoverable shared functions with explicit semantics. A calendar date must not silently acquire a timezone conversion merely to use the same helper as an instant. Locale and timezone are part of the formatting contract, not incidental caller details.
+Date formatting should have discoverable shared functions with explicit semantics. A calendar date must not silently acquire a timezone conversion merely to use the same helper as an instant. Locale and timezone are part of the formatting contract, not incidental caller details: the named presets in `src/lib/i18n/formats.ts` are the contract, used by `useFormatter`/`getFormatter` in components and by `src/lib/date/format.ts` elsewhere, and every instant is shown in UTC with the zone named, in the request's locale.
 
 Give established shared helpers a canonical import location in `src/lib`; local wrappers must not reproduce their logic independently. Global facilities use ordinary imports and do not require module scaffolding.
+
+## Localization
+
+The build serves the locales in `appConfig.locales` (`src/lib/config.ts`); English is the source of truth and a product narrows the list to what it ships. A request's locale is decided once, in `proxy.ts`, from an explicit `locale` cookie, then `Accept-Language`, then the default, and travels as the `x-locale` request header; `requestLocale` in `src/lib/i18n` is the only reader. There is no switcher and no stored preference; a stored preference goes first in the resolver when a product adds one. See [ADR 0005](adr/0005-localization-at-the-boundary.md).
+
+Catalogs are ICU JSON per scope, next to the code they describe: `app/(X)/_/messages/{en,pl}.json` and `app/(X)/admin/_/messages/` (namespaces `auth`, `authAdmin`, `logs`, `logsAdmin`), `src/lib/email/messages/` (`email`) and the global `src/lib/i18n/messages/` (`common`, `nav`, `errors`). `src/lib/app/messages` composes them, types every key from English and backs every locale with English. Keys read `namespace.area.component.key`; plurals and variants are ICU, never string concatenation. Both files of a pair carry the same key tree (`tests/i18n`).
+
+Surfaces translate; handlers do not. Pages and components use next-intl (`useTranslations`, `useFormatter`, `getTranslations`, `getFormatter`). An operation, service or persistence function raises a refusal as a catalog key with values (`ActionError` with a `MessageDescriptor`), and the adapter renders it in the request's locale; a developer-only message answers with the generic sentence for the reason. Zod custom messages are keys; the form resolver and `parseInput` translate issues identically. Better Auth's messages are rewritten by code in one `after` hook. Emails are written in the locale of the operation or provider request that asked for them, and the log keeps them as sent. Route labels and navigation groups are `nav.*` keys rendered where shown. Machine-facing JSON from the proxy and developer errors stay English.
+
+Written records keep their language: staff log blocks (ADR 0003) and logged emails are snapshots; only `date` blocks render in the reader's locale.
 
 ## Imports and scope
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { useTranslations } from "next-intl";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -15,16 +16,12 @@ import type { TablePageState } from "./types";
 
 export const DEFAULT_PAGE_SIZE_OPTIONS: readonly number[] = [10, 25, 50, 100];
 
-/** "1–25 of 132 users", or "0 users" for an empty result (never "1–0"). */
-export function describeRange(
-  pagination: TablePageState,
-  rowCount: number,
-  itemLabel: string,
-): string {
-  if (rowCount === 0) return `0 ${itemLabel}`;
+/** The 1-based rows the page covers, or null for an empty result (never "1–0"). */
+export function pageRange(pagination: TablePageState, rowCount: number): { first: number; last: number } | null {
+  if (rowCount === 0) return null;
   const first = pagination.pageIndex * pagination.pageSize + 1;
   const last = Math.min(first + pagination.pageSize - 1, rowCount);
-  return `${first}–${last} of ${rowCount.toLocaleString("en-US")} ${itemLabel}`;
+  return { first, last };
 }
 
 export function DataTablePagination({
@@ -42,7 +39,9 @@ export function DataTablePagination({
   pending?: boolean;
   onPaginationChange: (next: TablePageState) => void;
 }) {
+  const t = useTranslations("common.pagination");
   const pageSizeId = useId();
+  const range = pageRange(pagination, rowCount);
   const pageCount = lastPage(rowCount, pagination.pageSize);
   const current = pagination.pageIndex + 1;
   const goTo = (pageIndex: number) =>
@@ -54,12 +53,12 @@ export function DataTablePagination({
       className="ui:flex ui:flex-col ui:gap-3 ui:text-sm ui:md:flex-row ui:md:items-center ui:md:justify-between"
     >
       <p role="status" aria-live="polite" className="ui:text-muted-foreground">
-        {describeRange(pagination, rowCount, itemLabel)}
+        {range ? t("range", { ...range, total: rowCount, itemLabel }) : t("zero", { itemLabel })}
       </p>
       <div className="ui:flex ui:flex-wrap ui:items-center ui:gap-x-6 ui:gap-y-3">
         <div className="ui:flex ui:items-center ui:gap-2">
           <Label htmlFor={pageSizeId} className="ui:whitespace-nowrap ui:font-normal">
-            Rows per page
+            {t("rowsPerPage")}
           </Label>
           <NativeSelect
             id={pageSizeId}
@@ -78,14 +77,14 @@ export function DataTablePagination({
           </NativeSelect>
         </div>
         <p className="ui:whitespace-nowrap ui:text-muted-foreground">
-          Page {current} of {pageCount}
+          {t("pageOf", { page: current, pages: pageCount })}
         </p>
-        <nav aria-label="Pagination" className="ui:flex ui:items-center ui:gap-1">
+        <nav aria-label={t("navigation")} className="ui:flex ui:items-center ui:gap-1">
           <Button
             type="button"
             variant="outline"
             size="icon-sm"
-            aria-label="First page"
+            aria-label={t("firstPage")}
             disabled={pending || current <= 1}
             onClick={() => goTo(0)}
           >
@@ -95,7 +94,7 @@ export function DataTablePagination({
             type="button"
             variant="outline"
             size="icon-sm"
-            aria-label="Previous page"
+            aria-label={t("previousPage")}
             disabled={pending || current <= 1}
             onClick={() => goTo(pagination.pageIndex - 1)}
           >
@@ -105,7 +104,7 @@ export function DataTablePagination({
             type="button"
             variant="outline"
             size="icon-sm"
-            aria-label="Next page"
+            aria-label={t("nextPage")}
             disabled={pending || current >= pageCount}
             onClick={() => goTo(pagination.pageIndex + 1)}
           >
@@ -115,7 +114,7 @@ export function DataTablePagination({
             type="button"
             variant="outline"
             size="icon-sm"
-            aria-label="Last page"
+            aria-label={t("lastPage")}
             disabled={pending || current >= pageCount}
             onClick={() => goTo(pageCount - 1)}
           >

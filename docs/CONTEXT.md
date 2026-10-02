@@ -31,3 +31,15 @@ _Avoid_: Audit log, activity log
 
 **Block**:
 One part of a staff log message, such as a piece of text, a user, a date or a value. A block is a snapshot: it shows what was true when the action happened and needs nothing else to be displayed.
+
+**Locale**:
+The language a request is served in, negotiated once by the proxy from the browser and carried as a request header. It is not a user setting yet; the build's `appConfig.locales` says which languages exist.
+_Avoid_: Language setting, preference
+
+**Message descriptor**:
+What a refusal says, as a catalog key plus its values. Operations raise descriptors; the adapter that answers the caller turns them into a sentence in the request's locale.
+_Avoid_: Error message when the server-side object is meant
+
+**Catalog**:
+The ICU messages of one scope and one locale, a JSON file next to the scope's code. English is the source of truth and the other locales mirror its keys.
+

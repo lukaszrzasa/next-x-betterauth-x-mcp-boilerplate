@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangleIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/src/components/ui/button";
 
 /**
@@ -17,6 +18,7 @@ export function ErrorState({
   message: string;
   retry: () => void;
 }) {
+  const t = useTranslations("common.actions");
   return (
     <div
       role="alert"
@@ -28,7 +30,7 @@ export function ErrorState({
         <p className="ui:max-w-prose ui:text-sm ui:text-muted-foreground">{message}</p>
       </div>
       <Button type="button" variant="outline" onClick={() => retry()}>
-        Retry
+        {t("retry")}
       </Button>
     </div>
   );

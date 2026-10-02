@@ -28,8 +28,7 @@ export function checkAuthorization(
   // Impersonation grants an admin a session, not the user's second factor.
   if (requiresStepUp && session.impersonatedBy) {
     throw new ActionError("IMPERSONATION_FORBIDDEN", {
-      message:
-        "Two-factor protected actions cannot be run while impersonating.",
+      message: { key: "errors.auth.impersonationForbidden" },
     });
   }
 
@@ -43,16 +42,18 @@ export function checkAuthorization(
   // Role admission first: to an account outside the declared roles the
   // operation does not exist, whatever permissions it may otherwise hold.
   if (config.roles && !hasRole(user.role, config.roles)) {
-    throw new ActionError("NOT_FOUND", { message: "Not found." });
+    throw new ActionError("NOT_FOUND", { message: { key: "errors.auth.notFound" } });
   }
 
   const permissions = config.permissions ?? [];
   const connector = config.permissionsConnector ?? "AND";
   if (permissions.length > 0 && !can(user.role, permissions, connector)) {
     throw new ActionError("FORBIDDEN", {
-      message: `Missing permission (${connector}): ${
-        typeof permissions === "string" ? permissions : permissions.join(", ")
-      }`,
+      message: { key: "errors.auth.missingPermission" },
+      data: {
+        permissions: typeof permissions === "string" ? [permissions] : [...permissions],
+        connector,
+      },
     });
   }
 }

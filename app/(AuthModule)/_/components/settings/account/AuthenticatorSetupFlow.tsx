@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useCancelSetup } from "@/app/(AuthModule)/_/hooks/settings/actions/useCancelSetup";
 import type { Feedback } from "@/app/(AuthModule)/_/hooks/settings/feedback";
 import type { RecoveryCodesIssued, SetupStarted } from "@/app/(AuthModule)/_/types/settings";
@@ -14,33 +15,9 @@ type Issued = Exclude<RecoveryCodesIssued, { status: "completed-codes-unavailabl
 type Step = { name: "password" } | { name: "code"; setup: SetupStarted } | { name: "codes"; issued: Issued };
 export type SetupStepName = Step["name"];
 
-export const SETUP_STEP_TITLES: Record<SetupKind, Record<SetupStepName, string>> = {
-  enroll: { password: "Set up an authenticator", code: "Scan and confirm", codes: "Save your recovery codes" },
-  replace: { password: "Replace your authenticator", code: "Scan and confirm the new one", codes: "Save your new recovery codes" },
-};
-
-const DONE: Record<SetupKind, string> = { enroll: "Authenticator activated", replace: "Authenticator replaced" };
-
-const PARTIAL_WARNING =
-  "Your authenticator is active, but your other sessions could not be updated yet. Retry from the section afterwards.";
-
-function codesUnavailableFeedback(kind: SetupKind): Feedback {
-  return {
-    tone: "warning",
-    title: `${DONE[kind]}, but its recovery codes could not be shown`,
-    description: "Generate new recovery codes to get a set you can save.",
-  };
-}
-
-function completedFeedback(kind: SetupKind, issued: Issued): Feedback {
-  if (issued.status !== "partial") return { tone: "success", title: DONE[kind] };
-  return {
-    tone: "warning",
-    title: `${DONE[kind]}, but`,
-    description: "your other sessions could not be updated yet.",
-    recovery: "retryFactorSessionRefresh",
-  };
-}
+/** The dialog title of each step, as a catalog key under `auth.settings.authenticator.setupFlow.titles`. */
+export const setupStepTitleKey = (kind: SetupKind, step: SetupStepName) =>
+  `auth.settings.authenticator.setupFlow.titles.${kind}.${step}` as const;
 
 /**
  * One setup or replacement, start to finish, inside a modal as a disposable
@@ -60,9 +37,11 @@ export function AuthenticatorSetupFlow({
   onClose: () => void;
   onStep: (step: SetupStepName) => void;
 }) {
+  const t = useTranslations("auth.settings.authenticator.setupFlow");
   const router = useRouter();
   const [step, setStepState] = useState<Step>({ name: "password" });
   const cancelSetup = useCancelSetup();
+  const done = t(`done.${kind}`);
 
   const setStep = (next: Step) => {
     setStepState(next);
@@ -79,9 +58,25 @@ export function AuthenticatorSetupFlow({
     onClose();
   };
 
+  const codesUnavailableFeedback = (): Feedback => ({
+    tone: "warning",
+    title: t("codesUnavailableTitle", { done }),
+    description: t("codesUnavailableDescription"),
+  });
+
+  const completedFeedback = (issued: Issued): Feedback => {
+    if (issued.status !== "partial") return { tone: "success", title: done };
+    return {
+      tone: "warning",
+      title: t("partialTitle", { done }),
+      description: t("partialDescription"),
+      recovery: "retryFactorSessionRefresh",
+    };
+  };
+
   const completed = (issued: RecoveryCodesIssued) => {
     router.refresh();
-    if (issued.status === "completed-codes-unavailable") settle(codesUnavailableFeedback(kind));
+    if (issued.status === "completed-codes-unavailable") settle(codesUnavailableFeedback());
     else setStep({ name: "codes", issued });
   };
 
@@ -104,8 +99,8 @@ export function AuthenticatorSetupFlow({
         <RecoveryCodesResult
           codes={step.issued.recoveryCodes}
           issuedAt={step.issued.issuedAt}
-          warning={step.issued.status === "partial" ? PARTIAL_WARNING : undefined}
-          onAcknowledge={() => settle(completedFeedback(kind, step.issued))}
+          warning={step.issued.status === "partial" ? t("partialWarning") : undefined}
+          onAcknowledge={() => settle(completedFeedback(step.issued))}
         />
       );
   }

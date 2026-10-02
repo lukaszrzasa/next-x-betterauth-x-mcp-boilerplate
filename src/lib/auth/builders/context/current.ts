@@ -3,6 +3,7 @@ import "server-only";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 
+import { requestLocale } from "@/src/lib/i18n/resolveLocale";
 import { Ctx, type AuthedCtx, type PublicCtx } from "./ctx";
 import { createLogger } from "./logger";
 
@@ -44,6 +45,7 @@ export function providerRequestContext(name: string, headers?: Headers | null): 
     requestId,
     ip: clientIp(requestHeaders),
     userAgent: requestHeaders.get("user-agent"),
+    locale: requestLocale(requestHeaders),
     requestHeaders,
     log: createLogger({ requestId, action: name }),
   });

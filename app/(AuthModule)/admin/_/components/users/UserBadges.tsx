@@ -1,19 +1,16 @@
+"use client";
+
 import type { ComponentProps } from "react";
+import { useFormatter, useTranslations } from "next-intl";
 import { Badge } from "@/src/components/ui/badge";
-import { formatUtcDateTime, toIsoInstant } from "@/src/lib/date/format";
-import type { RoleName } from "@/src/lib/auth/permissions";
+import { toIsoInstant } from "@/src/lib/date/format";
+import { ROLE_NAMES, type RoleName } from "@/src/lib/auth/permissions";
 import type { AccessStatus } from "@/app/(AuthModule)/admin/_/types";
 
-/** One label per declared role: adding a role to the auth config fails to compile until it is named here. */
-export const ROLE_LABELS: Record<RoleName, string> = {
-  user: "User",
-  moderator: "Moderator",
-  admin: "Admin",
-};
-
-/** Readable names for known roles; anything else is shown as-is, escaped by React. */
-export function roleLabel(role: string): string {
-  return (ROLE_LABELS as Record<string, string | undefined>)[role] ?? role;
+/** The translator of role names; anything undeclared is shown as-is, escaped by React. */
+export function useRoleLabel(): (role: string) => string {
+  const t = useTranslations("authAdmin.badges.role");
+  return (role) => ((ROLE_NAMES as readonly string[]).includes(role) ? t(role as RoleName) : role);
 }
 
 /** Staff roles stand out; `user` and anything unknown stay quiet. */
@@ -28,8 +25,10 @@ function roleVariant(role: string): ComponentProps<typeof Badge>["variant"] {
 }
 
 export function RoleBadges({ roles }: { roles: readonly string[] }) {
+  const t = useTranslations("authAdmin.badges");
+  const roleLabel = useRoleLabel();
   return (
-    <ul aria-label="Roles" className="ui:flex ui:flex-wrap ui:gap-1">
+    <ul aria-label={t("rolesLabel")} className="ui:flex ui:flex-wrap ui:gap-1">
       {roles.map((role) => (
         <li key={role}>
           <Badge variant={roleVariant(role)}>{roleLabel(role)}</Badge>
@@ -40,20 +39,21 @@ export function RoleBadges({ roles }: { roles: readonly string[] }) {
 }
 
 export function VerificationBadge({ verified }: { verified: boolean }) {
+  const t = useTranslations("authAdmin.badges");
   return verified ? (
-    <Badge variant="secondary">Verified</Badge>
+    <Badge variant="secondary">{t("verified")}</Badge>
   ) : (
     <Badge variant="outline" className="ui:text-muted-foreground">
-      Unverified
+      {t("unverified")}
     </Badge>
   );
 }
 
-export const ACCESS_LABELS: Record<AccessStatus, string> = {
-  active: "Active",
-  "temporarily-banned": "Temporarily banned",
-  "permanently-banned": "Permanently banned",
-};
+const ACCESS_KEYS = {
+  active: "active",
+  "temporarily-banned": "temporarilyBanned",
+  "permanently-banned": "permanentlyBanned",
+} as const;
 
 export function AccessBadge({
   status,
@@ -62,16 +62,18 @@ export function AccessBadge({
   status: AccessStatus;
   banExpires: string | null;
 }) {
-  if (status === "active") return <Badge variant="outline">Active</Badge>;
+  const t = useTranslations("authAdmin.badges");
+  const format = useFormatter();
+  if (status === "active") return <Badge variant="outline">{t("access.active")}</Badge>;
 
   const expiry =
     status === "temporarily-banned" && banExpires
-      ? `Ban ends ${formatUtcDateTime(banExpires)}`
+      ? t("banEnds", { date: format.dateTime(new Date(banExpires), "dateTime") })
       : undefined;
 
   return (
     <Badge variant="destructive" title={expiry}>
-      {ACCESS_LABELS[status]}
+      {t(`access.${ACCESS_KEYS[status]}`)}
       {expiry && (
         <span className="ui:sr-only">
           , <time dateTime={toIsoInstant(banExpires ?? "")}>{expiry}</time>

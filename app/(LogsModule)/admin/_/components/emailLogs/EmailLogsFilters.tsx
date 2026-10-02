@@ -1,6 +1,7 @@
 "use client";
 
 import { XIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { z } from "zod";
 import { DataTableToolbar } from "@/src/components/data-table/DataTableToolbar";
 import { Button } from "@/src/components/ui/button";
@@ -17,24 +18,18 @@ import { ExactFilterInput } from "@/app/(LogsModule)/admin/_/components/shared/E
 import { FilterSelect } from "@/app/(LogsModule)/admin/_/components/shared/FilterSelect";
 import { LogSearchField } from "@/app/(LogsModule)/admin/_/components/shared/LogSearchField";
 import { TimeRangeFilter } from "@/app/(LogsModule)/admin/_/components/shared/TimeRangeFilter";
-import { EMAIL_STATUS_PRESENTATION } from "./EmailStatusBadge";
-
-const STATUS_OPTIONS: { value: EmailStatusFilter; label: string }[] = [
-  { value: "all", label: "Any status" },
-  ...EMAIL_LOG_STATUSES.map((status) => ({ value: status, label: EMAIL_STATUS_PRESENTATION[status].label })),
-];
 
 const recipientSchema = z.email().max(254);
 
 /** One value per sort/direction pair; the column headers offer the same sorts. */
-const SORT_OPTIONS: { value: `${EmailLogSort}:${SortDirection}`; label: string }[] = [
-  { value: "time:desc", label: "Newest first" },
-  { value: "time:asc", label: "Oldest first" },
-  { value: "recipient:asc", label: "Recipient A–Z" },
-  { value: "recipient:desc", label: "Recipient Z–A" },
-  { value: "subject:asc", label: "Subject A–Z" },
-  { value: "subject:desc", label: "Subject Z–A" },
-];
+const SORT_VALUES = [
+  ["time:desc", "timeDesc"],
+  ["time:asc", "timeAsc"],
+  ["recipient:asc", "recipientAsc"],
+  ["recipient:desc", "recipientDesc"],
+  ["subject:asc", "subjectAsc"],
+  ["subject:desc", "subjectDesc"],
+] as const satisfies ReadonlyArray<readonly [`${EmailLogSort}:${SortDirection}`, string]>;
 
 export type EmailLogsFiltersProps = {
   query: EmailLogsQuery;
@@ -47,6 +42,13 @@ export type EmailLogsFiltersProps = {
 };
 
 export function EmailLogsFilters({ query, pending, onChange, onSearchChange, onSearchSubmit }: EmailLogsFiltersProps) {
+  const t = useTranslations("logsAdmin.emailLogs");
+  const tActions = useTranslations("common.actions");
+  const statusOptions: { value: EmailStatusFilter; label: string }[] = [
+    { value: "all", label: t("filters.anyStatus") },
+    ...EMAIL_LOG_STATUSES.map((status) => ({ value: status, label: t(`status.${status}.label`) })),
+  ];
+  const sortOptions = SORT_VALUES.map(([value, key]) => ({ value, label: t(`filters.sort.${key}`) }));
   const change = (next: Partial<Omit<EmailLogsQuery, "page">>) => onChange(withEmailLogsQueryChange(query, next));
   const advanced = query.recipient !== "" || query.userId !== "";
 
@@ -55,8 +57,8 @@ export function EmailLogsFilters({ query, pending, onChange, onSearchChange, onS
       <DataTableToolbar
         search={
           <LogSearchField
-            label="Search email logs"
-            placeholder="Search subject or recipient"
+            label={t("search.label")}
+            placeholder={t("search.placeholder")}
             value={query.q}
             onChange={(q) => onSearchChange(withEmailLogsQueryChange(query, { q }))}
             onSubmit={onSearchSubmit}
@@ -70,16 +72,16 @@ export function EmailLogsFilters({ query, pending, onChange, onSearchChange, onS
               onChange={(range) => change(range)}
             />
             <FilterSelect
-              label="Status"
+              label={t("filters.status")}
               value={query.status}
-              options={STATUS_OPTIONS}
+              options={statusOptions}
               pending={pending}
               onChange={(status) => change({ status })}
             />
             <FilterSelect
-              label="Sort by"
+              label={t("filters.sortBy")}
               value={`${query.sort}:${query.direction}` as const}
-              options={SORT_OPTIONS}
+              options={sortOptions}
               pending={pending}
               onChange={(value) => {
                 const [sort, direction] = value.split(":") as [EmailLogSort, SortDirection];
@@ -98,35 +100,35 @@ export function EmailLogsFilters({ query, pending, onChange, onSearchChange, onS
               onClick={() => onChange(clearEmailLogsFilters(query))}
             >
               <XIcon aria-hidden="true" />
-              Clear filters
+              {tActions("clearFilters")}
             </Button>
           ) : undefined
         }
       />
       <details open={advanced || undefined} className="ui:group">
         <summary className="ui:w-fit ui:cursor-pointer ui:text-sm ui:text-muted-foreground ui:select-none ui:hover:text-foreground">
-          Recipient filters
+          {t("filters.recipientFilters")}
         </summary>
         <div className="ui:mt-3 ui:flex ui:flex-wrap ui:items-end ui:gap-3">
           <ExactFilterInput
-            label="Recipient email (exact)"
+            label={t("filters.recipientEmail")}
             type="email"
             value={query.recipient}
-            placeholder="name@example.com"
+            placeholder={t("filters.recipientEmailPlaceholder")}
             maxLength={254}
             pending={pending}
             schema={recipientSchema}
-            invalidMessage="Enter a complete email address."
+            invalidMessage={t("filters.recipientEmailInvalid")}
             onApply={(recipient) => change({ recipient: recipient.toLowerCase() })}
           />
           <ExactFilterInput
-            label="Recipient user ID (exact)"
+            label={t("filters.recipientUserId")}
             value={query.userId}
-            placeholder="User ID"
+            placeholder={t("filters.recipientUserIdPlaceholder")}
             maxLength={128}
             pending={pending}
             schema={opaqueIdSchema}
-            invalidMessage="Enter an ID of at most 128 characters without control characters."
+            invalidMessage={t("filters.recipientUserIdInvalid")}
             onApply={(userId) => change({ userId })}
           />
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { FormError } from "@/src/components/forms/FormError";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { Button } from "@/src/components/ui/button";
@@ -17,6 +18,8 @@ export function NewEmailForm({
   onCancel: () => void;
   onSettled: (feedback: Feedback) => void;
 }) {
+  const t = useTranslations("auth.settings.email.newEmailForm");
+  const tCommon = useTranslations("auth.settings.common");
   const { form, onSubmit, pending } = useNewEmailForm({
     requestId,
     onSettled: (feedback) => {
@@ -26,29 +29,26 @@ export function NewEmailForm({
   });
 
   return (
-    <form noValidate aria-label="Enter new email address" onSubmit={onSubmit} className="ui:flex ui:flex-col ui:gap-4">
+    <form noValidate aria-label={t("label")} onSubmit={onSubmit} className="ui:flex ui:flex-col ui:gap-4">
       <FieldGroup className="ui:gap-4">
         <FormError message={form.formState.errors.root?.message} />
         <FormInput
           control={form.control}
           name="newEmail"
-          label="New email address"
+          label={t("newEmail")}
           type="email"
           autoComplete="email"
           maxLength={254}
           disabled={pending}
         />
-        <FieldDescription>
-          A confirmation link is sent to this address. Once chosen it cannot be edited; cancel and start again to
-          pick another.
-        </FieldDescription>
+        <FieldDescription>{t("hint")}</FieldDescription>
       </FieldGroup>
       <div className="ui:flex ui:flex-wrap ui:justify-end ui:gap-2">
         <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={onCancel}>
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Sending…" : "Send confirmation"}
+          {pending ? t("submitting") : t("submit")}
         </Button>
       </div>
     </form>

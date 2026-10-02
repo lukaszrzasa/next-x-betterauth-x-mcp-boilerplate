@@ -6,12 +6,16 @@ import type {
   UserFieldError,
   UserMutationOutcome,
 } from "@/app/(AuthModule)/admin/_/types";
+import type { MessageKey } from "@/src/lib/i18n";
+import type { CatalogTranslator } from "@/src/lib/i18n/useCatalog";
 
 /**
  * How the detail page talks about outcomes: pure helpers shared by the form
  * and action hooks, so a partial result is never dressed up as a success and
  * every refusal has plain-language text (generic failures come from
- * `describeFailure`; this file adds what is specific to user accounts).
+ * `describeFailure`; this file adds what is specific to user accounts). Every
+ * sentence comes from the `authAdmin.feedback` catalog through the `t` the
+ * caller holds, so the helpers stay pure and the language stays the viewer's.
  */
 
 export type { FeedbackTone };
@@ -55,59 +59,61 @@ export function readFieldError(error: ActionFailure): UserFieldError | null {
   return parsed.success ? parsed.data : null;
 }
 
-const FAILURE_TITLES: Partial<Record<ActionFailure["reason"], string>> = {
-  RATE_LIMITED: "Please wait before sending another email",
-  NOT_FOUND: "This user no longer exists",
+/** Keys are spelled out rather than computed so the catalog type checks every one. */
+const FAILURE_TITLE_KEYS: Partial<Record<ActionFailure["reason"], MessageKey>> = {
+  RATE_LIMITED: "authAdmin.feedback.failureTitle.RATE_LIMITED",
+  NOT_FOUND: "authAdmin.feedback.failureTitle.NOT_FOUND",
 };
 
 /** The generic description, with the titles that read better for a user account. */
-export function describeUserFailure(error: ActionFailure): Feedback {
-  const generic = describeFailure(error);
+export function describeUserFailure(t: CatalogTranslator, error: ActionFailure): Feedback {
+  const generic = describeFailure(t, error);
   const tone: FeedbackTone = error.reason === "RATE_LIMITED" ? "warning" : "error";
-  return { tone, ...generic, title: FAILURE_TITLES[error.reason] ?? generic.title };
+  const titleKey = FAILURE_TITLE_KEYS[error.reason];
+  return { tone, ...generic, title: titleKey ? t(titleKey) : generic.title };
 }
 
-const EFFECT_LABELS: Record<FailedEffect["effect"], string> = {
-  "session-refresh": "the user's active sessions could not be updated",
-  "session-revocation": "sessions could not be fully revoked",
-  "verification-email": "the verification email could not be sent",
+const EFFECT_KEYS: Record<FailedEffect["effect"], MessageKey> = {
+  "session-refresh": "authAdmin.feedback.effect.sessionRefresh",
+  "session-revocation": "authAdmin.feedback.effect.sessionRevocation",
+  "verification-email": "authAdmin.feedback.effect.verificationEmail",
 };
 
-function describeEffect(effect: FailedEffect): string {
-  const label = EFFECT_LABELS[effect.effect];
+function describeEffect(t: CatalogTranslator, effect: FailedEffect): string {
+  const label = t(EFFECT_KEYS[effect.effect]);
   if (effect.code === "RATE_LIMITED" && effect.retryAfterSeconds) {
-    return `${label} (wait ${effect.retryAfterSeconds} seconds and resend)`;
+    return t("authAdmin.feedback.effectRateLimited", { label, seconds: effect.retryAfterSeconds });
   }
   return label;
 }
 
-const COMPLETED: Record<MutationKind, string> = {
-  updateName: "Name updated",
-  updateEmail: "Email updated. The new address must be verified; the user has been signed out.",
-  sendVerification: "Verification email requested",
-  sendPasswordReset: "Password-reset email requested",
-  revokeSessions: "Signed out of all devices",
-  ban: "Ban saved. The user has been signed out.",
-  unban: "Ban removed",
-  retryNameSessionRefresh: "Active sessions updated",
-  retryEmailChangeEffects: "Sessions revoked and verification requested",
-  retryBanSessions: "The user has been signed out",
-  retryUnbanSessionRefresh: "Active sessions updated",
+const COMPLETED_KEYS: Record<MutationKind, MessageKey> = {
+  updateName: "authAdmin.feedback.completed.updateName",
+  updateEmail: "authAdmin.feedback.completed.updateEmail",
+  sendVerification: "authAdmin.feedback.completed.sendVerification",
+  sendPasswordReset: "authAdmin.feedback.completed.sendPasswordReset",
+  revokeSessions: "authAdmin.feedback.completed.revokeSessions",
+  ban: "authAdmin.feedback.completed.ban",
+  unban: "authAdmin.feedback.completed.unban",
+  retryNameSessionRefresh: "authAdmin.feedback.completed.retryNameSessionRefresh",
+  retryEmailChangeEffects: "authAdmin.feedback.completed.retryEmailChangeEffects",
+  retryBanSessions: "authAdmin.feedback.completed.retryBanSessions",
+  retryUnbanSessionRefresh: "authAdmin.feedback.completed.retryUnbanSessionRefresh",
 };
 
-const UNCHANGED: Partial<Record<MutationKind, string>> = {
-  updateName: "The name is already up to date",
-  updateEmail: "The email address is already up to date",
-  sendVerification: "This email address is already verified",
-  unban: "This user is not banned",
+const UNCHANGED_KEYS: Partial<Record<MutationKind, MessageKey>> = {
+  updateName: "authAdmin.feedback.unchanged.updateName",
+  updateEmail: "authAdmin.feedback.unchanged.updateEmail",
+  sendVerification: "authAdmin.feedback.unchanged.sendVerification",
+  unban: "authAdmin.feedback.unchanged.unban",
 };
 
-const PARTIAL_TITLES: Partial<Record<MutationKind, string>> = {
-  updateName: "Name updated, but",
-  updateEmail: "Email updated, but",
-  ban: "Ban saved, but",
-  unban: "Ban removed, but",
-  revokeSessions: "Sign-out not confirmed:",
+const PARTIAL_TITLE_KEYS: Partial<Record<MutationKind, MessageKey>> = {
+  updateName: "authAdmin.feedback.partialTitle.updateName",
+  updateEmail: "authAdmin.feedback.partialTitle.updateEmail",
+  ban: "authAdmin.feedback.partialTitle.ban",
+  unban: "authAdmin.feedback.partialTitle.unban",
+  revokeSessions: "authAdmin.feedback.partialTitle.revokeSessions",
 };
 
 /** Which recovery finishes a partial outcome of each kind; retries recover themselves. */
@@ -126,53 +132,60 @@ const RECOVERY: Partial<Record<MutationKind, RecoveryKind>> = {
 const SIGN_OUT_KINDS: readonly MutationKind[] = ["revokeSessions", "ban", "retryBanSessions"];
 
 function describePartial(
+  t: CatalogTranslator,
   kind: MutationKind,
   outcome: Extract<UserMutationOutcome, { status: "partial" }>,
 ): Feedback {
   const rateLimited = outcome.failedEffects.find((effect) => effect.code === "RATE_LIMITED");
-  const effects = outcome.failedEffects.map(describeEffect).join(" and ");
+  const effects = outcome.failedEffects
+    .map((effect) => describeEffect(t, effect))
+    .join(t("authAdmin.feedback.effectJoiner"));
+  const prefix = t(PARTIAL_TITLE_KEYS[kind] ?? "authAdmin.feedback.partialTitle.default");
   const hint = SIGN_OUT_KINDS.includes(kind)
-    ? "Retry to finish signing the user out."
-    : "The change itself is saved. Retry to finish the remaining steps.";
+    ? t("authAdmin.feedback.hintSignOut")
+    : t("authAdmin.feedback.hintRemaining");
   return {
     tone: "warning",
-    title: `${PARTIAL_TITLES[kind] ?? "Not fully completed:"} ${effects}.`,
+    title: t("authAdmin.feedback.partial", { prefix, effects }),
     description: hint,
     recovery: RECOVERY[kind],
     retryAfterSeconds: rateLimited?.retryAfterSeconds,
   };
 }
 
-const UNRECORDED = "This action was not written to the staff log. Tell an administrator what you changed.";
-
 /** The action happened; only its staff log entry is missing, and the staff member must know. */
-function withUnrecorded(feedback: Feedback, outcome: UserMutationOutcome): Feedback {
+function withUnrecorded(t: CatalogTranslator, feedback: Feedback, outcome: UserMutationOutcome): Feedback {
   if (outcome.status === "unchanged" || !outcome.unrecorded) return feedback;
+  const unrecorded = t("authAdmin.feedback.unrecorded");
   return {
     ...feedback,
     tone: "warning",
-    description: feedback.description ? `${feedback.description} ${UNRECORDED}` : UNRECORDED,
+    description: feedback.description ? `${feedback.description} ${unrecorded}` : unrecorded,
   };
 }
 
 /** The feedback for a successful action call, by the payload's status. */
-export function describeOutcome(kind: MutationKind, outcome: UserMutationOutcome): Feedback {
+export function describeOutcome(t: CatalogTranslator, kind: MutationKind, outcome: UserMutationOutcome): Feedback {
   switch (outcome.status) {
     case "unchanged":
-      return { tone: "info", title: UNCHANGED[kind] ?? "No change" };
+      return {
+        tone: "info",
+        title: t(UNCHANGED_KEYS[kind] ?? "authAdmin.feedback.unchanged.default"),
+      };
     case "completed":
-      return withUnrecorded({ tone: "success", title: COMPLETED[kind] }, outcome);
+      return withUnrecorded(t, { tone: "success", title: t(COMPLETED_KEYS[kind]) }, outcome);
     case "partial":
-      return withUnrecorded(describePartial(kind, outcome), outcome);
+      return withUnrecorded(t, describePartial(t, kind, outcome), outcome);
   }
 }
 
 /** One place that turns an `execute` outcome into feedback, or nothing for busy/cancelled. */
 export function feedbackFor(
+  t: CatalogTranslator,
   kind: MutationKind,
   result: ActionOutcome<UserMutationOutcome>,
 ): Feedback | null {
-  if (result.status === "success") return describeOutcome(kind, result.data);
-  if (result.status === "error") return describeUserFailure(result.error);
+  if (result.status === "success") return describeOutcome(t, kind, result.data);
+  if (result.status === "error") return describeUserFailure(t, result.error);
   return null;
 }

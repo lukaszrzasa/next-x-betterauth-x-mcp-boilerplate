@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Alert, AlertDescription, AlertTitle } from "@/src/components/ui/alert";
 import { Button } from "@/src/components/ui/button";
 import { FieldGroup } from "@/src/components/ui/field";
@@ -8,16 +9,14 @@ import { FormError } from "@/src/components/forms/FormError";
 import { useForgotPasswordForm } from "@/app/(AuthModule)/_/hooks/form/useForgotPasswordForm";
 
 export function ForgotPasswordForm() {
+  const t = useTranslations("auth.passwordReset.forgot");
   const { form, onSubmit, resetLinkSent } = useForgotPasswordForm();
 
   if (resetLinkSent) {
     return (
       <Alert>
-        <AlertTitle>Check your inbox</AlertTitle>
-        <AlertDescription>
-          If an account matches that email, you’ll receive a password reset link
-          shortly.
-        </AlertDescription>
+        <AlertTitle>{t("inboxTitle")}</AlertTitle>
+        <AlertDescription>{t("inboxDescription")}</AlertDescription>
       </Alert>
     );
   }
@@ -29,9 +28,9 @@ export function ForgotPasswordForm() {
         <FormInput
           control={form.control}
           name="email"
-          label="Email address"
+          label={t("email")}
           type="email"
-          placeholder="you@example.com"
+          placeholder={t("emailPlaceholder")}
           autoComplete="email"
         />
         <Button
@@ -39,7 +38,7 @@ export function ForgotPasswordForm() {
           className="ui:h-11"
           disabled={form.formState.isSubmitting}
         >
-          {form.formState.isSubmitting ? "Sending…" : "Send reset link"}
+          {form.formState.isSubmitting ? t("submitting") : t("submit")}
         </Button>
       </FieldGroup>
     </form>

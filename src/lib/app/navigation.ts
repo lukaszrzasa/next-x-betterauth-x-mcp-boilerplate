@@ -5,6 +5,7 @@ import {
   type Viewer,
 } from "@/src/lib/access/routes";
 import { appRoutes } from "@/src/lib/app/routes";
+import type { MessageKey } from "@/src/lib/i18n/messageKey";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 import { logsRoutes } from "@/app/(LogsModule)/_/routes";
 
@@ -16,16 +17,17 @@ import { logsRoutes } from "@/app/(LogsModule)/_/routes";
  */
 
 /** Only labelled, iconed page entries can be listed. */
-export type NavigationItem = RouteDef & { label: string; icon: RouteIcon };
+export type NavigationItem = RouteDef & { label: MessageKey; icon: RouteIcon };
 
 export type NavigationGroup = {
-  label: string;
+  /** Catalog key (`nav.groups.*`). */
+  label: MessageKey;
   items: readonly NavigationItem[];
 };
 
 export const navigation: readonly NavigationGroup[] = [
-  { label: "General", items: [appRoutes.dashboard, authRoutes.adminUsers] },
-  { label: "System", items: [logsRoutes.staffLogs, logsRoutes.emailLogs] },
+  { label: "nav.groups.general", items: [appRoutes.dashboard, authRoutes.adminUsers] },
+  { label: "nav.groups.system", items: [logsRoutes.staffLogs, logsRoutes.emailLogs] },
 ];
 
 /** The groups a viewer may open, decided by the same rule that guards the pages. */

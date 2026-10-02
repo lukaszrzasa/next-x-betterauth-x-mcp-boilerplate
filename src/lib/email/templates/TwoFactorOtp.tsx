@@ -1,3 +1,4 @@
+import type { Locale } from "@/src/lib/i18n/locales";
 import {
   appName,
   EmailCode,
@@ -5,32 +6,25 @@ import {
   EmailLayout,
   EmailNote,
   EmailText,
+  type EmailTranslator,
 } from "./_components";
 
 export type TwoFactorOtpProps = {
   code: string;
   expiresInMinutes: number;
   name?: string;
+  locale: Locale;
+  t: EmailTranslator;
 };
 
-export default function TwoFactorOtp({
-  code,
-  expiresInMinutes,
-  name,
-}: TwoFactorOtpProps) {
+export default function TwoFactorOtp({ code, expiresInMinutes, name, locale, t }: TwoFactorOtpProps) {
+  const greeting = name ? t("greeting", { name }) : "";
   return (
-    <EmailLayout preview={`Your ${appName} verification code is ${code}`}>
-      <EmailHeading>Your verification code</EmailHeading>
-      <EmailText>
-        {name ? `Hi ${name}, ` : ""}enter this code to finish signing in to{" "}
-        {appName}. It expires in {expiresInMinutes}{" "}
-        {expiresInMinutes === 1 ? "minute" : "minutes"}.
-      </EmailText>
+    <EmailLayout locale={locale} preview={t("otp.preview", { appName, code })}>
+      <EmailHeading>{t("otp.heading")}</EmailHeading>
+      <EmailText>{t("otp.body", { greeting, appName, minutes: expiresInMinutes })}</EmailText>
       <EmailCode>{code}</EmailCode>
-      <EmailNote>
-        If you did not try to sign in, someone may know your password - change it
-        and this code will stop working.
-      </EmailNote>
+      <EmailNote>{t("otp.note")}</EmailNote>
     </EmailLayout>
   );
 }

@@ -1,4 +1,5 @@
 import { beforeEach, expect, mock, test } from "bun:test";
+import { serverIntlMock } from "../helpers/intl";
 
 /**
  * The two page entries against a mocked session and mocked reads: the guard,
@@ -18,6 +19,7 @@ const listUsersQuery = mock();
 const getUserQuery = mock();
 
 mock.module("server-only", () => ({}));
+mock.module("next-intl/server", serverIntlMock());
 mock.module("next/navigation", () => ({
   redirect: (to) => {
     throw new Redirect(to);

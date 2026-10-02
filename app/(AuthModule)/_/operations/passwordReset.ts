@@ -10,7 +10,7 @@ import { fieldError, lifecycleError } from "@/app/(AuthModule)/_/errors/settings
 import { completePasswordResetSchema, type CompletePasswordResetSchema } from "@/app/(AuthModule)/_/schemas/settings";
 import { providerErrorCode } from "@/app/(AuthModule)/_/services/credentials/providerErrors";
 
-const invalidResetLink = () => lifecycleError("FORBIDDEN", "INACTIVE", "This reset link is invalid or expired.");
+const invalidResetLink = () => lifecycleError("FORBIDDEN", "INACTIVE", { key: "auth.errors.resetLinkInvalid" });
 
 type ResetProof = { userId: string; createdAt: unknown };
 
@@ -30,7 +30,7 @@ async function resetThroughProvider(input: CompletePasswordResetSchema): Promise
     const code = providerErrorCode(error);
     if (code === "INVALID_TOKEN" || code === "USER_NOT_FOUND") throw invalidResetLink();
     if (code === "PASSWORD_TOO_SHORT" || code === "PASSWORD_TOO_LONG") {
-      throw fieldError("INVALID_INPUT", "newPassword", code, "Use between 8 and 128 characters.", error);
+      throw fieldError("INVALID_INPUT", "newPassword", code, { key: "auth.errors.passwordLength" }, error);
     }
     throw error;
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { FieldGroup } from "@/src/components/ui/field";
@@ -11,6 +12,7 @@ import { TwoFactorForm } from "./TwoFactorForm";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 export function SignInForm() {
+  const t = useTranslations("auth.signIn");
   const { form, onSubmit, twoFactorRequired, restartSignIn } = useSignInForm();
 
   if (twoFactorRequired) {
@@ -24,17 +26,17 @@ export function SignInForm() {
         <FormInput
           control={form.control}
           name="email"
-          label="Email address"
+          label={t("email")}
           type="email"
-          placeholder="you@example.com"
+          placeholder={t("emailPlaceholder")}
           autoComplete="email"
         />
         <FormInput
           control={form.control}
           name="password"
-          label="Password"
+          label={t("password")}
           type="password"
-          placeholder="Enter your password"
+          placeholder={t("passwordPlaceholder")}
           autoComplete="current-password"
           aside={
             <Button
@@ -42,7 +44,7 @@ export function SignInForm() {
               asChild
               className="ui:h-auto ui:p-0 ui:text-xs"
             >
-              <Link href={authRoutes.forgotPassword.href}>Forgot password?</Link>
+              <Link href={authRoutes.forgotPassword.href}>{t("forgotPassword")}</Link>
             </Button>
           }
         />
@@ -51,7 +53,7 @@ export function SignInForm() {
           className="ui:h-11"
           disabled={form.formState.isSubmitting}
         >
-          {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
+          {form.formState.isSubmitting ? t("submitting") : t("submit")}
           <ArrowRight />
         </Button>
       </FieldGroup>

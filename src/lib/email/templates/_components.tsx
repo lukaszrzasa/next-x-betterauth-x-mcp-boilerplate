@@ -13,8 +13,11 @@ import {
 } from "@react-email/components";
 import type { ReactNode } from "react";
 
+import type { Locale } from "@/src/lib/i18n/locales";
+
 // Re-exported so templates keep a single local import.
 export { appName } from "@/src/lib/config";
+export type { EmailTranslator } from "@/src/lib/email/i18n";
 
 const styles = {
   body: {
@@ -85,17 +88,19 @@ const styles = {
 /**
  * Shared shell: every template renders its own copy so email clients get a
  * complete document. `preview` is the snippet shown next to the subject in
- * most inboxes.
+ * most inboxes; `locale` is the language the copy was rendered in.
  */
 export function EmailLayout({
   preview,
+  locale,
   children,
 }: {
   preview: string;
+  locale: Locale;
   children: ReactNode;
 }) {
   return (
-    <Html lang="en">
+    <Html lang={locale}>
       <Head />
       <Preview>{preview}</Preview>
       <Body style={styles.body}>
@@ -146,13 +151,11 @@ export function EmailNote({ children }: { children: ReactNode }) {
 /**
  * Some clients strip buttons, so the destination is always repeated as text.
  */
-export function EmailFallbackLink({ href, note }: { href: string; note: string }) {
+export function EmailFallbackLink({ href, intro, note }: { href: string; intro: string; note: string }) {
   return (
     <>
       <Hr style={styles.hr} />
-      <Text style={styles.muted}>
-        If the button does not work, paste this link into your browser:
-      </Text>
+      <Text style={styles.muted}>{intro}</Text>
       <Text style={styles.muted}>
         <Link href={href} style={{ color: "#71717a" }}>
           {href}

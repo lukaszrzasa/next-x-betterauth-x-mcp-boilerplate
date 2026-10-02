@@ -28,17 +28,17 @@ export const authRoutes = defineRoutes({
   api: "/api/auth",
 
   /** The minimal signed-in landing page. */
-  panel: { href: "/panel", label: "Panel", access: "session" },
+  panel: { href: "/panel", label: "nav.panel", access: "session" },
   /** Index only: redirects to `settingsProfile`. */
-  settings: { href: "/settings", label: "Settings", access: "session" },
+  settings: { href: "/settings", label: "nav.settings", access: "session" },
   /** Display name. Listed by the settings navigation; pages also require completed enrollment. */
-  settingsProfile: { href: "/settings/profile", label: "Profile", access: "session" },
+  settingsProfile: { href: "/settings/profile", label: "nav.profile", access: "session" },
   /** Sign-in email, password, authenticator, recovery codes and sessions. */
-  settingsAccount: { href: "/settings/account", label: "Account", access: "session" },
+  settingsAccount: { href: "/settings/account", label: "nav.account", access: "session" },
   /** Dashboard user management, served by this module's admin scope. */
   adminUsers: {
     href: "/admin/users",
-    label: "Users",
+    label: "nav.users",
     icon: "users",
     access: { roles: STAFF_ROLES, perm: "user.list" },
   },
@@ -49,7 +49,7 @@ export const authRoutes = defineRoutes({
    */
   adminUser: {
     href: "/admin/users/[userId]",
-    label: "User details",
+    label: "nav.userDetails",
     access: { roles: STAFF_ROLES, perm: "user.get" },
   },
 });

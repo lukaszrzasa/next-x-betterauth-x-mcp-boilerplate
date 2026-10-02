@@ -19,6 +19,8 @@ const listSessionsQuery = mock(async ({ page }) => ({ items: [], page, pageSize:
 const inspectEmailProofQuery = mock(async () => ({ status: "confirmable", purpose: "current", maskedEmail: "a•••@example.com", expiresAt: "2026-09-27T00:00:00.000Z" }));
 
 mock.module("server-only", () => ({}));
+const { serverIntlMock } = await import("../helpers/intl.jsx");
+mock.module("next-intl/server", serverIntlMock());
 mock.module("next/navigation", () => ({
   redirect: (to) => {
     throw new Redirect(to);

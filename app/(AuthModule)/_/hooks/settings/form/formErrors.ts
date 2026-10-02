@@ -2,7 +2,11 @@
 
 import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 import type { ActionFailure } from "@/src/lib/actions";
-import { describeSettingsFailure, readFieldError } from "@/app/(AuthModule)/_/hooks/settings/feedback";
+import {
+  describeSettingsFailure,
+  readFieldError,
+  type Translator,
+} from "@/app/(AuthModule)/_/hooks/settings/feedback";
 import type { SettingsFieldError } from "@/app/(AuthModule)/_/types/settings";
 
 /**
@@ -21,7 +25,7 @@ export function attributeFieldError<TValues extends FieldValues>(
   return true;
 }
 
-export function rootMessage(error: ActionFailure): string {
-  const { title, description } = describeSettingsFailure(error);
+export function rootMessage(t: Translator, error: ActionFailure): string {
+  const { title, description } = describeSettingsFailure(t, error);
   return description ? `${title}. ${description}` : title;
 }

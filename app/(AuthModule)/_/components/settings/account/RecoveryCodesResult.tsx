@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { CopyIcon, DownloadIcon } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent } from "@/src/components/ui/card";
@@ -9,19 +10,20 @@ import { Label } from "@/src/components/ui/label";
 import { copyText } from "@/src/lib/browser/clipboard";
 import { downloadTextFile } from "@/src/lib/browser/download";
 import { appName } from "@/src/lib/config";
-import { formatUtcDateTime } from "@/src/lib/date/format";
 
 const DOWNLOAD_FILE_NAME = "account-recovery-codes.txt";
 
+type ResultTranslator = ReturnType<typeof useTranslations<"auth.settings.recoveryCodes.result">>;
+
 /** The downloaded file: a heading, when the set was issued, the codes, and how to use them. */
-function recoveryCodesFile(codes: readonly string[], issuedAt: string): string {
+function recoveryCodesFile(t: ResultTranslator, codes: readonly string[], issuedAt: string): string {
   const lines = [
-    `${appName} recovery codes`,
-    `Generated ${formatUtcDateTime(issuedAt)}`,
+    t("fileHeading", { appName }),
+    t("fileGenerated", { issuedAt: new Date(issuedAt) }),
     "",
     ...codes,
     "",
-    "Each code can be used once in place of an authenticator code.",
+    t("fileNote"),
   ];
   return lines.join("\n");
 }
@@ -43,25 +45,23 @@ export function RecoveryCodesResult({
   warning?: string;
   onAcknowledge: () => void;
 }) {
+  const t = useTranslations("auth.settings.recoveryCodes.result");
   const [saved, setSaved] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   const copy = async () => {
     const copied = await copyText(codes.join("\n"));
-    setNotice(copied ? "Copied to the clipboard." : "Copying failed; select the codes and copy them manually.");
+    setNotice(copied ? t("copied") : t("copyFailed"));
   };
 
   return (
-    <div className="ui:flex ui:flex-col ui:gap-4" role="region" aria-label="New recovery codes">
+    <div className="ui:flex ui:flex-col ui:gap-4" role="region" aria-label={t("region")}>
       {warning && (
         <p role="alert" className="ui:text-sm ui:text-amber-900 ui:dark:text-amber-200">
           {warning}
         </p>
       )}
-      <p className="ui:text-sm ui:text-muted-foreground">
-        These codes are shown only now. Each one replaces an authenticator code once when signing in; you still
-        need your password.
-      </p>
+      <p className="ui:text-sm ui:text-muted-foreground">{t("intro")}</p>
       <Card className="ui:bg-muted">
         <CardContent>
           <ul className="ui:grid ui:list-none ui:grid-cols-1 ui:gap-2 ui:p-0 ui:font-mono ui:text-sm ui:sm:grid-cols-2">
@@ -76,16 +76,16 @@ export function RecoveryCodesResult({
       <div className="ui:flex ui:flex-wrap ui:gap-2">
         <Button type="button" size="sm" variant="outline" onClick={() => void copy()}>
           <CopyIcon aria-hidden="true" />
-          Copy all
+          {t("copyAll")}
         </Button>
         <Button
           type="button"
           size="sm"
           variant="outline"
-          onClick={() => downloadTextFile(DOWNLOAD_FILE_NAME, recoveryCodesFile(codes, issuedAt))}
+          onClick={() => downloadTextFile(DOWNLOAD_FILE_NAME, recoveryCodesFile(t, codes, issuedAt))}
         >
           <DownloadIcon aria-hidden="true" />
-          Download .txt
+          {t("download")}
         </Button>
       </div>
       {notice && (
@@ -96,12 +96,12 @@ export function RecoveryCodesResult({
       <div className="ui:flex ui:items-start ui:gap-3">
         <Checkbox id="recovery-codes-saved" checked={saved} onCheckedChange={(checked) => setSaved(checked === true)} />
         <Label htmlFor="recovery-codes-saved" className="ui:leading-relaxed">
-          I have saved these codes in a safe place.
+          {t("saved")}
         </Label>
       </div>
       <div className="ui:flex ui:justify-end">
         <Button type="button" size="sm" disabled={!saved} onClick={onAcknowledge}>
-          Done
+          {t("done")}
         </Button>
       </div>
     </div>

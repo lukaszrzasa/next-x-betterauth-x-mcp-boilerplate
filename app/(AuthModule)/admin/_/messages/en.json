@@ -1,0 +1,279 @@
+{
+  "breadcrumbs": {
+    "admin": "Admin",
+    "user": "User"
+  },
+  "badges": {
+    "rolesLabel": "Roles",
+    "role": {
+      "user": "User",
+      "moderator": "Moderator",
+      "admin": "Admin"
+    },
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "access": {
+      "active": "Active",
+      "temporarilyBanned": "Temporarily banned",
+      "permanentlyBanned": "Permanently banned"
+    },
+    "banEnds": "Ban ends {date}"
+  },
+  "list": {
+    "title": "Users",
+    "description": "Every account, including banned and staff accounts. Open a user to review or change it.",
+    "loading": "Loading users",
+    "loadError": {
+      "title": "Users could not be loaded",
+      "message": "Something went wrong while loading the user list. Nothing was changed. Try again in a moment."
+    },
+    "empty": "No users yet.",
+    "emptyFiltered": "No users match these filters.",
+    "clearFilters": "Clear filters",
+    "caption": "Users, with roles, email verification, access status and creation date",
+    "itemLabel": "users",
+    "search": {
+      "label": "Search users",
+      "placeholder": "Search by name, email or ID"
+    },
+    "filters": {
+      "role": "Role",
+      "verification": "Email verification",
+      "access": "Access",
+      "sort": "Sort by",
+      "allRoles": "All roles",
+      "anyVerification": "Any verification",
+      "anyAccess": "Any access",
+      "banned": "Banned"
+    },
+    "sort": {
+      "createdAtDesc": "Newest first",
+      "createdAtAsc": "Oldest first",
+      "nameAsc": "Name A–Z",
+      "nameDesc": "Name Z–A",
+      "emailAsc": "Email A–Z",
+      "emailDesc": "Email Z–A"
+    },
+    "columns": {
+      "user": "User",
+      "roles": "Roles",
+      "verification": "Email verification",
+      "access": "Access",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "viewUser": "View user",
+    "viewUserNamed": "View user {name}"
+  },
+  "detail": {
+    "loading": "Loading user",
+    "loadingText": "Loading user…",
+    "loadError": {
+      "title": "This user could not be loaded",
+      "message": "Something went wrong while loading the account. Nothing was changed. Try again in a moment."
+    },
+    "notFound": {
+      "title": "User not found",
+      "description": "There is no account with this ID. It may have been removed, or the link is incomplete."
+    },
+    "backToUsers": "Back to users",
+    "rootAccount": "Root account",
+    "ownership": {
+      "rootSelf": "This is the root account, and it is yours. Here you can change its name, send yourself a verification or password-reset email, and sign out of all devices. Its email address cannot be changed here and it can never be banned.",
+      "root": "This is the installation's root account. Only the root account itself can change it.",
+      "self": "This is your own account. Administrative changes to it are not available here."
+    },
+    "policy": {
+      "rootProtected": "Only the root account can change this.",
+      "rootSelfLimit": "Not available for the root account.",
+      "self": "Not available for your own account.",
+      "staffTarget": "Requires the manage-staff permission."
+    },
+    "retry": "Retry",
+    "retryVerb": "send again",
+    "yes": "Yes",
+    "no": "No",
+    "profile": {
+      "title": "Profile",
+      "description": "The account's display name and sign-in email address.",
+      "name": "Name",
+      "email": "Email address",
+      "editName": "Edit name",
+      "editEmail": "Edit email",
+      "editEmailDialog": "Edit email address",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "saveName": "Save name",
+      "saveEmail": "Save email",
+      "emailNote": "Changing the address marks it unverified, signs the user out everywhere and sends a verification email to the new address. Older password-reset links stop working.",
+      "emailConfirm": {
+        "title": "Change email address?",
+        "description": "{name}'s address will change from {from} to {to}. The new address starts unverified, every current session is signed out, and a verification email is sent to the new address. You will be asked to verify your identity.",
+        "confirm": "Change email",
+        "cancel": "Keep current address"
+      }
+    },
+    "security": {
+      "title": "Security",
+      "description": "Email verification, second factor and session controls.",
+      "emailVerification": "Email verification",
+      "sendVerification": "Send verification email",
+      "sending": "Sending…",
+      "twoFactorRequired": "Two-factor required",
+      "twoFactorEnabled": "Two-factor enabled",
+      "password": "Password",
+      "sendPasswordReset": "Send password-reset email",
+      "passwordNote": "A reset email lets the user choose a new password. Existing factors stay enabled.",
+      "sessions": "Sessions",
+      "signOutAll": "Sign out of all devices",
+      "signingOut": "Signing out…",
+      "sessionsNote": "Signing out ends every current session. The user can sign in again afterwards.",
+      "signOutConfirm": {
+        "title": "Sign this user out of all devices?",
+        "description": "Every current session of {name} ({email}) ends immediately. This does not ban the account; the user can sign in again.",
+        "descriptionSelf": "Every current session of {name} ({email}) ends immediately. This does not ban the account; the user can sign in again. This is your own account: you will be signed out as well.",
+        "confirm": "Sign out everywhere"
+      }
+    },
+    "access": {
+      "title": "Access",
+      "description": "Roles and whether the account may sign in.",
+      "roles": "Roles",
+      "effectiveAccess": "Effective access",
+      "banUser": "Ban user",
+      "updateBan": "Update ban",
+      "removeBan": "Remove ban",
+      "removing": "Removing…",
+      "banReason": "Ban reason",
+      "noReason": "No reason recorded",
+      "banEnds": "Ban ends",
+      "never": "Never (permanent)",
+      "removeBanConfirm": {
+        "title": "Remove the ban?",
+        "description": "{name} ({email}) will be able to sign in again. Nothing else changes: no session is created, the email stays as it is and roles are untouched.",
+        "confirm": "Remove ban",
+        "cancel": "Keep ban"
+      }
+    },
+    "metadata": {
+      "title": "Account details",
+      "userId": "User ID",
+      "copyUserId": "Copy user ID",
+      "created": "Created",
+      "lastUpdated": "Last updated",
+      "rootDesignation": "Root designation",
+      "rootYes": "Yes, the installation's root account",
+      "rootNo": "No"
+    },
+    "staffLog": {
+      "title": "Staff log",
+      "description": "What staff changed on this account, newest first.",
+      "widgetLabel": "Staff actions on this user"
+    },
+    "ban": {
+      "title": "Ban user",
+      "titleReplace": "Update ban",
+      "submit": "Ban user",
+      "submitReplace": "Replace ban",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "duration": "Duration",
+      "selectDuration": "Select a duration",
+      "selectDurationHint": "Select a duration to see what it means.",
+      "reason": "Reason",
+      "reasonPlaceholder": "Why this account is being banned (3–1,000 characters)",
+      "stateActive": "{who} will be signed out of every device and cannot sign in while the ban lasts. Their data is kept.",
+      "stateBanned": "{who} is currently {current}. The new ban replaces it and its period starts now, not at the end of the current one. Any current sessions are signed out.",
+      "bannedPermanently": "banned permanently",
+      "bannedUntil": "banned until {date}",
+      "durations": {
+        "24h": "24 hours",
+        "7d": "7 days",
+        "30d": "30 days",
+        "permanent": "Permanent"
+      },
+      "consequences": {
+        "24h": "The account cannot sign in for 24 hours from now.",
+        "7d": "The account cannot sign in for 7 days from now.",
+        "30d": "The account cannot sign in for 30 days from now.",
+        "permanent": "The account keeps its data but cannot sign in until an administrator removes the ban."
+      }
+    }
+  },
+  "feedback": {
+    "failureTitle": {
+      "RATE_LIMITED": "Please wait before sending another email",
+      "NOT_FOUND": "This user no longer exists"
+    },
+    "completed": {
+      "updateName": "Name updated",
+      "updateEmail": "Email updated. The new address must be verified; the user has been signed out.",
+      "sendVerification": "Verification email requested",
+      "sendPasswordReset": "Password-reset email requested",
+      "revokeSessions": "Signed out of all devices",
+      "ban": "Ban saved. The user has been signed out.",
+      "unban": "Ban removed",
+      "retryNameSessionRefresh": "Active sessions updated",
+      "retryEmailChangeEffects": "Sessions revoked and verification requested",
+      "retryBanSessions": "The user has been signed out",
+      "retryUnbanSessionRefresh": "Active sessions updated"
+    },
+    "unchanged": {
+      "updateName": "The name is already up to date",
+      "updateEmail": "The email address is already up to date",
+      "sendVerification": "This email address is already verified",
+      "unban": "This user is not banned",
+      "default": "No change"
+    },
+    "partialTitle": {
+      "updateName": "Name updated, but",
+      "updateEmail": "Email updated, but",
+      "ban": "Ban saved, but",
+      "unban": "Ban removed, but",
+      "revokeSessions": "Sign-out not confirmed:",
+      "default": "Not fully completed:"
+    },
+    "partial": "{prefix} {effects}.",
+    "effectJoiner": " and ",
+    "effect": {
+      "sessionRefresh": "the user's active sessions could not be updated",
+      "sessionRevocation": "sessions could not be fully revoked",
+      "verificationEmail": "the verification email could not be sent"
+    },
+    "effectRateLimited": "{label} (wait {seconds, plural, one {# second} other {# seconds}} and resend)",
+    "hintSignOut": "Retry to finish signing the user out.",
+    "hintRemaining": "The change itself is saved. Retry to finish the remaining steps.",
+    "unrecorded": "This action was not written to the staff log. Tell an administrator what you changed."
+  },
+  "errors": {
+    "denial": {
+      "permission": "You do not have permission to do this.",
+      "rootProtected": "The root account can only be changed by the root account.",
+      "rootSelfLimit": "This change is not available for the root account.",
+      "self": "You cannot administer your own account here.",
+      "staffTarget": "Changing a staff account requires the manage-staff permission.",
+      "alreadyVerified": "This email address is already verified.",
+      "notBanned": "This user is not banned."
+    },
+    "targetNotFound": "This user no longer exists.",
+    "emailInUse": "Another account already uses this email address.",
+    "lastAdmin": "This is the last active admin account; it cannot be banned.",
+    "rateLimited": "Please wait {seconds, plural, one {# second} other {# seconds}} before sending another email to this user.",
+    "notBannedNothingToFinish": "This user is not banned; there is nothing to finish.",
+    "stillBanned": "This user is still banned; there is nothing to refresh.",
+    "changeNotConfirmed": "The change could not be confirmed. Refresh the page before trying again."
+  },
+  "validation": {
+    "userIdRequired": "A user ID is required.",
+    "userIdInvalid": "Invalid user ID.",
+    "nameRequired": "Enter a name.",
+    "nameTooLong": "Use at most 100 characters.",
+    "nameControlCharacters": "Names cannot contain control characters.",
+    "emailTooLong": "Use at most 254 characters.",
+    "emailInvalid": "Enter a valid email address.",
+    "banDurationRequired": "Choose how long the ban lasts.",
+    "reasonTooShort": "Give a reason of at least 3 characters.",
+    "reasonTooLong": "Use at most 1,000 characters.",
+    "reasonControlCharacters": "The reason cannot contain control characters."
+  }
+}

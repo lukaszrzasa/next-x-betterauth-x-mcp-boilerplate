@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { authClient } from "@/src/lib/auth/client";
 import { authenticatorChallengeSchema } from "@/app/(AuthModule)/_/schema";
 import { unwrapAuthResult } from "@/app/(AuthModule)/_/utils/unwrapAuthResult";
@@ -9,6 +10,7 @@ import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 /** Completes sign-in with a six-digit code from the authenticator app. */
 export function useAuthenticatorChallengeForm() {
+  const t = useTranslations("auth.client");
   const redirect = useSessionRedirect();
   const { form, createSubmitHandler } = useSchemaForm(
     authenticatorChallengeSchema,
@@ -17,7 +19,7 @@ export function useAuthenticatorChallengeForm() {
   const onSubmit = createSubmitHandler(async ({ code }) => {
     unwrapAuthResult(
       await authClient.twoFactor.verifyTotp({ code, trustDevice: false }),
-      "Unable to verify this code.",
+      t("verifyCodeFailed"),
     );
     redirect(authRoutes.panel.href);
   });

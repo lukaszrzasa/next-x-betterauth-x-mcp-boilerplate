@@ -82,6 +82,7 @@ const { render, fireEvent, screen, cleanup, waitFor, act } =
   await import("@testing-library/react");
 const { AppShell, getShellMode } = await import("../../src/components/shell/AppShell");
 const { ViewerProvider } = await import("../../src/components/shell/ViewerProvider");
+const { IntlWrapper } = await import("../helpers/intl.jsx");
 
 const alice = { name: "Alice Admin", email: "alice@example.com", image: null, role: "admin" };
 const mod = { ...alice, name: "Mo Derator", role: "moderator" };
@@ -102,9 +103,11 @@ function renderShell({
 } = {}) {
   pathname = path;
   const tree = () => (
-    <ViewerProvider viewer={user}>
-      <AppShell defaultSidebarOpen={defaultSidebarOpen}>{children}</AppShell>
-    </ViewerProvider>
+    <IntlWrapper>
+      <ViewerProvider viewer={user}>
+        <AppShell defaultSidebarOpen={defaultSidebarOpen}>{children}</AppShell>
+      </ViewerProvider>
+    </IntlWrapper>
   );
   const view = render(tree());
 

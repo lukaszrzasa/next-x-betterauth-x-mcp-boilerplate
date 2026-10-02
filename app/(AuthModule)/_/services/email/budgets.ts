@@ -11,13 +11,13 @@ export async function consumeEmailInitiation(ctx: AuthedCtx): Promise<void> {
   const { limit, windowSeconds } = EMAIL_CHANGE_POLICY.initiations;
   const budget = await consumeBudget(settingsThrottleKeys.emailInitiations(ctx.user.id), limit, windowSeconds);
   if (!budget.allowed) {
-    throw rateLimitedError(budget.retryAfterSeconds, "Too many email change requests. Try again later.");
+    throw rateLimitedError(budget.retryAfterSeconds, { key: "auth.errors.tooManyEmailRequests" });
   }
 }
 
 async function charge(key: string, window: FixedWindow): Promise<void> {
   const budget = await consumeBudget(key, window.limit, window.windowSeconds);
-  if (!budget.allowed) throw rateLimitedError(budget.retryAfterSeconds, "Too many attempts. Try again later.");
+  if (!budget.allowed) throw rateLimitedError(budget.retryAfterSeconds, { key: "auth.errors.tooManyAttempts" });
 }
 
 /** Charges a submit to its request, or, for a token that matches nothing, to the client IP. */

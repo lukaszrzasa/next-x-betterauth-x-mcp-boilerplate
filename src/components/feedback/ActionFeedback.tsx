@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangleIcon, CheckCircle2Icon, InfoIcon, XCircleIcon, XIcon, type LucideIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Countdown } from "@/src/components/feedback/Countdown";
 import { Alert, AlertDescription, AlertTitle } from "@/src/components/ui/alert";
 import { Button } from "@/src/components/ui/button";
@@ -48,6 +49,7 @@ function FeedbackDetails({
   recovery: FeedbackRecovery | undefined;
   retryVerb: string;
 }) {
+  const t = useTranslations("common");
   const { description, retryAfterSeconds } = feedback;
   if (description === undefined && retryAfterSeconds === undefined && recovery === undefined) return null;
 
@@ -59,14 +61,18 @@ function FeedbackDetails({
           <Countdown
             key={`${feedback.title}:${retryAfterSeconds}`}
             seconds={retryAfterSeconds}
-            render={(remaining) => (remaining > 0 ? `You can ${retryVerb} in ${remaining}s.` : `You can ${retryVerb} now.`)}
+            render={(remaining) =>
+              remaining > 0
+                ? t("feedback.retryIn", { verb: retryVerb, seconds: remaining })
+                : t("feedback.retryNow", { verb: retryVerb })
+            }
           />
         </p>
       )}
       {recovery && (
         <div>
           <Button type="button" size="sm" variant="outline" disabled={recovery.pending} onClick={recovery.onClick}>
-            {recovery.pending ? "Working…" : recovery.label}
+            {recovery.pending ? t("actions.working") : recovery.label}
           </Button>
         </div>
       )}
@@ -83,15 +89,16 @@ export function ActionFeedback({
   feedback,
   onDismiss,
   recovery,
-  retryVerb = "try again",
+  retryVerb,
 }: {
   feedback: ActionFeedbackMessage | null;
   onDismiss: () => void;
   /** The handler for the feedback's recovery, when the section supports it. */
   recovery?: FeedbackRecovery;
-  /** Completes "You can … in 42s." for a rate limit. */
+  /** Completes "You can … in 42s." for a rate limit; already translated. Defaults to "try again". */
   retryVerb?: string;
 }) {
+  const t = useTranslations("common");
   if (!feedback) return null;
   const tone = TONES[feedback.tone];
   const Icon = tone.icon;
@@ -108,13 +115,13 @@ export function ActionFeedback({
       <FeedbackDetails
         feedback={feedback}
         recovery={feedback.recovery ? recovery : undefined}
-        retryVerb={retryVerb}
+        retryVerb={retryVerb ?? t("feedback.tryAgainVerb")}
       />
       <Button
         type="button"
         variant="ghost"
         size="icon-xs"
-        aria-label="Dismiss"
+        aria-label={t("actions.dismiss")}
         className="ui:absolute ui:top-2 ui:right-2 ui:text-current"
         onClick={onDismiss}
       >

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   LayoutDashboardIcon,
   MailIcon,
@@ -39,6 +40,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const { viewer } = useViewer();
   const { state, setOpenMobile } = useSidebar();
+  const t = useTranslations();
   const groups = visibleNavigation(viewer);
 
   // History navigation (back/forward) changes the path without a link click.
@@ -55,23 +57,24 @@ export function AdminSidebar() {
       <SidebarContent>
         {groups.map((group) => (
           <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupLabel>{t(group.label)}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
                   const Icon = ICONS[item.icon];
                   const active = isRouteActive(item, pathname);
+                  const label = t(item.label);
 
                   return (
                     <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
+                      <SidebarMenuButton asChild isActive={active} tooltip={label}>
                         <Link
                           href={item.href}
                           aria-current={active ? "page" : undefined}
                           onClick={() => setOpenMobile(false)}
                         >
                           <Icon />
-                          <span>{item.label}</span>
+                          <span>{label}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

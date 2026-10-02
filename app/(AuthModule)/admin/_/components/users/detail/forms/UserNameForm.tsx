@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { FormError } from "@/src/components/forms/FormError";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { Button } from "@/src/components/ui/button";
@@ -17,16 +18,17 @@ export function UserNameForm({
   onCancel: () => void;
   onSettled: (feedback: Feedback) => void;
 }) {
+  const t = useTranslations("authAdmin.detail.profile");
   const { form, onSubmit, reset, unchanged, pending } = useUserNameForm({ user, onSettled });
 
   return (
-    <form noValidate aria-label="Edit name" onSubmit={onSubmit} className="ui:flex ui:flex-col ui:gap-4">
+    <form noValidate aria-label={t("editName")} onSubmit={onSubmit} className="ui:flex ui:flex-col ui:gap-4">
       <FieldGroup className="ui:gap-4">
         <FormError message={form.formState.errors.root?.message} />
         <FormInput
           control={form.control}
           name="name"
-          label="Name"
+          label={t("name")}
           autoComplete="off"
           maxLength={100}
           autoFocus
@@ -44,10 +46,10 @@ export function UserNameForm({
             onCancel();
           }}
         >
-          Cancel
+          {t("cancel")}
         </Button>
         <Button type="submit" size="sm" disabled={unchanged || pending}>
-          {pending ? "Saving…" : "Save name"}
+          {pending ? t("saving") : t("saveName")}
         </Button>
       </div>
     </form>

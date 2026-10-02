@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { DataTablePagination } from "@/src/components/data-table/DataTablePagination";
 import { Button } from "@/src/components/ui/button";
 import { Skeleton } from "@/src/components/ui/skeleton";
@@ -27,7 +28,7 @@ export type StaffLogWidgetProps = {
   action?: string | readonly string[];
   /** Changes when the host knows the log may have grown; the widget reads again. */
   revision?: unknown;
-  /** Names the list for assistive technology, e.g. "Staff actions on this user". */
+  /** Names the list for assistive technology, e.g. "Staff actions on this user"; already translated. */
   label?: string;
   className?: string;
 };
@@ -55,9 +56,11 @@ function StaffLogWidgetContent({
   actorId = "",
   action,
   revision,
-  label = "Staff actions",
+  label: givenLabel,
   className,
 }: StaffLogWidgetProps) {
+  const t = useTranslations("logsAdmin.staffLogs");
+  const label = givenLabel ?? t("widget.label");
   const [q, setQ] = useState("");
   const [appliedQ, setAppliedQ] = useState("");
   const [page, setPage] = useState(1);
@@ -101,8 +104,8 @@ function StaffLogWidgetContent({
   return (
     <div className={cn("ui:flex ui:flex-col ui:gap-4", className)} aria-busy={loading || undefined}>
       <LogSearchField
-        label={`Search ${label.toLowerCase()}`}
-        placeholder="Search what was done"
+        label={t("widget.search", { label: label.toLowerCase() })}
+        placeholder={t("widget.searchPlaceholder")}
         value={q}
         onChange={onSearchChange}
         onSubmit={() => applySearch(q)}
@@ -111,14 +114,14 @@ function StaffLogWidgetContent({
       <Entries
         state={state}
         label={label}
-        emptyText={appliedQ ? "No staff actions match this search." : "No staff actions have been logged here."}
+        emptyText={appliedQ ? t("widget.emptySearch") : t("widget.emptyNever")}
       />
 
       {shown !== null && shown.total > 0 && (
         <DataTablePagination
           pagination={{ pageIndex: shown.page - 1, pageSize: shown.pageSize }}
           rowCount={shown.total}
-          itemLabel="staff actions"
+          itemLabel={t("itemLabel")}
           pageSizeOptions={WIDGET_PAGE_SIZES}
           pending={loading}
           onPaginationChange={(next) => {
@@ -133,20 +136,22 @@ function StaffLogWidgetContent({
 }
 
 function Entries({ state, label, emptyText }: { state: StaffLogsState; label: string; emptyText: string }) {
+  const t = useTranslations("logsAdmin.staffLogs");
+  const tActions = useTranslations("common.actions");
   if (state.status === "refused") return null;
   if (state.status === "failed") {
     return (
       <div role="alert" className="ui:flex ui:flex-col ui:items-start ui:gap-2 ui:text-sm">
-        <p className="ui:text-muted-foreground">The staff log could not be loaded.</p>
+        <p className="ui:text-muted-foreground">{t("widget.failed")}</p>
         <Button type="button" variant="outline" size="sm" onClick={state.retry}>
-          Retry
+          {tActions("retry")}
         </Button>
       </div>
     );
   }
   if (state.page === null) {
     return (
-      <div className="ui:flex ui:flex-col ui:gap-3" role="status" aria-label="Loading the staff log">
+      <div className="ui:flex ui:flex-col ui:gap-3" role="status" aria-label={t("widget.loading")}>
         <Skeleton className="ui:h-10 ui:w-full" />
         <Skeleton className="ui:h-10 ui:w-full" />
         <Skeleton className="ui:h-10 ui:w-2/3" />

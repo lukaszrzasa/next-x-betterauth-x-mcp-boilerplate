@@ -39,7 +39,7 @@ export const beginEmailChangeOperation = defineAction({
       const owner = await requireEmailOwner(ctx);
       if (!owner.emailVerified) {
         throw new ActionError("EMAIL_VERIFICATION_REQUIRED", {
-          message: "Your current address is not verified; use Correct email instead.",
+          message: { key: "auth.errors.useCorrectEmail" },
         });
       }
       await assertSecurityStateCurrent(ctx.user.id, securityVersionOf(ctx.user));

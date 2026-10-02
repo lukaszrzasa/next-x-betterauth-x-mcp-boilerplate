@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/src/components/ui/button";
 import { copyText } from "@/src/lib/browser/clipboard";
 
@@ -28,6 +29,7 @@ export function CopyButton({
   size,
   ...props
 }: CopyButtonProps) {
+  const t = useTranslations("common.copy");
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -38,7 +40,7 @@ export function CopyButton({
     [],
   );
 
-  const status = { idle: label, copied: "Copied", failed: "Copy failed; select the text instead" }[state];
+  const status = { idle: label, copied: t("copied"), failed: t("failed") }[state];
 
   return (
     <Button

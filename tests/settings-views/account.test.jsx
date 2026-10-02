@@ -58,7 +58,10 @@ const actions = {
 mock.module("../../app/(AuthModule)/_/actions.ts", () => actions);
 
 const React = await import("react");
-const { render, fireEvent, screen, cleanup, waitFor, within, act } = await import("@testing-library/react");
+const { render: baseRender, fireEvent, screen, cleanup, waitFor, within, act } = await import("@testing-library/react");
+const { withIntl } = await import("../helpers/intl.jsx");
+/** Every section reads the English catalog through the provider, as in the app. */
+const render = (ui, options) => baseRender(ui, { wrapper: withIntl(), ...options });
 const { ActionProvider } = await import("../../src/lib/actions");
 const { TooltipProvider } = await import("../../src/components/ui/tooltip");
 const { ConfirmDialogRoot } = await import("../../src/components/feedback/ConfirmDialog");
@@ -215,7 +218,7 @@ test("email change: read-only current address, password only, consequence dialog
 
   renderAccount(accountOf({ pendingEmail: { state: "awaiting_new_address", id: "req-1", kind: "change", originalEmail: "ada@example.com", expiresAt: "2026-09-27T12:00:00.000Z" } }));
   expect(screen.getByText("Current address confirmed")).toBeTruthy();
-  expect(screen.getByText("27 Sep 2026, 12:00 UTC")).toBeTruthy();
+  expect(screen.getByText("Sep 27, 2026 at 12:00 PM UTC")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Enter new address" }));
   fireEvent.change(screen.getByLabelText("New email address"), { target: { value: "New@Example.com" } });
   await act(async () => {

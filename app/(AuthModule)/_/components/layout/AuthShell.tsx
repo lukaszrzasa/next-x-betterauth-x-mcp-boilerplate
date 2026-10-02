@@ -1,9 +1,11 @@
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { AppBrand } from "@/src/components/shell/AppBrand";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { appName } from "@/src/lib/config";
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("auth.layout");
   return (
     <main className="app-ui ui:grid ui:min-h-dvh ui:bg-background ui:md:grid-cols-[minmax(350px,48%)_1fr] ui:lg:grid-cols-[minmax(420px,40%)_1fr]">
       <section className="ui:flex ui:min-h-dvh ui:min-w-0 ui:flex-col ui:px-6 ui:py-7 ui:md:p-8 ui:lg:px-14 ui:lg:pt-10">
@@ -15,11 +17,11 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           <span>
             © {new Date().getFullYear()} {appName}
           </span>
-          <span>Clone it, rename it, ship it.</span>
+          <span>{t("tagline")}</span>
         </footer>
       </section>
       <aside
-        aria-label="Decorative placeholder"
+        aria-label={t("decorativeLabel")}
         className="ui:relative ui:my-3.5 ui:mr-3.5 ui:hidden ui:min-h-[600px] ui:overflow-hidden ui:rounded-xl ui:bg-muted ui:md:block"
       >
         <Image
@@ -31,12 +33,12 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         />
         <div className="ui:absolute ui:right-10 ui:bottom-14 ui:left-8 ui:text-white ui:lg:left-12">
           <p className="ui:mb-5 ui:text-[10px] ui:tracking-[2px] ui:uppercase ui:opacity-80">
-            Your next project starts here
+            {t("heroKicker")}
           </p>
           <h2 className="ui:max-w-lg ui:text-[clamp(30px,3.6vw,54px)] ui:leading-tight ui:font-normal ui:tracking-tighter">
-            Every great product
+            {t("heroLine1")}
             <br />
-            starts with a first commit.
+            {t("heroLine2")}
           </h2>
         </div>
       </aside>

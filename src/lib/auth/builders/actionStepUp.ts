@@ -30,7 +30,7 @@ export async function ensureStepUp(
   const methods = availableMethods(ctx.user);
   if (methods.length === 0) {
     throw new ActionError("TWO_FACTOR_ENROLLMENT_REQUIRED", {
-      message: "Set up two-factor authentication to perform this action.",
+      message: { key: "errors.auth.enrollmentRequired" },
     });
   }
 

@@ -20,11 +20,11 @@ import { pendingOutcome } from "./pendingRequest";
 /** Only a change whose current mailbox has agreed may choose its destination, and only once. */
 function assertAwaitingNewAddress(request: EmailChangeRequestRow): void {
   if (request.state === "awaiting_new_address" && request.currentConfirmedAt !== null) return;
-  const message =
+  const key =
     request.state === "awaiting_new"
-      ? "The new address is already chosen. Cancel and start again to change it."
-      : "Confirm your current address first.";
-  throw lifecycleError("CONFLICT", "INACTIVE", message);
+      ? "auth.errors.newAddressAlreadyChosen"
+      : "auth.errors.confirmCurrentAddressFirst";
+  throw lifecycleError("CONFLICT", "INACTIVE", { key });
 }
 
 /**

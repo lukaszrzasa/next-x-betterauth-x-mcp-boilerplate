@@ -641,9 +641,60 @@ describe("action pipeline", () => {
       ok: false,
       reason: "INTERNAL",
       status: 500,
-      message: "INTERNAL",
+      // The generic sentence for the reason, never the developer message.
+      message: "Something went wrong.",
     });
     expect(logs.some((entry) => entry.outcome === "failed")).toBe(true);
+  });
+
+  test("a refusal's descriptor is rendered in the request's locale; a developer message never reaches the client", async () => {
+    const run = action({
+      handler: () => {
+        throw new ActionError("RATE_LIMITED", {
+          message: { key: "errors.auth.emailCodeCooldown", values: { seconds: 30 } },
+          data: { retryAfterSeconds: 30 },
+        });
+      },
+    });
+    const english = await toServerAction(run)(undefined);
+    expect(english).toMatchObject({ ok: false, reason: "RATE_LIMITED", message: "Wait 30 seconds before requesting another email code." });
+
+    requestHeaders.set("x-locale", "pl");
+    try {
+      const polish = await toServerAction(run)(undefined);
+      expect(polish).toMatchObject({ message: "Odczekaj 30 sekund przed wysłaniem kolejnego kodu e-mailem." });
+    } finally {
+      requestHeaders.delete("x-locale");
+    }
+
+    const developerOnly = action({
+      handler: () => {
+        throw new ActionError("FORBIDDEN", { message: "internal detail for the log" });
+      },
+    });
+    const result = await toServerAction(developerOnly)(undefined);
+    expect(result).toMatchObject({ ok: false, reason: "FORBIDDEN", message: "You are not allowed to do this." });
+  });
+
+  test("validation issues are reported in the request's locale, custom messages through the catalog", async () => {
+    const run = action({
+      schema: z.object({
+        name: z.string().min(2, "errors.auth.notFound"),
+        age: z.number(),
+      }),
+      handler: () => "unreachable",
+    });
+    requestHeaders.set("x-locale", "pl");
+    try {
+      const result = await toServerAction(run)({ name: "x", age: "old" });
+      expect(result.ok).toBe(false);
+      expect(result.data).toEqual([
+        { path: "name", message: "Nie znaleziono.", code: "too_small" },
+        { path: "age", message: expect.stringContaining("Nieprawidłowe dane"), code: "invalid_type" },
+      ]);
+    } finally {
+      requestHeaders.delete("x-locale");
+    }
   });
 
   test("handlers and step-up run inside their operation's context; nothing leaks outside", async () => {

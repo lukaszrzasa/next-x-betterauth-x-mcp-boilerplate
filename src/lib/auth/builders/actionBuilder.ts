@@ -5,6 +5,7 @@ import { unstable_rethrow } from "next/navigation";
 
 import { ActionError } from "@/src/lib/auth/errors";
 import { describeErrorSafely } from "@/src/lib/errorMessage";
+import { requestLocale } from "@/src/lib/i18n/resolveLocale";
 import { resolveAuthoritativeSession } from "@/src/lib/auth/sessionAuthority";
 import {
   STEP_UP_CONDITIONS,
@@ -79,13 +80,15 @@ export function defineAction<TInput, TOutput, TRawInput>(
 
     try {
       const resolved = await resolveSession(config, meta.headers);
+      const locale = requestLocale(meta.headers);
 
       // Reject bad input before prompting for 2FA or consuming a one-time grant.
-      const input = await parseInput(config.schema, rawInput);
+      const input = await parseInput(config.schema, rawInput, locale);
       const baseCtx = {
         requestId,
         ip: clientIp(meta.headers),
         userAgent: meta.headers.get("user-agent"),
+        locale,
         // A copy: the context must not observe later mutation of the request headers.
         requestHeaders: new Headers(meta.headers),
         log,
@@ -136,7 +139,7 @@ export function defineAction<TInput, TOutput, TRawInput>(
           // holds: refuse the obsolete proof rather than turning it into a
           // grant. A fresh submission without it proceeds normally.
           throw new ActionError("INVALID_INPUT", {
-            message: "Verification proof is not expected for this account; submit again without it.",
+            message: { key: "errors.auth.staleProof" },
           });
         }
         const verifiedCtx = authedCtx;
@@ -238,5 +241,5 @@ function checkEntryPoint(meta: ActionMeta, mcpAllowed: boolean): void {
   )
     return;
   if (meta.entryPoint === "mcp" && mcpAllowed) return;
-  throw new ActionError("FORBIDDEN", { message: "Operation unavailable through this entry point." });
+  throw new ActionError("FORBIDDEN", { message: { key: "errors.auth.entryPointUnavailable" } });
 }

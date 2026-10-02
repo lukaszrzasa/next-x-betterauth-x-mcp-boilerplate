@@ -32,8 +32,10 @@ mock.module("better-auth/cookies", () => ({ getCookieCache, getSessionCookie }))
 
 const { proxy } = await import("../../proxy");
 
-const request = (path, method = "GET") =>
-  new NextRequest(`http://localhost:3000${path}`, { method });
+const request = (path, method = "GET", headers = {}) =>
+  new NextRequest(`http://localhost:3000${path}`, { method, headers });
+/** The request header the app receives, as `NextResponse.next({ request })` forwards it. */
+const forwardedLocale = (response) => response.headers.get("x-middleware-request-x-locale");
 const location = (response) => {
   const value = response.headers.get("location");
   return value ? new URL(value).pathname : null;
@@ -86,4 +88,23 @@ test("the email-change confirmation page stays reachable while enrollment is req
   const response = await proxy(request("/auth/email-change/confirm?token=abc"));
   expect(response.headers.get("x-middleware-next")).toBe("1");
   expect(location(await proxy(request("/settings/account")))).toBe("/auth/enroll");
+});
+
+test("the locale is negotiated once here and handed to the app as a request header", async () => {
+  expect(forwardedLocale(await proxy(request("/panel")))).toBe("en");
+  expect(forwardedLocale(await proxy(request("/panel", "GET", { "accept-language": "pl-PL,pl;q=0.9,en;q=0.5" })))).toBe("pl");
+  expect(forwardedLocale(await proxy(request("/panel", "GET", { "accept-language": "de-DE,de;q=0.9" })))).toBe("en");
+  // An explicit cookie wins over the browser's preference.
+  expect(
+    forwardedLocale(await proxy(request("/panel", "GET", { "accept-language": "en-US", cookie: "locale=pl" }))),
+  ).toBe("pl");
+  // Also on the setup page, which skips every other check.
+  expect(forwardedLocale(await proxy(request("/auth/setup", "GET", { "accept-language": "pl" })))).toBe("pl");
+});
+
+test("a client-supplied locale header is overwritten, never trusted", async () => {
+  const response = await proxy(request("/panel", "GET", { "x-locale": "pl", "accept-language": "en" }));
+  expect(forwardedLocale(response)).toBe("en");
+  const spoofed = await proxy(request("/panel", "GET", { "x-locale": "fr" }));
+  expect(forwardedLocale(spoofed)).toBe("en");
 });

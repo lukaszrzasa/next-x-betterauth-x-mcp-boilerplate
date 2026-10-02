@@ -1,6 +1,8 @@
 import "server-only";
 
 import { ActionError } from "@/src/lib/auth/errors";
+import { requestLocale } from "@/src/lib/i18n/resolveLocale";
+import { localizeActionError } from "./localize";
 import { optionalData } from "./response";
 
 import type { Action, ActionMeta } from "@/src/lib/auth/builders/actionTypes";
@@ -30,7 +32,7 @@ export function toRouteHandler<TInput, TOutput>(
         {
           error: {
             reason: error.reason,
-            message: error.message,
+            message: localizeActionError(error, requestLocale(request.headers)),
             ...optionalData(error.data),
           },
         },
@@ -49,7 +51,7 @@ function checkOrigin(request: Request): void {
   // Do not trust forwarded host headers or accept missing/opaque origins.
   if (request.headers.get("origin") !== new URL(request.url).origin) {
     throw new ActionError("FORBIDDEN", {
-      message: "Request origin is not allowed.",
+      message: { key: "errors.auth.originNotAllowed" },
     });
   }
 }
@@ -70,7 +72,7 @@ async function readRequest(request: Request) {
     body = JSON.parse(text);
   } catch {
     throw new ActionError("INVALID_INPUT", {
-      message: "Request body must be valid JSON.",
+      message: { key: "errors.auth.bodyNotJson" },
     });
   }
 

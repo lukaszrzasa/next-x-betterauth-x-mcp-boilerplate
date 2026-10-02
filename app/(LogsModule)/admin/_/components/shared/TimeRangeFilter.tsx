@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/src/components/ui/native-select";
@@ -14,25 +15,20 @@ import {
 
 export type TimeRangeValue = { range: LogRange; from: string; to: string };
 
-function hintFor(reversed: boolean, outOfBounds: boolean): string {
-  if (outOfBounds) return `Choose dates between ${CALENDAR_DATE_MIN} and ${CALENDAR_DATE_MAX}.`;
-  if (reversed) return "The start date must not be after the end date.";
-  return "Choose both dates; the range applies once both are set.";
+/** The `logsAdmin.shared` translator. */
+type SharedTranslator = ReturnType<typeof useTranslations<"logsAdmin.shared">>;
+
+function hintFor(t: SharedTranslator, reversed: boolean, outOfBounds: boolean): string {
+  if (outOfBounds) return t("period.hint.bounds", { min: CALENDAR_DATE_MIN, max: CALENDAR_DATE_MAX });
+  if (reversed) return t("period.hint.reversed");
+  return t("period.hint.both");
 }
 
-export const RANGE_LABELS: Record<LogRange, string> = {
-  "24h": "Last 24 hours",
-  "7d": "Last 7 days",
-  "30d": "Last 30 days",
-  "90d": "Last 90 days",
-  all: "All time",
-  custom: "Custom dates (UTC)",
-};
-
 /** "in the last 30 days", "between 2026-09-01 and 2026-09-27 (UTC)"; never used for all time. */
-export function describePeriod(value: TimeRangeValue): string {
-  if (value.range === "custom") return `between ${value.from} and ${value.to} (UTC)`;
-  return `in the ${RANGE_LABELS[value.range].toLowerCase()}`;
+export function describePeriod(value: TimeRangeValue, t: SharedTranslator): string {
+  if (value.range === "custom") return t("period.in.custom", { from: value.from, to: value.to });
+  if (value.range === "all") return "";
+  return t(`period.in.${value.range}`);
 }
 
 /**
@@ -50,6 +46,7 @@ export function TimeRangeFilter({
   pending: boolean;
   onChange: (next: TimeRangeValue) => void;
 }) {
+  const t = useTranslations("logsAdmin.shared");
   const ids = { range: useId(), from: useId(), to: useId(), hint: useId() };
   const [draft, setDraft] = useState(value);
   const [shown, setShown] = useState(value);
@@ -74,7 +71,7 @@ export function TimeRangeFilter({
     <>
       <div className="ui:flex ui:flex-col ui:gap-1.5">
         <Label htmlFor={ids.range} className="ui:text-xs ui:text-muted-foreground">
-          Period
+          {t("period.label")}
         </Label>
         <NativeSelect
           id={ids.range}
@@ -92,7 +89,7 @@ export function TimeRangeFilter({
         >
           {LOG_RANGES.map((range) => (
             <NativeSelectOption key={range} value={range}>
-              {RANGE_LABELS[range]}
+              {t(`period.ranges.${range}`)}
             </NativeSelectOption>
           ))}
         </NativeSelect>
@@ -101,7 +98,7 @@ export function TimeRangeFilter({
         <>
           <div className="ui:flex ui:flex-col ui:gap-1.5">
             <Label htmlFor={ids.from} className="ui:text-xs ui:text-muted-foreground">
-              From (UTC)
+              {t("period.from")}
             </Label>
             <Input
               id={ids.from}
@@ -118,7 +115,7 @@ export function TimeRangeFilter({
           </div>
           <div className="ui:flex ui:flex-col ui:gap-1.5">
             <Label htmlFor={ids.to} className="ui:text-xs ui:text-muted-foreground">
-              To (UTC, included)
+              {t("period.to")}
             </Label>
             <Input
               id={ids.to}
@@ -134,7 +131,7 @@ export function TimeRangeFilter({
             />
           </div>
           <p id={ids.hint} className="ui:basis-full ui:text-xs ui:text-muted-foreground" aria-live="polite">
-            {hintFor(reversed, outOfBounds)}
+            {hintFor(t, reversed, outOfBounds)}
           </p>
         </>
       )}

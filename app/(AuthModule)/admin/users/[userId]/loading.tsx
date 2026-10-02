@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import { AppBreadcrumbs } from "@/src/components/shell/AppBreadcrumbs";
 import { appRoutes } from "@/src/lib/app/routes";
@@ -23,17 +24,18 @@ function SectionSkeleton({ rows }: { rows: number }) {
   );
 }
 
-export default function UserLoading() {
+export default async function UserLoading() {
+  const [t, nav] = await Promise.all([getTranslations("authAdmin"), getTranslations()]);
   return (
     <>
       <AppBreadcrumbs
         items={[
-          { label: "Admin", href: appRoutes.dashboard.href },
-          { label: authRoutes.adminUsers.label, href: authRoutes.adminUsers.href },
-          { label: "User" },
+          { label: t("breadcrumbs.admin"), href: appRoutes.dashboard.href },
+          { label: nav(authRoutes.adminUsers.label), href: authRoutes.adminUsers.href },
+          { label: t("breadcrumbs.user") },
         ]}
       />
-      <div role="status" aria-label="Loading user" className="ui:flex ui:w-full ui:max-w-[80rem] ui:flex-col ui:gap-6">
+      <div role="status" aria-label={t("detail.loading")} className="ui:flex ui:w-full ui:max-w-[80rem] ui:flex-col ui:gap-6">
         <div className="ui:flex ui:items-start ui:gap-4">
           <Skeleton className="ui:size-14 ui:rounded-full" />
           <div className="ui:flex ui:flex-col ui:gap-2">
@@ -56,7 +58,7 @@ export default function UserLoading() {
             <SectionSkeleton rows={4} />
           </div>
         </div>
-        <span className="ui:sr-only">Loading user…</span>
+        <span className="ui:sr-only">{t("detail.loadingText")}</span>
       </div>
     </>
   );

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Skeleton } from "@/src/components/ui/skeleton";
 
 function SectionSkeleton({ rows }: { rows: number }) {
@@ -22,14 +23,15 @@ function SectionSkeleton({ rows }: { rows: number }) {
 
 /** The Account page's own skeleton; the settings navigation above it stays mounted. */
 export default function AccountLoading() {
+  const t = useTranslations("auth.settingsPages");
   return (
-    <div role="status" aria-label="Loading account" className="ui:flex ui:w-full ui:flex-col ui:gap-6">
+    <div role="status" aria-label={t("loadingAccount")} className="ui:flex ui:w-full ui:flex-col ui:gap-6">
       <SectionSkeleton rows={1} />
       <SectionSkeleton rows={1} />
       <SectionSkeleton rows={1} />
       <SectionSkeleton rows={1} />
       <SectionSkeleton rows={2} />
-      <span className="ui:sr-only">Loading account…</span>
+      <span className="ui:sr-only">{t("loadingAccountText")}</span>
     </div>
   );
 }

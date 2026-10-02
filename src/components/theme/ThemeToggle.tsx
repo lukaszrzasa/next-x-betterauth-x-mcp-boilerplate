@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import { Button } from "@/src/components/ui/button";
 import {
   DropdownMenu,
@@ -12,11 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/src/components/ui/dropdown-menu";
 
-const THEMES = [
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-  { value: "system", label: "System" },
-] as const;
+const THEMES = ["light", "dark", "system"] as const;
 
 const subscribe = () => () => {};
 
@@ -32,6 +29,7 @@ function useMounted() {
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const mounted = useMounted();
+  const t = useTranslations("common.theme");
 
   return (
     <DropdownMenu>
@@ -39,7 +37,7 @@ export function ThemeToggle() {
         <Button variant="ghost" size="icon" className="ui:size-8">
           {/* The trigger keeps a fixed size before mount; the icon follows the resolved theme. */}
           {mounted && resolvedTheme === "dark" ? <MoonIcon /> : <SunIcon />}
-          <span className="ui:sr-only">Change theme</span>
+          <span className="ui:sr-only">{t("change")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -48,8 +46,8 @@ export function ThemeToggle() {
           onValueChange={setTheme}
         >
           {THEMES.map((option) => (
-            <DropdownMenuRadioItem key={option.value} value={option.value}>
-              {option.label}
+            <DropdownMenuRadioItem key={option} value={option}>
+              {t(option)}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>

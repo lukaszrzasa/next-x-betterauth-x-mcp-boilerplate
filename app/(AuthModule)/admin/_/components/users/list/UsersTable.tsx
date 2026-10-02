@@ -2,6 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { DataTable } from "@/src/components/data-table/DataTable";
 import type { TablePageState, TableSort } from "@/src/components/data-table/types";
 import { USER_PAGE_SIZES, type UserPageSize, type UserSort } from "@/app/(AuthModule)/admin/_/schema";
@@ -39,6 +40,7 @@ export function UsersTable({
   emptyState: ReactNode;
   onQueryChange: (next: UsersQuery) => void;
 }) {
+  const t = useTranslations("authAdmin.list");
   const { query } = page;
 
   const onPaginationChange = (next: TablePageState) => {
@@ -71,8 +73,8 @@ export function UsersTable({
       pending={pending}
       toolbar={toolbar}
       emptyState={emptyState}
-      caption="Users, with roles, email verification, access status and creation date"
-      itemLabel="users"
+      caption={t("caption")}
+      itemLabel={t("itemLabel")}
       pageSizeOptions={USER_PAGE_SIZES}
     />
   );

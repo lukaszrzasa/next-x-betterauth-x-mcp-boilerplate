@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/src/components/ui/button";
 import { useTableNavigation } from "@/src/lib/data-table/useTableNavigation";
 import { useViewer } from "@/src/components/shell/ViewerProvider";
@@ -21,6 +22,7 @@ import { UsersTable } from "./UsersTable";
  * `page.query`, so Back/Forward and a canonical redirect restore them.
  */
 export function UsersList({ page }: { page: UsersPage }) {
+  const t = useTranslations("authAdmin.list");
   const { can } = useViewer();
   const canViewDetail = can(authRoutes.adminUser.access);
   const { navigate, navigateDebounced, flush, pending } = useTableNavigation({
@@ -29,8 +31,8 @@ export function UsersList({ page }: { page: UsersPage }) {
     serialize: serializeUsersQuery,
   });
   const columns = useMemo(
-    () => usersColumns({ canViewDetail, listQuery: page.query }),
-    [canViewDetail, page.query],
+    () => usersColumns({ canViewDetail, listQuery: page.query, t }),
+    [canViewDetail, page.query, t],
   );
   const filtered = hasUsersFilters(page.query);
 
@@ -52,7 +54,7 @@ export function UsersList({ page }: { page: UsersPage }) {
       emptyState={
         <div className="ui:flex ui:flex-col ui:items-center ui:gap-3">
           <p className="ui:text-muted-foreground">
-            {filtered ? "No users match these filters." : "No users yet."}
+            {filtered ? t("emptyFiltered") : t("empty")}
           </p>
           {filtered && (
             <Button
@@ -62,7 +64,7 @@ export function UsersList({ page }: { page: UsersPage }) {
               disabled={pending}
               onClick={() => navigate(clearUsersFilters(page.query))}
             >
-              Clear filters
+              {t("clearFilters")}
             </Button>
           )}
         </div>

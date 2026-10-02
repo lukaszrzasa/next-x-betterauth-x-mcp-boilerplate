@@ -8,6 +8,7 @@ import { authRoutes } from "@/app/(AuthModule)/_/routes";
 import type { UserMutationOutcome } from "@/app/(AuthModule)/admin/_/types";
 import { feedbackFor, type Feedback, type MutationKind } from "@/app/(AuthModule)/admin/_/hooks/feedback";
 import { useAccountRefresh } from "@/app/(AuthModule)/admin/_/hooks/useAccountRefresh";
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 
 export type UserMutationOptions = {
   /** Receives the outcome's feedback; busy and cancelled produce none. */
@@ -27,6 +28,7 @@ export function useUserMutation<I>(
   action: ServerAction<I, UserMutationOutcome>,
   { onSettled }: UserMutationOptions,
 ) {
+  const t = useCatalog();
   const refresh = useAccountRefresh();
   const redirect = useSessionRedirect();
   // Feedback is presented by the section; the shared alert stays quiet.
@@ -35,7 +37,7 @@ export function useUserMutation<I>(
   const run = useCallback(
     async (input: I): Promise<ActionOutcome<UserMutationOutcome>> => {
       const result = await execute(input);
-      const feedback = feedbackFor(kind, result);
+      const feedback = feedbackFor(t, kind, result);
       if (!feedback) return result;
 
       if (result.status === "success" && result.data.status === "completed" && result.data.selfSignedOut) {
@@ -49,7 +51,7 @@ export function useUserMutation<I>(
       if (changed || vanished) refresh();
       return result;
     },
-    [execute, kind, onSettled, redirect, refresh],
+    [execute, kind, onSettled, redirect, refresh, t],
   );
 
   return { run, pending: isPending };

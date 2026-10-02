@@ -27,8 +27,7 @@ export type SecurityStateChangedData = { code: "SECURITY_STATE_CHANGED"; retryab
 export function securityStateChangedError(cause?: unknown): ActionError {
   const data: SecurityStateChangedData = { code: "SECURITY_STATE_CHANGED", retryable: true };
   return new ActionError("CONFLICT", {
-    message:
-      "Your account's security settings changed while this request was in progress. Verify again and retry.",
+    message: { key: "errors.auth.securityStateChanged" },
     data,
     cause,
   });
@@ -65,7 +64,7 @@ export async function assertSecurityStateCurrent(
 ): Promise<number> {
   const current = await readSecurityVersion(userId, reads);
   if (current === null) {
-    throw new ActionError("NOT_FOUND", { message: "This account no longer exists." });
+    throw new ActionError("NOT_FOUND", { message: { key: "errors.auth.accountNotFound" } });
   }
   if (current !== expected) throw securityStateChangedError();
   return current;
@@ -86,6 +85,6 @@ export async function incrementSecurityVersion(
     sql`UPDATE "user" SET security_version = security_version + 1 WHERE id = ${userId} RETURNING security_version`,
   );
   const row = result.rows[0];
-  if (!row) throw new ActionError("NOT_FOUND", { message: "This account no longer exists." });
+  if (!row) throw new ActionError("NOT_FOUND", { message: { key: "errors.auth.accountNotFound" } });
   return Number(row.security_version);
 }

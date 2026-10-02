@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeftIcon, CrownIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { UserAvatar } from "@/src/components/identity/UserAvatar";
 import { Badge } from "@/src/components/ui/badge";
 import { buttonVariants } from "@/src/components/ui/button";
@@ -7,12 +10,10 @@ import { cn } from "@/src/lib/utils";
 import type { UserDetail } from "@/app/(AuthModule)/admin/_/types";
 import { AccessBadge, RoleBadges, VerificationBadge } from "@/app/(AuthModule)/admin/_/components/users/UserBadges";
 
-function ownershipNote(user: UserDetail): string {
-  if (user.isRoot && user.isSelf) {
-    return "This is the root account, and it is yours. Here you can change its name, send yourself a verification or password-reset email, and sign out of all devices. Its email address cannot be changed here and it can never be banned.";
-  }
-  if (user.isRoot) return "This is the installation's root account. Only the root account itself can change it.";
-  return "This is your own account. Administrative changes to it are not available here.";
+function ownershipKey(user: UserDetail): "rootSelf" | "root" | "self" {
+  if (user.isRoot && user.isSelf) return "rootSelf";
+  if (user.isRoot) return "root";
+  return "self";
 }
 
 /**
@@ -28,6 +29,7 @@ export function UserIdentityHeader({
   /** The validated list URL, or null when the viewer may not open the list. */
   listUrl: string | null;
 }) {
+  const t = useTranslations("authAdmin.detail");
   return (
     <header className="ui:flex ui:flex-col ui:gap-4">
       {listUrl && (
@@ -36,7 +38,7 @@ export function UserIdentityHeader({
           className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "ui:-ml-2 ui:w-fit ui:text-muted-foreground")}
         >
           <ArrowLeftIcon aria-hidden="true" />
-          Back to users
+          {t("backToUsers")}
         </Link>
       )}
       <div className="ui:flex ui:flex-col ui:gap-4 ui:sm:flex-row ui:sm:items-start">
@@ -53,7 +55,7 @@ export function UserIdentityHeader({
             {user.isRoot && (
               <Badge variant="outline" className="ui:gap-1">
                 <CrownIcon aria-hidden="true" />
-                Root account
+                {t("rootAccount")}
               </Badge>
             )}
           </div>
@@ -61,7 +63,7 @@ export function UserIdentityHeader({
       </div>
       {(user.isRoot || user.isSelf) && (
         <p className="ui:rounded-lg ui:border ui:bg-muted/50 ui:px-4 ui:py-3 ui:text-sm ui:text-muted-foreground">
-          {ownershipNote(user)}
+          {t(`ownership.${ownershipKey(user)}`)}
         </p>
       )}
     </header>

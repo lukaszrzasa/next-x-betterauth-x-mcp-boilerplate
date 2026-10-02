@@ -82,21 +82,7 @@ export const BAN_DURATION_SECONDS: Record<BanDuration, number | null> = {
   permanent: null,
 };
 
-export const BAN_DURATION_LABELS: Record<BanDuration, string> = {
-  "24h": "24 hours",
-  "7d": "7 days",
-  "30d": "30 days",
-  permanent: "Permanent",
-};
-
-/** What a ban of each duration means for the account, shown before it is applied. */
-export const BAN_DURATION_CONSEQUENCES: Record<BanDuration, string> = {
-  "24h": "The account cannot sign in for 24 hours from now.",
-  "7d": "The account cannot sign in for 7 days from now.",
-  "30d": "The account cannot sign in for 30 days from now.",
-  permanent:
-    "The account keeps its data but cannot sign in until an administrator removes the ban.",
-};
+/** Each duration's name and consequence line live in the catalog (`authAdmin.detail.ban.durations`, `.consequences`). */
 
 export type UserEffect = "session-refresh" | "session-revocation" | "verification-email";
 

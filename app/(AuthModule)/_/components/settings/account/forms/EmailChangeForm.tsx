@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { FormError } from "@/src/components/forms/FormError";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { Button } from "@/src/components/ui/button";
@@ -8,12 +9,14 @@ import { Input } from "@/src/components/ui/input";
 import { useEmailChangeForm } from "@/app/(AuthModule)/_/hooks/settings/form/useEmailChangeForm";
 import type { Feedback } from "@/app/(AuthModule)/_/hooks/settings/feedback";
 
-/** Verified address: read-only current email plus the current password. */
-function submitLabel(pending: boolean, replacing: boolean): string {
-  if (pending) return "Sending…";
-  return replacing ? "Start over" : "Continue";
+type ChangeFormTranslator = ReturnType<typeof useTranslations<"auth.settings.email.changeForm">>;
+
+function submitLabel(t: ChangeFormTranslator, pending: boolean, replacing: boolean): string {
+  if (pending) return t("sending");
+  return replacing ? t("startOver") : t("continue");
 }
 
+/** Verified address: read-only current email plus the current password. */
 export function EmailChangeForm({
   email,
   replacing,
@@ -25,6 +28,8 @@ export function EmailChangeForm({
   onCancel: () => void;
   onSettled: (feedback: Feedback) => void;
 }) {
+  const t = useTranslations("auth.settings.email.changeForm");
+  const tCommon = useTranslations("auth.settings.common");
   const { form, onSubmit, pending } = useEmailChangeForm({
     email,
     replacing,
@@ -35,21 +40,20 @@ export function EmailChangeForm({
   });
 
   return (
-    <form noValidate aria-label="Change email address" onSubmit={onSubmit} className="ui:flex ui:flex-col ui:gap-4">
+    <form noValidate aria-label={t("label")} onSubmit={onSubmit} className="ui:flex ui:flex-col ui:gap-4">
       <FieldGroup className="ui:gap-4">
         <FormError message={form.formState.errors.root?.message} />
         <Field>
-          <FieldLabel htmlFor="current-email">Current email address</FieldLabel>
+          <FieldLabel htmlFor="current-email">{t("currentEmail")}</FieldLabel>
           <Input id="current-email" value={email} readOnly className="ui:h-11" />
           <FieldDescription>
-            A confirmation link is sent here first. After confirming it, you choose the new address in this
-            section, and the new mailbox confirms as well. {replacing && "The request currently in progress is cancelled."}
+            {t("hint")} {replacing && t("replacingHint")}
           </FieldDescription>
         </Field>
         <FormInput
           control={form.control}
           name="currentPassword"
-          label="Current password"
+          label={tCommon("currentPassword")}
           type="password"
           autoComplete="current-password"
           maxLength={128}
@@ -58,10 +62,10 @@ export function EmailChangeForm({
       </FieldGroup>
       <div className="ui:flex ui:flex-wrap ui:justify-end ui:gap-2">
         <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={onCancel}>
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" size="sm" disabled={pending}>
-          {submitLabel(pending, replacing)}
+          {submitLabel(t, pending, replacing)}
         </Button>
       </div>
     </form>

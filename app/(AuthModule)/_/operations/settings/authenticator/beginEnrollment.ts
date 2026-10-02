@@ -80,7 +80,7 @@ export const beginEnrollmentOperation = defineAction({
       const account = await requireFactorAccount(ctx);
       const existing = await findFactor(ctx);
       if (account.twoFactorEnabled || existing?.verified === true) {
-        throw lifecycleError("CONFLICT", "INACTIVE", "An authenticator is already set up. Replace it instead.");
+        throw lifecycleError("CONFLICT", "INACTIVE", { key: "auth.errors.authenticatorAlreadySetUp" });
       }
       await assertSecurityStateCurrent(ctx.user.id, securityVersionOf(ctx.user));
       await consumeSetupInitiation(ctx);

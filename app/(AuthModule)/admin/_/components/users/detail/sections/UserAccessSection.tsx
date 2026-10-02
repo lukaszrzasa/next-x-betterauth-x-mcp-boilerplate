@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useFormatter, useTranslations } from "next-intl";
 import { BanIcon, KeyRoundIcon, ShieldOffIcon } from "lucide-react";
 import { DetailRow, DetailSection } from "@/src/components/detail/DetailSection";
 import { confirm } from "@/src/components/feedback/ConfirmDialog";
 import { Button } from "@/src/components/ui/button";
-import { formatUtcDateTime, toIsoInstant } from "@/src/lib/date/format";
+import { toIsoInstant } from "@/src/lib/date/format";
 import { ActionFeedback } from "@/src/components/feedback/ActionFeedback";
 import { useFeedback } from "@/src/lib/hooks/useFeedback";
 import { useRetryBanSessions } from "@/app/(AuthModule)/admin/_/hooks/actions/useRetryBanSessions";
@@ -24,6 +25,9 @@ import { policyNote } from "@/app/(AuthModule)/admin/_/components/users/detail/p
  * ban asks for confirmation; applying one has its own dialog.
  */
 export function UserAccessSection({ user }: { user: UserDetail }) {
+  const t = useTranslations("authAdmin.detail");
+  const policyT = useTranslations("authAdmin.detail.policy");
+  const format = useFormatter();
   const [banOpen, setBanOpen] = useState(false);
   const { feedback, setFeedback, dismiss } = useFeedback<Feedback>();
   const unban = useUnbanUser(user.id, { onSettled: setFeedback });
@@ -37,15 +41,15 @@ export function UserAccessSection({ user }: { user: UserDetail }) {
   const { ban: banCapability, unban: unbanCapability } = user.capabilities;
   const banned = user.accessStatus !== "active";
   const blocked = [banCapability, unbanCapability]
-    .map((capability) => (capability.allowed ? null : policyNote(capability.reason)))
+    .map((capability) => (capability.allowed ? null : policyNote(policyT, capability.reason)))
     .find((note) => note !== null);
 
   const removeBan = async () => {
     const confirmed = await confirm({
-      title: "Remove the ban?",
-      description: `${user.name} (${user.email}) will be able to sign in again. Nothing else changes: no session is created, the email stays as it is and roles are untouched.`,
-      confirmLabel: "Remove ban",
-      cancelLabel: "Keep ban",
+      title: t("access.removeBanConfirm.title"),
+      description: t("access.removeBanConfirm.description", { name: user.name, email: user.email }),
+      confirmLabel: t("access.removeBanConfirm.confirm"),
+      cancelLabel: t("access.removeBanConfirm.cancel"),
     });
     if (!confirmed) return;
     dismiss();
@@ -53,25 +57,21 @@ export function UserAccessSection({ user }: { user: UserDetail }) {
   };
 
   return (
-    <DetailSection
-      title="Access"
-      description="Roles and whether the account may sign in."
-      icon={KeyRoundIcon}
-    >
+    <DetailSection title={t("access.title")} description={t("access.description")} icon={KeyRoundIcon}>
       <ActionFeedback
-        retryVerb="send again"
+        retryVerb={t("retryVerb")}
         feedback={feedback}
         onDismiss={dismiss}
         recovery={
-          recovery ? { label: "Retry", pending: recovery.pending, onClick: () => void recovery.run() } : undefined
+          recovery ? { label: t("retry"), pending: recovery.pending, onClick: () => void recovery.run() } : undefined
         }
       />
       <div>
-        <DetailRow label="Roles">
+        <DetailRow label={t("access.roles")}>
           <RoleBadges roles={user.roles} />
         </DetailRow>
         <DetailRow
-          label="Effective access"
+          label={t("access.effectiveAccess")}
           control={
             <>
               {banCapability.allowed && (
@@ -86,7 +86,7 @@ export function UserAccessSection({ user }: { user: UserDetail }) {
                   }}
                 >
                   <BanIcon aria-hidden="true" />
-                  {banned ? "Update ban" : "Ban user"}
+                  {banned ? t("access.updateBan") : t("access.banUser")}
                 </Button>
               )}
               {unbanCapability.allowed && banned && (
@@ -98,7 +98,7 @@ export function UserAccessSection({ user }: { user: UserDetail }) {
                   onClick={() => void removeBan()}
                 >
                   <ShieldOffIcon aria-hidden="true" />
-                  {unban.pending ? "Removing…" : "Remove ban"}
+                  {unban.pending ? t("access.removing") : t("access.removeBan")}
                 </Button>
               )}
             </>
@@ -108,14 +108,16 @@ export function UserAccessSection({ user }: { user: UserDetail }) {
         </DetailRow>
         {banned && (
           <>
-            <DetailRow label="Ban reason">
-              <p className="ui:whitespace-pre-line">{user.banReason ?? "No reason recorded"}</p>
+            <DetailRow label={t("access.banReason")}>
+              <p className="ui:whitespace-pre-line">{user.banReason ?? t("access.noReason")}</p>
             </DetailRow>
-            <DetailRow label="Ban ends">
+            <DetailRow label={t("access.banEnds")}>
               {user.banExpires ? (
-                <time dateTime={toIsoInstant(user.banExpires)}>{formatUtcDateTime(user.banExpires)}</time>
+                <time dateTime={toIsoInstant(user.banExpires)}>
+                  {format.dateTime(new Date(user.banExpires), "dateTime")}
+                </time>
               ) : (
-                "Never (permanent)"
+                t("access.never")
               )}
             </DetailRow>
           </>

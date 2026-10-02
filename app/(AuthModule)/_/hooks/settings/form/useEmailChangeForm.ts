@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { confirm } from "@/src/components/feedback/ConfirmDialog";
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 import { useAction } from "@/src/lib/actions";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
 import { beginEmailChangeAction } from "@/app/(AuthModule)/_/actions";
@@ -26,26 +28,28 @@ export function useEmailChangeForm({
   onSettled: (feedback: Feedback) => void;
 }) {
   const router = useRouter();
+  const t = useCatalog();
+  const tForm = useTranslations("auth.settings.email.changeForm.confirm");
   const { form, createSubmitHandler } = useSchemaForm(emailChangeFormSchema);
   const { execute, isPending } = useAction(beginEmailChangeAction, { onError: () => true });
 
   const onSubmit = createSubmitHandler(async ({ currentPassword }) => {
     const confirmed = await confirm({
-      title: replacing ? "Start a new email change?" : "Change your sign-in email?",
-      description: `${replacing ? "The current request is cancelled and its links stop working. " : ""}A confirmation link is sent to ${email}. After confirming it you will choose the new address here, and the new mailbox confirms it as well. Nothing changes until then; the request expires after 24 hours.`,
-      confirmLabel: replacing ? "Start over" : "Send confirmation",
-      cancelLabel: "Keep current address",
+      title: replacing ? tForm("titleNew") : tForm("title"),
+      description: tForm("description", { prefix: replacing ? tForm("replacing") : "", email }),
+      confirmLabel: replacing ? tForm("confirmNew") : tForm("confirm"),
+      cancelLabel: tForm("keep"),
     });
     if (!confirmed) return;
 
     const result = await execute({ currentPassword });
     if (result.status === "error") {
       if (attributeFieldError(form, result.error, ["currentPassword"])) return;
-      throw new Error(rootMessage(result.error));
+      throw new Error(rootMessage(t, result.error));
     }
     if (result.status !== "success") return;
     form.reset();
-    onSettled(describeEmailRequestOutcome(result.data));
+    onSettled(describeEmailRequestOutcome(t, result.data));
     router.refresh();
   });
 

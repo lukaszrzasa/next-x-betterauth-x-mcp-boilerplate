@@ -1,6 +1,7 @@
 "use client";
 
 import { XIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { DataTableToolbar } from "@/src/components/data-table/DataTableToolbar";
 import { Button } from "@/src/components/ui/button";
 import {
@@ -42,6 +43,8 @@ export function StaffLogsFilters({
   onSearchChange,
   onSearchSubmit,
 }: StaffLogsFiltersProps) {
+  const t = useTranslations("logsAdmin.staffLogs");
+  const tActions = useTranslations("common.actions");
   const change = (next: Partial<Omit<StaffLogsQuery, "page">>) => onChange(withStaffLogsQueryChange(query, next));
   const action = query.actions[0] ?? "";
   const actors = withCurrent(
@@ -57,8 +60,8 @@ export function StaffLogsFilters({
     <DataTableToolbar
       search={
         <LogSearchField
-          label="Search the staff log"
-          placeholder="Search what was done"
+          label={t("search.label")}
+          placeholder={t("search.placeholder")}
           value={query.q}
           onChange={(q) => onSearchChange(withStaffLogsQueryChange(query, { q }))}
           onSubmit={onSearchSubmit}
@@ -72,16 +75,16 @@ export function StaffLogsFilters({
             onChange={(range) => change(range)}
           />
           <FilterSelect
-            label="Staff member"
+            label={t("filters.staffMember")}
             value={query.actorId}
-            options={[{ value: "", label: "Anyone" }, ...actors]}
+            options={[{ value: "", label: t("filters.anyone") }, ...actors]}
             pending={pending}
             onChange={(actorId) => change({ actorId })}
           />
           <FilterSelect
-            label="Action"
+            label={t("filters.action")}
             value={action}
-            options={[{ value: "", label: "Any action" }, ...actions]}
+            options={[{ value: "", label: t("filters.anyAction") }, ...actions]}
             pending={pending}
             onChange={(next) => change({ actions: next ? [next] : [] })}
           />
@@ -97,7 +100,7 @@ export function StaffLogsFilters({
             onClick={() => onChange(clearStaffLogsFilters(query))}
           >
             <XIcon aria-hidden="true" />
-            Clear filters
+            {tActions("clearFilters")}
           </Button>
         ) : undefined
       }

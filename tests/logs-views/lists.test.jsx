@@ -64,7 +64,10 @@ const listStaffLogsAction = mock();
 mock.module("../../app/(LogsModule)/admin/_/actions.ts", () => ({ getEmailLogAction, listStaffLogsAction }));
 
 React = await import("react");
-const { render, fireEvent, screen, cleanup, within, act, waitFor } = await import("@testing-library/react");
+const { render: baseRender, fireEvent, screen, cleanup, within, act, waitFor } = await import("@testing-library/react");
+const { withIntl } = await import("../helpers/intl.jsx");
+/** Every tree renders inside the English catalog, as the root layout provides it. */
+const render = (ui, options) => baseRender(ui, { wrapper: withIntl(), ...options });
 const { ActionProvider } = await import("../../src/lib/actions");
 const { ViewerProvider } = await import("../../src/components/shell/ViewerProvider");
 const { EmailLogsList } = await import("../../app/(LogsModule)/admin/_/components/emailLogs/EmailLogsList");
@@ -164,7 +167,7 @@ describe("email logs table", () => {
     const rows = screen.getAllByRole("row").slice(1);
     expect(rows).toHaveLength(2);
     const first = within(rows[0]);
-    expect(first.getByText("26 Sep 2026, 10:15 UTC").getAttribute("datetime")).toBe("2026-09-26T10:15:00.000Z");
+    expect(first.getByText("Sep 26, 2026 at 10:15 AM UTC").getAttribute("datetime")).toBe("2026-09-26T10:15:00.000Z");
     expect(first.getByRole("link", { name: "Alice" }).getAttribute("href")).toBe("/admin/users/user-42");
     expect(first.getByText("alice@example.test")).toBeTruthy();
     expect(first.getByText("Accepted")).toBeTruthy();
@@ -173,7 +176,7 @@ describe("email logs table", () => {
     expect(second.queryByRole("link")).toBeNull();
     expect(second.getByText("Failed")).toBeTruthy();
     expect(second.getByText("Attempt 3")).toBeTruthy();
-    expect(second.getByRole("button", { name: "View details of the email to alice@example.test, 26 Sep 2026, 10:15 UTC" })).toBeTruthy();
+    expect(second.getByRole("button", { name: "View details of the email to alice@example.test, Sep 26, 2026 at 10:15 AM UTC" })).toBeTruthy();
     // Read-only: no sending, deleting or exporting anywhere.
     for (const name of [/resend/i, /send/i, /delete/i, /export/i, /retry/i]) expect(screen.queryByRole("button", { name })).toBeNull();
     expect(getEmailLogAction).not.toHaveBeenCalled();
@@ -538,7 +541,7 @@ describe("staff log message", () => {
   test("blocks render inline, in order, as one sentence", () => {
     const { container } = renderMessage(everyBlock);
     expect(container.textContent).toBe(
-      "Banned Anna until 25 Sep 2026, 14:32 UTC, see the account and the policy. Reason: Spam [unsupported content]",
+      "Banned Anna until Sep 25, 2026 at 02:32 PM UTC, see the account and the policy. Reason: Spam [unsupported content]",
     );
     const sentence = container.firstElementChild;
     expect(sentence.tagName).toBe("SPAN");
@@ -550,7 +553,7 @@ describe("staff log message", () => {
     const { container } = renderMessage(everyBlock);
     expect(screen.getByRole("link", { name: "Anna" }).getAttribute("href")).toBe("/admin/users/user-42");
     const time = container.querySelector("time");
-    expect(time.textContent).toBe("25 Sep 2026, 14:32 UTC");
+    expect(time.textContent).toBe("Sep 25, 2026 at 02:32 PM UTC");
     expect(time.getAttribute("datetime")).toBe("2026-09-25T14:32:00.000Z");
     expect(screen.getByText("Spam").tagName).toBe("SPAN");
     expect(screen.getByText("[unsupported content]")).toBeTruthy();
@@ -571,7 +574,7 @@ describe("staff log message", () => {
     const { container } = renderMessage(banned, "user");
     expect(screen.queryByRole("link", { name: "Anna" })).toBeNull();
     expect(screen.getByText("Anna").tagName).toBe("SPAN");
-    expect(container.textContent).toBe("Banned Anna until 25 Sep 2026, 14:32 UTC");
+    expect(container.textContent).toBe("Banned Anna until Sep 25, 2026 at 02:32 PM UTC");
   });
 
   test("stored content is text: markup is escaped and loads nothing", () => {
@@ -599,10 +602,10 @@ describe("staff log list", () => {
     const rows = screen.getAllByRole("row").slice(1);
     expect(rows).toHaveLength(2);
     const first = within(rows[0]);
-    expect(first.getAllByText("26 Sep 2026, 09:00 UTC")[0].getAttribute("datetime")).toBe("2026-09-26T09:00:00.000Z");
+    expect(first.getAllByText("Sep 26, 2026 at 09:00 AM UTC")[0].getAttribute("datetime")).toBe("2026-09-26T09:00:00.000Z");
     expect(first.getByRole("link", { name: "Root" }).getAttribute("href")).toBe("/admin/users/root-user-id");
     expect(first.getByRole("link", { name: "Anna" }).getAttribute("href")).toBe("/admin/users/user-42");
-    expect(rows[0].textContent).toContain("Banned Anna until 25 Sep 2026, 14:32 UTC");
+    expect(rows[0].textContent).toContain("Banned Anna until Sep 25, 2026 at 02:32 PM UTC");
     expect(rows[1].textContent).toContain("Unbanned Anna");
     // Newest first, always: no sort controls. Read-only: no dialog, nothing to delete or export.
     expect(screen.queryByRole("button", { name: /Sort by/ })).toBeNull();
@@ -708,7 +711,7 @@ describe("staff log widget", () => {
     await act(async () => answer.resolve({ ok: true, data: staffPage([staffItem(ID_A), staffItem(ID_B, { message: unbanned })]) }));
     await waitFor(() => expect(entriesOf()).toHaveLength(2));
     const [first, second] = entriesOf();
-    expect(first.textContent).toBe("Root: Banned Anna until 25 Sep 2026, 14:32 UTC26 Sep 2026, 09:00 UTC");
+    expect(first.textContent).toBe("Root: Banned Anna until Sep 25, 2026 at 02:32 PM UTCSep 26, 2026 at 09:00 AM UTC");
     expect(within(first).getByRole("link", { name: "Root" }).getAttribute("href")).toBe("/admin/users/root-user-id");
     expect(within(first).getByRole("link", { name: "Anna" }).getAttribute("href")).toBe("/admin/users/user-42");
     expect(second.textContent).toContain("Root: Unbanned Anna");

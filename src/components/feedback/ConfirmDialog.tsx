@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { createCallable } from "react-call";
+import { useTranslations } from "next-intl";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +18,7 @@ export type ConfirmRequest = {
   title: string;
   description: ReactNode;
   confirmLabel: string;
+  /** Defaults to the catalog's "Cancel". */
   cancelLabel?: string;
   /** Styles the confirming button as destructive. */
   destructive?: boolean;
@@ -33,9 +35,10 @@ const ConfirmDialog = createCallable<ConfirmRequest, boolean>(function ConfirmDi
   title,
   description,
   confirmLabel,
-  cancelLabel = "Cancel",
+  cancelLabel,
   destructive = false,
 }) {
+  const t = useTranslations("common.actions");
   return (
     <AlertDialog open onOpenChange={(open) => !open && call.end(false)}>
       <AlertDialogContent>
@@ -44,7 +47,7 @@ const ConfirmDialog = createCallable<ConfirmRequest, boolean>(function ConfirmDi
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => call.end(false)}>{cancelLabel}</AlertDialogCancel>
+          <AlertDialogCancel onClick={() => call.end(false)}>{cancelLabel ?? t("cancel")}</AlertDialogCancel>
           <AlertDialogAction
             variant={destructive ? "destructive" : "default"}
             onClick={() => call.end(true)}

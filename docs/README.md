@@ -5,7 +5,7 @@
 1. [Architecture](architecture.md): scope, shared operations, layout, import scopes, authorization, step-up, MCP, and infrastructure.
 2. [Agent instructions](agent-instructions.md): working conventions and completion criteria.
 3. [Glossary](CONTEXT.md): admin, staff, editing presence, MCP eligibility, and step-up requirements.
-4. [Admin authority decision](adr/0001-admin-permission-bypass.md), [shared-operation decision](adr/0002-shared-operations-and-mcp-restrictions.md), [staff log decision](adr/0003-staff-log-snapshot-blocks.md) and [workflow ownership decision](adr/0004-operations-own-workflows.md): rationale for consequential choices.
+4. [Admin authority decision](adr/0001-admin-permission-bypass.md), [shared-operation decision](adr/0002-shared-operations-and-mcp-restrictions.md), [staff log decision](adr/0003-staff-log-snapshot-blocks.md), [workflow ownership decision](adr/0004-operations-own-workflows.md) and [localization decision](adr/0005-localization-at-the-boundary.md): rationale for consequential choices.
 
 [Design evidence](evidence.md) records observations behind the decisions. It is background material, not an additional source of instructions.
 

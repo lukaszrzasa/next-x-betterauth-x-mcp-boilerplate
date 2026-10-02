@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useWatch } from "react-hook-form";
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 import { useAction } from "@/src/lib/actions";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
 import { updateDisplayNameAction } from "@/app/(AuthModule)/_/actions";
@@ -12,6 +13,7 @@ import { attributeFieldError, rootMessage } from "./formErrors";
 /** Editing the display name alone; a saved change refreshes the shell identity and the page. */
 export function useDisplayNameForm({ name, onSettled }: { name: string; onSettled: (feedback: Feedback) => void }) {
   const router = useRouter();
+  const t = useCatalog();
   const { form, createSubmitHandler } = useSchemaForm(displayNameFormSchema, { name });
   const { execute, isPending } = useAction(updateDisplayNameAction, { onError: () => true });
   const value = useWatch({ control: form.control, name: "name" });
@@ -21,9 +23,9 @@ export function useDisplayNameForm({ name, onSettled }: { name: string; onSettle
     const result = await execute(input);
     if (result.status === "error") {
       if (attributeFieldError(form, result.error, ["name"])) return;
-      throw new Error(rootMessage(result.error));
+      throw new Error(rootMessage(t, result.error));
     }
-    const feedback = syncFeedbackFor("updateName", result);
+    const feedback = syncFeedbackFor(t, "updateName", result);
     if (!feedback) return;
     onSettled(feedback);
     if (result.status === "success" && result.data.status !== "unchanged") router.refresh();

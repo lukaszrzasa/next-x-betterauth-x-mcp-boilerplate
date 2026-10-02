@@ -31,7 +31,7 @@ async function verifyAuthenticatorCode(ctx: AuthedCtx, code: string | undefined)
       "INVALID_INPUT",
       "authenticatorCode",
       "AUTHENTICATOR_NOT_ENROLLED",
-      "This account has no authenticator; submit again without a code.",
+      { key: "auth.errors.authenticatorNotEnrolled" },
     );
   }
   if (code === undefined) {
@@ -39,7 +39,7 @@ async function verifyAuthenticatorCode(ctx: AuthedCtx, code: string | undefined)
       "INVALID_INPUT",
       "authenticatorCode",
       "AUTHENTICATOR_CODE_REQUIRED",
-      "Enter the current code from your authenticator app.",
+      { key: "auth.errors.authenticatorCodeRequired" },
     );
   }
   await verifyStepUp({
@@ -75,7 +75,7 @@ export const beginEmailCorrectionOperation = defineAction({
     const request = await withAccountSecurityLock(ctx, ctx.user.id, async () => {
       const owner = await requireEmailOwner(ctx);
       if (owner.emailVerified) {
-        throw lifecycleError("CONFLICT", "INACTIVE", "Your address is verified; use Change email instead.");
+        throw lifecycleError("CONFLICT", "INACTIVE", { key: "auth.errors.useChangeEmail" });
       }
       if (input.newEmail === owner.email) throw addressUnchangedError();
       if (await isAddressTaken(ctx, input.newEmail)) throw addressUnavailableError();

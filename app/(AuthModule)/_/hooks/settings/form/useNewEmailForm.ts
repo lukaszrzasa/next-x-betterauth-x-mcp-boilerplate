@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 import { useAction } from "@/src/lib/actions";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
 import { selectNewEmailAction } from "@/app/(AuthModule)/_/actions";
@@ -11,6 +12,7 @@ import { attributeFieldError, rootMessage } from "./formErrors";
 /** Choosing the destination once the current mailbox agreed; no password is repeated within the request. */
 export function useNewEmailForm({ requestId, onSettled }: { requestId: string; onSettled: (feedback: Feedback) => void }) {
   const router = useRouter();
+  const t = useCatalog();
   const { form, createSubmitHandler } = useSchemaForm(newEmailFormSchema);
   const { execute, isPending } = useAction(selectNewEmailAction, { onError: () => true });
 
@@ -19,10 +21,10 @@ export function useNewEmailForm({ requestId, onSettled }: { requestId: string; o
     if (result.status === "error") {
       if (attributeFieldError(form, result.error, ["newEmail"])) return;
       if (result.error.reason === "NOT_FOUND" || result.error.reason === "CONFLICT") router.refresh();
-      throw new Error(rootMessage(result.error));
+      throw new Error(rootMessage(t, result.error));
     }
     if (result.status !== "success") return;
-    onSettled(describeEmailRequestOutcome(result.data));
+    onSettled(describeEmailRequestOutcome(t, result.data));
     router.refresh();
   });
 

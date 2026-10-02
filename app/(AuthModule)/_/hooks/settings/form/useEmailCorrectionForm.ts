@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 import { useAction } from "@/src/lib/actions";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
 import { beginEmailCorrectionAction } from "@/app/(AuthModule)/_/actions";
@@ -15,6 +16,7 @@ import { attributeFieldError, rootMessage } from "./formErrors";
  */
 export function useEmailCorrectionForm({ onSettled }: { onSettled: (feedback: Feedback) => void }) {
   const router = useRouter();
+  const t = useCatalog();
   const { form, createSubmitHandler } = useSchemaForm(emailCorrectionFormSchema);
   const { execute, isPending } = useAction(beginEmailCorrectionAction, { onError: () => true });
 
@@ -26,11 +28,11 @@ export function useEmailCorrectionForm({ onSettled }: { onSettled: (feedback: Fe
         form.setError("authenticatorCode", { type: "server", message: result.error.message }, { shouldFocus: true });
         return;
       }
-      throw new Error(rootMessage(result.error));
+      throw new Error(rootMessage(t, result.error));
     }
     if (result.status !== "success") return;
     form.reset();
-    onSettled(describeEmailRequestOutcome(result.data));
+    onSettled(describeEmailRequestOutcome(t, result.data));
     router.refresh();
   });
 

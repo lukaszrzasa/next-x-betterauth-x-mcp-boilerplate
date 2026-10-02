@@ -18,6 +18,7 @@ import { completeEmailLog } from "@/app/(LogsModule)/_/operations/email/complete
 import { serializeErrorForLog } from "@/app/(LogsModule)/_/redaction";
 import { LOG_LIMITS } from "@/app/(LogsModule)/_/schema";
 import { LogRecordingError, type EmailCompletionStatus } from "@/app/(LogsModule)/_/types";
+import type { Locale } from "@/src/lib/i18n/locales";
 
 /**
  * The one way the application sends email, and therefore the one place
@@ -53,6 +54,8 @@ export type OutgoingEmail = {
   to: string;
   /** The account the message is about, when there is one. */
   recipient?: { userId: string; name?: string | null };
+  /** The language the subject and body were written in (`emailLocale`). */
+  locale: Locale;
   subject: string;
   react: ReactNode;
   /** Every sensitive value in the message, by what it is (`token`, `url`, `code`). */

@@ -1,0 +1,625 @@
+{
+  "errors": {
+    "incorrectPassword": "To hasło jest nieprawidłowe.",
+    "accountNotFound": "To konto już nie istnieje.",
+    "emailRequestInactive": "To zgłoszenie zmiany adresu e-mail nie jest już aktywne.",
+    "emailRequestExpired": "To zgłoszenie zmiany adresu e-mail wygasło. Zacznij od nowa, aby kontynuować.",
+    "emailUnavailable": "Tego adresu nie można użyć jako adresu e-mail do logowania.",
+    "emailUnchanged": "Wpisz inny adres.",
+    "setupReplaced": "Ta konfiguracja aplikacji uwierzytelniającej nie jest już aktywna. Rozpocznij konfigurację od nowa.",
+    "setupExpired": "Ta konfiguracja aplikacji uwierzytelniającej wygasła. Rozpocznij konfigurację od nowa.",
+    "invalidAuthenticatorCode": "Ten kod z aplikacji uwierzytelniającej jest nieprawidłowy.",
+    "accountBusy": "Inna zmiana tego konta jest wciąż w toku. Spróbuj ponownie za chwilę.",
+    "tooManyIncorrectPasswords": "Zbyt wiele nieprawidłowych haseł. Spróbuj ponownie później.",
+    "tooManySetups": "Rozpoczęto zbyt wiele konfiguracji aplikacji uwierzytelniającej. Spróbuj ponownie później.",
+    "tooManyIncorrectCodes": "Zbyt wiele nieprawidłowych kodów. Rozpocznij konfigurację ponownie później.",
+    "tooManyEmailRequests": "Zbyt wiele zgłoszeń zmiany adresu e-mail. Spróbuj ponownie później.",
+    "tooManyAttempts": "Zbyt wiele prób. Spróbuj ponownie później.",
+    "resetLinkInvalid": "Ten link do resetowania hasła jest nieprawidłowy lub wygasł.",
+    "passwordLength": "Użyj od 8 do 128 znaków.",
+    "authenticatorAlreadySetUp": "Aplikacja uwierzytelniająca jest już skonfigurowana. Zamiast tego ją zastąp.",
+    "noAuthenticatorToReplace": "Nie skonfigurowano jeszcze aplikacji uwierzytelniającej. Zamiast tego ją skonfiguruj.",
+    "noRecoveryCodesToReplace": "Nie skonfigurowano aplikacji uwierzytelniającej; nie ma kodów odzyskiwania do zastąpienia.",
+    "authenticatorRequired": "Twoje konto musi mieć aplikację uwierzytelniającą; nie można jej wyłączyć.",
+    "setupUnavailable": "Konfiguracja początkowa jest dostępna tylko dla pustej instalacji.",
+    "useCorrectEmail": "Twój obecny adres nie jest zweryfikowany; użyj opcji Popraw adres e-mail.",
+    "useChangeEmail": "Twój adres jest zweryfikowany; użyj opcji Zmień adres e-mail.",
+    "authenticatorNotEnrolled": "To konto nie ma aplikacji uwierzytelniającej; wyślij ponownie bez kodu.",
+    "authenticatorCodeRequired": "Wpisz aktualny kod z aplikacji uwierzytelniającej.",
+    "nothingToResend": "Na tym etapie nie ma wiadomości do ponownego wysłania.",
+    "linkCooldown": "Odczekaj minutę przed poproszeniem o kolejny link.",
+    "verificationCooldown": "Odczekaj minutę przed poproszeniem o kolejną wiadomość weryfikacyjną.",
+    "newAddressAlreadyChosen": "Nowy adres został już wybrany. Anuluj i zacznij od nowa, aby go zmienić.",
+    "confirmCurrentAddressFirst": "Najpierw potwierdź swój obecny adres."
+  },
+  "validation": {
+    "maxLength": "Użyj najwyżej {maximum} znaków.",
+    "minLength": "Użyj co najmniej {minimum} znaków.",
+    "email": "Wpisz poprawny adres e-mail.",
+    "nameRequired": "Wpisz swoje imię i nazwisko.",
+    "nameControlCharacters": "Nazwa nie może zawierać znaków sterujących.",
+    "passwordRequired": "Wpisz swoje hasło.",
+    "authenticatorCode": "Wpisz sześciocyfrowy kod z aplikacji uwierzytelniającej.",
+    "emailCode": "Wpisz sześciocyfrowy kod z wiadomości e-mail.",
+    "recoveryCode": "Wpisz kod odzyskiwania w formacie xxxxx-xxxxx.",
+    "passwordsMismatch": "Hasła nie są takie same.",
+    "identifierRequired": "Identyfikator jest wymagany.",
+    "identifierInvalid": "Nieprawidłowy identyfikator.",
+    "linkInvalid": "Ten link jest nieprawidłowy.",
+    "passwordUnchanged": "Wybierz hasło inne niż obecne.",
+    "resetLinkInvalid": "Ten link do resetowania hasła jest nieprawidłowy lub wygasł."
+  },
+  "layout": {
+    "metaTitle": "Konto",
+    "tagline": "Sklonuj, zmień nazwę, wdróż.",
+    "decorativeLabel": "Dekoracyjny element",
+    "heroKicker": "Twój kolejny projekt zaczyna się tutaj",
+    "heroLine1": "Każdy świetny produkt",
+    "heroLine2": "zaczyna się od pierwszego commita."
+  },
+  "pages": {
+    "emailConfirmation": {
+      "title": "Potwierdź swój adres e-mail",
+      "description": "W ten sposób weryfikujesz adres e-mail powiązany z Twoim kontem."
+    },
+    "enroll": {
+      "title": "Skonfiguruj aplikację uwierzytelniającą",
+      "description": "Twoje konto wymaga aplikacji uwierzytelniającej, zanim uzyskasz dostęp do aplikacji."
+    },
+    "forgotPassword": {
+      "title": "Nie pamiętasz hasła?",
+      "description": "Zdarza się. Wpisz swój adres e-mail, a wyślemy Ci link do jego zresetowania.",
+      "backToSignIn": "← Wróć do logowania"
+    },
+    "resetPassword": {
+      "unavailableTitle": "Link do resetowania jest niedostępny",
+      "unavailableDescription": "Tego linku brakuje, jest nieprawidłowy lub wygasł.",
+      "requestNewLink": "Poproś o nowy link",
+      "backToSignIn": "Wróć do logowania",
+      "title": "Ustaw nowe hasło",
+      "description": "Wybierz nowe hasło do swojego konta."
+    },
+    "setup": {
+      "title": "Skonfiguruj swój nowy projekt",
+      "description": "Utwórz konto głównego administratora, aby zacząć."
+    },
+    "signIn": {
+      "title": "Witaj ponownie",
+      "description": "Wpisz swoje dane, aby zalogować się na konto.",
+      "newHere": "Pierwszy raz tutaj?",
+      "createAccount": "Utwórz konto"
+    },
+    "signUp": {
+      "title": "Utwórz swoje konto",
+      "description": "Wpisz swoje dane, aby utworzyć konto.",
+      "haveAccount": "Masz już konto?",
+      "signIn": "Zaloguj się"
+    },
+    "emailChange": {
+      "title": "Potwierdź swój adres e-mail",
+      "description": "W ten sposób potwierdzasz jeden z etapów zmiany adresu e-mail do logowania zgłoszonej w ustawieniach konta."
+    }
+  },
+  "settingsPages": {
+    "title": "Ustawienia",
+    "navLabel": "Ustawienia",
+    "profileErrorTitle": "Nie udało się wczytać Twojego profilu",
+    "profileErrorMessage": "Coś poszło nie tak podczas wczytywania profilu. Nic nie zostało zmienione. Spróbuj ponownie za chwilę.",
+    "loadingProfile": "Wczytywanie profilu",
+    "loadingProfileText": "Wczytywanie profilu…",
+    "accountErrorTitle": "Nie udało się wczytać ustawień konta",
+    "accountErrorMessage": "Coś poszło nie tak podczas wczytywania konta. Nic nie zostało zmienione. Spróbuj ponownie za chwilę.",
+    "loadingAccount": "Wczytywanie konta",
+    "loadingAccountText": "Wczytywanie konta…"
+  },
+  "signIn": {
+    "email": "Adres e-mail",
+    "emailPlaceholder": "ty@przyklad.pl",
+    "password": "Hasło",
+    "passwordPlaceholder": "Wpisz swoje hasło",
+    "forgotPassword": "Nie pamiętasz hasła?",
+    "submit": "Zaloguj się",
+    "submitting": "Logowanie…",
+    "authenticator": {
+      "description": "Jeszcze jeden krok: wpisz sześciocyfrowy kod z aplikacji uwierzytelniającej.",
+      "codeLabel": "Kod z aplikacji uwierzytelniającej"
+    },
+    "emailChallenge": {
+      "sending": "Wysyłanie kodu na Twój adres e-mail…",
+      "sent": "Wysłaliśmy Ci e-mailem sześciocyfrowy kod. Wpisz go poniżej, aby dokończyć logowanie.",
+      "sendFailed": "Nie udało się wysłać kodu. Spróbuj ponownie za chwilę.",
+      "codeLabel": "Kod z e-maila",
+      "resend": "Wyślij nowy kod"
+    },
+    "recovery": {
+      "description": "Wpisz jeden z zapisanych kodów odzyskiwania. Każdego kodu można użyć tylko raz.",
+      "codeLabel": "Kod odzyskiwania"
+    },
+    "verify": "Zweryfikuj i zaloguj się",
+    "verifying": "Weryfikacja…",
+    "twoFactor": {
+      "useAuthenticator": "Użyj kodu z aplikacji uwierzytelniającej",
+      "useRecovery": "Użyj kodu odzyskiwania",
+      "useEmail": "Wyślij mi kod e-mailem",
+      "restart": "Rozpocznij logowanie od nowa"
+    }
+  },
+  "signUp": {
+    "name": "Imię i nazwisko",
+    "namePlaceholder": "Twoje imię i nazwisko",
+    "email": "Adres e-mail",
+    "emailPlaceholder": "ty@przyklad.pl",
+    "password": "Hasło",
+    "passwordPlaceholder": "Co najmniej 8 znaków",
+    "confirmPassword": "Potwierdź hasło",
+    "confirmPasswordPlaceholder": "Powtórz hasło",
+    "note": "Wyślemy link potwierdzający na Twój adres e-mail. Z konta możesz korzystać od razu.",
+    "submit": "Utwórz konto",
+    "submitting": "Tworzenie konta…",
+    "confirmation": {
+      "verifying": {
+        "title": "Potwierdzanie adresu e-mail",
+        "description": "Poczekaj, aż zweryfikujemy Twój link potwierdzający."
+      },
+      "confirmed": {
+        "title": "Adres e-mail potwierdzony",
+        "description": "Twój adres e-mail został pomyślnie zweryfikowany."
+      },
+      "failed": {
+        "title": "Nie udało się potwierdzić adresu e-mail",
+        "description": "Tego linku brakuje, jest nieprawidłowy lub wygasł. Użyj linku potwierdzającego z wiadomości e-mail."
+      },
+      "continue": "Dalej"
+    }
+  },
+  "passwordReset": {
+    "forgot": {
+      "inboxTitle": "Sprawdź skrzynkę",
+      "inboxDescription": "Jeśli jakieś konto pasuje do tego adresu, wkrótce otrzymasz link do zresetowania hasła.",
+      "email": "Adres e-mail",
+      "emailPlaceholder": "ty@przyklad.pl",
+      "submit": "Wyślij link do resetowania",
+      "submitting": "Wysyłanie…"
+    },
+    "reset": {
+      "updatedTitle": "Hasło zaktualizowane",
+      "updatedDescription": "Twoje sesje zostały wylogowane. Zaloguj się nowym hasłem, aby kontynuować.",
+      "newPassword": "Nowe hasło",
+      "confirmPassword": "Potwierdź nowe hasło",
+      "submit": "Zresetuj hasło",
+      "submitting": "Aktualizowanie…",
+      "requestNewLink": "Poproś o nowy link do resetowania"
+    }
+  },
+  "setup": {
+    "createdTitle": "Administrator utworzony",
+    "createdDescription": "Zaloguj się, aby dokończyć konfigurację aplikacji uwierzytelniającej przed uzyskaniem dostępu do konta.",
+    "continueToSignIn": "Przejdź do logowania",
+    "name": "Imię i nazwisko",
+    "email": "Adres e-mail",
+    "password": "Hasło",
+    "confirmPassword": "Potwierdź hasło",
+    "submit": "Utwórz administratora",
+    "submitting": "Tworzenie administratora…"
+  },
+  "enrollment": {
+    "password": {
+      "label": "Potwierdź swoje hasło",
+      "submit": "Skonfiguruj aplikację uwierzytelniającą",
+      "submitting": "Przygotowywanie…"
+    },
+    "verify": {
+      "description": "Zeskanuj ten kod QR aplikacją uwierzytelniającą, a następnie wpisz jej sześciocyfrowy kod.",
+      "qrTitle": "Zeskanuj, aby dodać aplikację uwierzytelniającą",
+      "codeLabel": "Kod z aplikacji uwierzytelniającej",
+      "submit": "Zweryfikuj aplikację",
+      "submitting": "Weryfikacja…"
+    },
+    "recoveryCodes": {
+      "intro": "Twoja aplikacja uwierzytelniająca jest gotowa. Zapisz te kody odzyskiwania w bezpiecznym miejscu: każdy z nich może raz zastąpić kod z aplikacji przy logowaniu.",
+      "note": "Te kody są pokazywane tylko teraz. Aby ich użyć, nadal potrzebujesz hasła do konta.",
+      "saved": "Zapisałem/am kody odzyskiwania w bezpiecznym miejscu.",
+      "continue": "Przejdź do panelu"
+    }
+  },
+  "signOut": {
+    "button": "Wyloguj się",
+    "pending": "Wylogowywanie…",
+    "failed": "Nie udało się wylogować. Spróbuj ponownie."
+  },
+  "client": {
+    "verifyCodeFailed": "Nie udało się zweryfikować tego kodu.",
+    "startSetupFailed": "Nie udało się rozpocząć konfiguracji aplikacji uwierzytelniającej.",
+    "verifyAuthenticatorFailed": "Nie udało się zweryfikować kodu z aplikacji uwierzytelniającej.",
+    "resetRequestFailed": "Nie udało się poprosić o reset. Spróbuj ponownie później.",
+    "signInFailed": "Nie udało się zalogować.",
+    "signUpFailed": "Nie udało się utworzyć konta."
+  },
+  "emailProof": {
+    "inactive": {
+      "title": "Ten link nie jest aktywny",
+      "description": "Został już użyty, zastąpiony lub anulowany. Jeśli nadal chcesz zmienić adres e-mail, zacznij od nowa w ustawieniach konta."
+    },
+    "expired": {
+      "title": "Ten link wygasł",
+      "description": "Minęło 24-godzinne okno zgłoszenia. Rozpocznij zmianę ponownie w ustawieniach konta."
+    },
+    "goToSignIn": "Przejdź do logowania",
+    "currentIntro": "Potwierdź, że {maskedEmail} zgadza się na zmianę adresu e-mail do logowania. Następnie wróć do ustawień konta, aby wpisać nowy adres.",
+    "newIntro": "Potwierdź {maskedEmail} jako nowy adres e-mail do logowania. To kończy zmianę i wylogowuje wszystkie istniejące sesje.",
+    "validUntil": "Ten link działa do {expiresAt, date, dateTime}.",
+    "confirm": "Potwierdź adres e-mail",
+    "confirming": "Potwierdzanie…"
+  },
+  "settings": {
+    "feedback": {
+      "lifecycle": {
+        "EXPIRED": {
+          "title": "To zgłoszenie wygasło",
+          "description": "Minęło 24-godzinne okno. Zacznij od nowa, aby kontynuować."
+        },
+        "INACTIVE": {
+          "title": "To zgłoszenie nie jest już aktywne",
+          "description": "Zostało ukończone, anulowane lub zastąpione. Odśwież, aby zobaczyć aktualny stan."
+        },
+        "DESTINATION_UNAVAILABLE": {
+          "title": "Tego adresu nie można użyć",
+          "description": "Używa go inne konto. Zacznij od nowa z innym adresem."
+        },
+        "SECURITY_STATE_CHANGED": {
+          "title": "W międzyczasie zmieniły się Twoje ustawienia bezpieczeństwa",
+          "description": "Zweryfikuj się ponownie i spróbuj jeszcze raz."
+        },
+        "SETUP_REPLACED": {
+          "title": "Ta konfiguracja aplikacji uwierzytelniającej nie jest już aktywna",
+          "description": "Rozpocznij konfigurację od nowa."
+        }
+      },
+      "rateLimited": "Odczekaj chwilę przed kolejną próbą",
+      "effects": {
+        "session-refresh": "nie udało się jeszcze zaktualizować pozostałych sesji",
+        "session-renewal": "nie udało się odnowić tej sesji",
+        "session-revocation": "nie udało się potwierdzić wylogowania"
+      },
+      "effectsJoin": " i ",
+      "completed": {
+        "updateName": "Nazwa zaktualizowana",
+        "changePassword": "Hasło zmienione",
+        "disableAuthenticator": "Aplikacja uwierzytelniająca wyłączona",
+        "revokeSession": "Sesja wylogowana",
+        "revokeOtherSessions": "Pozostałe urządzenia wylogowane",
+        "revokeAllSessions": "Wylogowano wszędzie",
+        "retryProfileSessionRefresh": "Sesje zaktualizowane",
+        "retryFactorSessionRefresh": "Sesje zaktualizowane"
+      },
+      "unchanged": {
+        "default": "Bez zmian",
+        "updateName": "Nazwa jest już aktualna",
+        "disableAuthenticator": "Żadna aplikacja uwierzytelniająca nie jest włączona",
+        "revokeSession": "Tej sesji już nie ma",
+        "revokeOtherSessions": "Nie ma innych sesji"
+      },
+      "partialTitles": {
+        "default": "Nie ukończono w całości:",
+        "updateName": "Nazwa zaktualizowana, ale",
+        "changePassword": "Hasło zmienione, ale",
+        "disableAuthenticator": "Aplikacja uwierzytelniająca wyłączona, ale",
+        "revokeSession": "Nie potwierdzono:",
+        "revokeOtherSessions": "Nie potwierdzono:",
+        "revokeAllSessions": "Nie potwierdzono:"
+      },
+      "partialTitle": "{title} {effects}.",
+      "hints": {
+        "renewal": "Twoje nowe hasło jest zapisane. Jeśli ta sesja przestanie działać, zaloguj się ponownie nowym hasłem.",
+        "committed": "Sama zmiana jest zapisana. Ponów, aby dokończyć pozostały krok.",
+        "signOut": "Ponów, aby dokończyć wylogowywanie."
+      },
+      "retry": "Ponów",
+      "cancelled": "{what}: anulowano",
+      "alreadyClosed": "{what}: zgłoszenie było już zamknięte",
+      "emailChangeWhat": "Zmiana adresu e-mail",
+      "emailRequest": {
+        "sent": "Link potwierdzający {verb, select, resent {wysłano ponownie} other {wysłano}} na Twój {stage, select, current {obecny adres} other {nowy adres}}",
+        "sentDescription": "Otwórz link w tej skrzynce, aby kontynuować. Zgłoszenie zachowuje pierwotny termin.",
+        "saved": "Zgłoszenie zapisane",
+        "rateLimitedTitle": "Zgłoszenie zapisane, ale wiadomość nie została jeszcze wysłana",
+        "rateLimitedDescription": "Odczekaj przed poproszeniem o kolejny link; zgłoszenie jest nadal aktywne.",
+        "failedTitle": "Zgłoszenie zapisane, ale nie udało się wysłać wiadomości",
+        "failedDescription": "Zgłoszenie jest nadal aktywne. Użyj opcji Wyślij ponownie, aby spróbować dostarczyć link jeszcze raz."
+      },
+      "proof": {
+        "currentConfirmed": {
+          "title": "Obecny adres potwierdzony",
+          "description": "Wróć do ustawień konta, zalogowany/a jak zwykle, aby wpisać nowy adres."
+        },
+        "completedPending": {
+          "title": "Twój adres e-mail został zmieniony, ale nie udało się potwierdzić wylogowania istniejących sesji.",
+          "description": "Zaloguj się nowym adresem e-mail. Istniejące sesje zostaną wylogowane przy następnym żądaniu."
+        },
+        "completed": {
+          "title": "Twój adres e-mail do logowania został zmieniony",
+          "description": "Wszystkie istniejące sesje zostały wylogowane. Zaloguj się nowym adresem e-mail."
+        },
+        "expired": {
+          "title": "Ten link wygasł",
+          "description": "Rozpocznij zmianę ponownie w ustawieniach konta."
+        },
+        "destinationUnavailable": {
+          "title": "Tego adresu nie można użyć",
+          "description": "Używa go inne konto. Zacznij od nowa z innym adresem."
+        },
+        "accountChanged": {
+          "title": "To zgłoszenie nie jest już ważne",
+          "description": "Twoje konto zmieniło się od czasu jego rozpoczęcia. Zacznij od nowa w ustawieniach konta."
+        },
+        "inactive": {
+          "title": "Ten link nie jest aktywny",
+          "description": "Został już użyty, zastąpiony lub anulowany."
+        }
+      },
+      "verificationSent": {
+        "title": "Wiadomość weryfikacyjna wysłana",
+        "description": "Otwórz link w swojej skrzynce, aby zweryfikować ten adres."
+      },
+      "alreadyVerified": "Ten adres jest już zweryfikowany"
+    },
+    "common": {
+      "cancel": "Anuluj",
+      "continue": "Dalej",
+      "currentPassword": "Obecne hasło",
+      "retry": "Ponów"
+    },
+    "profile": {
+      "title": "Profil",
+      "description": "Jak wyglądasz w całej aplikacji.",
+      "displayName": "Wyświetlana nazwa",
+      "editName": "Edytuj nazwę",
+      "dialogTitle": "Edytuj wyświetlaną nazwę",
+      "form": {
+        "label": "Edytuj wyświetlaną nazwę",
+        "name": "Nazwa",
+        "hint": "Od 1 do 100 znaków.",
+        "submit": "Zapisz nazwę",
+        "submitting": "Zapisywanie…"
+      }
+    },
+    "email": {
+      "title": "Adres e-mail",
+      "description": "Adres, którym się logujesz i na który wysyłane są wiadomości dotyczące konta.",
+      "currentAddress": "Obecny adres",
+      "startOver": "Zacznij od nowa",
+      "changeEmail": "Zmień adres e-mail",
+      "verifyEmail": "Zweryfikuj adres e-mail",
+      "verified": "Zweryfikowany",
+      "unverified": "Niezweryfikowany",
+      "unverifiedHint": "Zmiana hasła lub aplikacji uwierzytelniającej wymaga zweryfikowanego adresu. Podano błędny adres e-mail przy rejestracji?",
+      "correctIt": "Popraw go",
+      "restartCorrection": "Rozpocznij poprawianie od nowa",
+      "pendingChange": "Oczekująca zmiana",
+      "cancelConfirm": {
+        "title": "Anulować tę zmianę adresu e-mail?",
+        "description": "Wysłane już linki przestaną działać. Twój adres do logowania pozostanie bez zmian.",
+        "confirm": "Anuluj zgłoszenie",
+        "keep": "Zachowaj zgłoszenie"
+      },
+      "dialogChangeNew": "Rozpocznij nową zmianę adresu e-mail",
+      "dialogChange": "Zmień adres e-mail do logowania",
+      "dialogCorrect": "Popraw swój adres e-mail",
+      "dialogNewAddress": "Wpisz nowy adres e-mail",
+      "status": {
+        "awaiting_current": {
+          "title": "Oczekiwanie na obecny adres",
+          "next": "Otwórz link potwierdzający wysłany na obecny adres. Następnie wróć tutaj, aby wpisać nowy adres."
+        },
+        "awaiting_new_address": {
+          "title": "Obecny adres potwierdzony",
+          "next": "Wpisz nowy adres e-mail. Zostanie na niego wysłany link potwierdzający."
+        },
+        "awaiting_new": {
+          "title": "Oczekiwanie na nowy adres",
+          "next": "Otwórz link potwierdzający wysłany na nowy adres. Potwierdzenie kończy zmianę i wylogowuje wszystkie sesje; potem zaloguj się nowym adresem."
+        },
+        "currentAddress": "Obecny adres",
+        "newAddress": "Nowy adres",
+        "expires": "Wygasa",
+        "enterNewAddress": "Wpisz nowy adres",
+        "resendIn": "Wyślij ponownie za {seconds} s",
+        "resend": "Wyślij link ponownie",
+        "cancelRequest": "Anuluj zgłoszenie"
+      },
+      "changeForm": {
+        "label": "Zmień adres e-mail",
+        "sending": "Wysyłanie…",
+        "startOver": "Zacznij od nowa",
+        "continue": "Dalej",
+        "currentEmail": "Obecny adres e-mail",
+        "hint": "Najpierw zostanie tu wysłany link potwierdzający. Po jego potwierdzeniu wybierzesz nowy adres w tej sekcji, a nowa skrzynka również go potwierdzi.",
+        "replacingHint": "Trwające obecnie zgłoszenie zostanie anulowane.",
+        "confirm": {
+          "titleNew": "Rozpocząć nową zmianę adresu e-mail?",
+          "title": "Zmienić adres e-mail do logowania?",
+          "replacing": "Obecne zgłoszenie zostanie anulowane, a jego linki przestaną działać. ",
+          "description": "{prefix}Link potwierdzający zostanie wysłany na {email}. Po jego potwierdzeniu wybierzesz tutaj nowy adres, a nowa skrzynka również go potwierdzi. Do tego czasu nic się nie zmieni; zgłoszenie wygasa po 24 godzinach.",
+          "confirmNew": "Zacznij od nowa",
+          "confirm": "Wyślij potwierdzenie",
+          "keep": "Zachowaj obecny adres"
+        }
+      },
+      "correctionForm": {
+        "label": "Popraw adres e-mail",
+        "hint": "Użyj tej opcji, gdy {email} jest błędny lub niedostępny. Link potwierdzający zostanie wysłany tylko na poprawiony adres; na obecny nic nie zostanie wysłane. Potwierdzenie kończy zmianę i wylogowuje wszystkie sesje.",
+        "newEmail": "Poprawiony adres e-mail",
+        "authenticatorCode": "Kod z aplikacji uwierzytelniającej",
+        "submit": "Wyślij potwierdzenie",
+        "submitting": "Wysyłanie…"
+      },
+      "newEmailForm": {
+        "label": "Wpisz nowy adres e-mail",
+        "newEmail": "Nowy adres e-mail",
+        "hint": "Na ten adres zostanie wysłany link potwierdzający. Po wybraniu nie można go edytować; anuluj i zacznij od nowa, aby wybrać inny.",
+        "submit": "Wyślij potwierdzenie",
+        "submitting": "Wysyłanie…"
+      }
+    },
+    "password": {
+      "title": "Hasło",
+      "description": "Używane razem z adresem e-mail do logowania.",
+      "label": "Hasło",
+      "change": "Zmień hasło",
+      "policy": "Od 8 do 128 znaków.",
+      "unverifiedHint": "Zweryfikuj adres e-mail, aby zmienić tutaj hasło. Zapomniane hasło zawsze można zresetować ze strony logowania.",
+      "dialogTitle": "Zmień swoje hasło",
+      "form": {
+        "label": "Zmień hasło",
+        "newPassword": "Nowe hasło",
+        "confirmNewPassword": "Potwierdź nowe hasło",
+        "hint": "Od 8 do 128 znaków; menedżer haseł mile widziany.",
+        "revokeOthers": "Wyloguj pozostałe urządzenia (zalecane)",
+        "submit": "Zmień hasło",
+        "submitting": "Zmienianie…"
+      }
+    },
+    "authenticator": {
+      "title": "Aplikacja uwierzytelniająca",
+      "description": "Kod z aplikacji uwierzytelniającej przy logowaniu i przy wrażliwych zmianach.",
+      "requiredBadge": "Wymagana dla Twojego konta",
+      "requiredTooltip": "Twoja rola wymaga aplikacji uwierzytelniającej; można ją zastąpić, ale nie wyłączyć.",
+      "enabled": "Włączona",
+      "notSetUp": "Nieskonfigurowana",
+      "setUp": "Skonfiguruj aplikację",
+      "replace": "Zastąp aplikację",
+      "disable": "Wyłącz",
+      "status": "Status",
+      "unverifiedHint": "Zweryfikuj adres e-mail, aby zarządzać aplikacją uwierzytelniającą.",
+      "disableDialogTitle": "Wyłącz aplikację uwierzytelniającą",
+      "disableForm": {
+        "label": "Wyłącz aplikację uwierzytelniającą",
+        "submit": "Wyłącz aplikację",
+        "submitting": "Wyłączanie…",
+        "confirm": {
+          "title": "Wyłączyć aplikację uwierzytelniającą?",
+          "description": "Logowanie nie będzie już wymagać kodu z aplikacji, a kody odzyskiwania przestaną działać. Zostaniesz poproszony/a o weryfikację obecną aplikacją.",
+          "confirm": "Wyłącz aplikację"
+        }
+      },
+      "setupFlow": {
+        "titles": {
+          "enroll": {
+            "password": "Skonfiguruj aplikację uwierzytelniającą",
+            "code": "Zeskanuj i potwierdź",
+            "codes": "Zapisz kody odzyskiwania"
+          },
+          "replace": {
+            "password": "Zastąp aplikację uwierzytelniającą",
+            "code": "Zeskanuj i potwierdź nową",
+            "codes": "Zapisz nowe kody odzyskiwania"
+          }
+        },
+        "done": {
+          "enroll": "Aplikacja uwierzytelniająca aktywowana",
+          "replace": "Aplikacja uwierzytelniająca zastąpiona"
+        },
+        "partialWarning": "Twoja aplikacja uwierzytelniająca jest aktywna, ale nie udało się jeszcze zaktualizować pozostałych sesji. Ponów później z poziomu sekcji.",
+        "codesUnavailableTitle": "{done}, ale nie udało się wyświetlić kodów odzyskiwania",
+        "codesUnavailableDescription": "Wygeneruj nowe kody odzyskiwania, aby otrzymać zestaw, który możesz zapisać.",
+        "partialTitle": "{done}, ale",
+        "partialDescription": "nie udało się jeszcze zaktualizować pozostałych sesji."
+      },
+      "setupForm": {
+        "labelEnroll": "Skonfiguruj aplikację uwierzytelniającą",
+        "labelReplace": "Zastąp aplikację uwierzytelniającą",
+        "hintEnroll": "Potwierdź hasło, a następnie zeskanuj kod aplikacją uwierzytelniającą. Nic się nie zmieni, dopóki nie wpiszesz jej pierwszego kodu.",
+        "hintReplace": "Potwierdź hasło; zostaniesz też poproszony/a o kod z obecnej aplikacji. Obecna działa, dopóki nowa nie zostanie potwierdzona.",
+        "submit": "Dalej",
+        "submitting": "Przygotowywanie…"
+      },
+      "codeForm": {
+        "label": "Potwierdź nową aplikację uwierzytelniającą",
+        "hintEnroll": "Zeskanuj ten kod aplikacją uwierzytelniającą, a następnie wpisz sześciocyfrowy kod, który pokazuje.",
+        "hintReplace": "Zeskanuj ten kod aplikacją uwierzytelniającą, a następnie wpisz sześciocyfrowy kod, który pokazuje dla nowego wpisu. Kod z obecnej aplikacji nie kończy tego kroku.",
+        "qrTitle": "Zeskanuj, aby skonfigurować aplikację uwierzytelniającą",
+        "manualKey": "Nie możesz zeskanować? Wpisz ten klucz ręcznie:",
+        "code": "Kod z nowej aplikacji uwierzytelniającej",
+        "expiresAt": "Ta konfiguracja wygasa {expiresAt, date, dateTime}.",
+        "cancel": "Anuluj konfigurację",
+        "submitEnroll": "Aktywuj aplikację",
+        "submitReplace": "Zastąp aplikację",
+        "submitting": "Weryfikacja…"
+      }
+    },
+    "recoveryCodes": {
+      "title": "Kody odzyskiwania",
+      "description": "Jednorazowe kody zastępujące aplikację uwierzytelniającą, gdy jest niedostępna.",
+      "codes": "Kody",
+      "generate": "Wygeneruj nowe kody",
+      "hint": "Wygenerowanie nowego zestawu natychmiast zastępuje wszystkie poprzednie kody. Kody są pokazywane raz, przy generowaniu.",
+      "dialogSave": "Zapisz nowe kody odzyskiwania",
+      "dialogGenerate": "Wygeneruj nowe kody odzyskiwania",
+      "unavailable": {
+        "title": "Nowe kody zostały wygenerowane, ale nie udało się ich wyświetlić",
+        "description": "Twoje poprzednie kody już nie działają. Wygeneruj ponownie, aby otrzymać zestaw, który możesz zapisać."
+      },
+      "generated": {
+        "title": "Wygenerowano nowe kody odzyskiwania",
+        "description": "Twoje poprzednie kody już nie działają."
+      },
+      "form": {
+        "label": "Wygeneruj nowe kody odzyskiwania",
+        "submit": "Wygeneruj nowe kody",
+        "submitting": "Generowanie…",
+        "confirm": {
+          "title": "Wygenerować nowe kody odzyskiwania?",
+          "description": "Twoje poprzednie kody odzyskiwania natychmiast przestaną działać. Nowy zestaw jest pokazywany raz; zapisz go przed zamknięciem.",
+          "confirm": "Wygeneruj nowe kody"
+        }
+      },
+      "result": {
+        "region": "Nowe kody odzyskiwania",
+        "intro": "Te kody są pokazywane tylko teraz. Każdy z nich raz zastępuje kod z aplikacji przy logowaniu; nadal potrzebujesz hasła.",
+        "copyAll": "Kopiuj wszystkie",
+        "download": "Pobierz .txt",
+        "copied": "Skopiowano do schowka.",
+        "copyFailed": "Kopiowanie nie powiodło się; zaznacz kody i skopiuj je ręcznie.",
+        "saved": "Zapisałem/am te kody w bezpiecznym miejscu.",
+        "done": "Gotowe",
+        "fileHeading": "Kody odzyskiwania {appName}",
+        "fileGenerated": "Wygenerowano {issuedAt, date, dateTime}",
+        "fileNote": "Każdego kodu można użyć raz zamiast kodu z aplikacji uwierzytelniającej."
+      }
+    },
+    "sessions": {
+      "title": "Sesje",
+      "description": "Urządzenia i przeglądarki aktualnie zalogowane na Twoje konto.",
+      "signOutOthers": "Wyloguj pozostałe urządzenia",
+      "signOutEverywhere": "Wyloguj wszędzie",
+      "signOut": "Wyloguj",
+      "thisDevice": "To urządzenie",
+      "signedIn": "Zalogowano",
+      "ip": "IP {ip}",
+      "unknownIp": "nieznane",
+      "details": "Szczegóły",
+      "expires": "Wygasa {time}",
+      "listLabel": "Sesje",
+      "count": "{total, plural, one {# aktywna sesja} few {# aktywne sesje} many {# aktywnych sesji} other {# aktywnej sesji}}",
+      "pageOf": " · strona {page} z {pages}",
+      "pagesLabel": "Strony sesji",
+      "previous": "Poprzednia",
+      "next": "Następna",
+      "confirmOthers": {
+        "title": "Wylogować pozostałe urządzenia?",
+        "description": "Każda sesja oprócz tej zakończy się natychmiast. Mogą zalogować się ponownie.",
+        "confirm": "Wyloguj pozostałe urządzenia"
+      },
+      "confirmEverywhere": {
+        "title": "Wylogować wszędzie?",
+        "description": "Każda sesja zakończy się natychmiast, łącznie z tą. Zostaniesz przeniesiony/a na stronę logowania.",
+        "confirm": "Wyloguj wszędzie"
+      },
+      "confirmSession": {
+        "title": "Wylogować tę sesję?",
+        "description": "{device}, zalogowane {signedIn, date, dateTime}, zostanie wylogowane natychmiast. Może zalogować się ponownie.",
+        "confirm": "Wyloguj sesję"
+      }
+    }
+  }
+}

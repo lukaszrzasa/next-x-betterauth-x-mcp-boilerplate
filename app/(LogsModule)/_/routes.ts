@@ -12,13 +12,13 @@ import { defineRoutes } from "@/src/lib/access/routes";
 export const logsRoutes = defineRoutes({
   staffLogs: {
     href: "/admin/staff-logs",
-    label: "Staff log",
+    label: "nav.staffLog",
     icon: "staffLogs",
     access: { roles: ["admin"] },
   },
   emailLogs: {
     href: "/admin/email-logs",
-    label: "Email logs",
+    label: "nav.emailLogs",
     icon: "emailLogs",
     access: { roles: ["admin"] },
   },

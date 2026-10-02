@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 import { useAction } from "@/src/lib/actions";
 import {
   cancelEmailRequestAction,
@@ -22,6 +23,7 @@ import {
  */
 export function useEmailRequestActions({ onSettled }: { onSettled: (feedback: Feedback) => void }) {
   const router = useRouter();
+  const t = useCatalog();
   const resend = useAction(resendEmailRequestAction, { onError: () => true });
   const cancel = useAction(cancelEmailRequestAction, { onError: () => true });
   const verification = useAction(resendVerificationAction, { onError: () => true });
@@ -31,20 +33,20 @@ export function useEmailRequestActions({ onSettled }: { onSettled: (feedback: Fe
     async resend(requestId: string) {
       const result = await resend.execute({ requestId });
       if (result.status === "success") {
-        onSettled(describeEmailRequestOutcome(result.data, true));
+        onSettled(describeEmailRequestOutcome(t, result.data, true));
         router.refresh();
       } else if (result.status === "error") {
-        onSettled(describeSettingsFailure(result.error));
+        onSettled(describeSettingsFailure(t, result.error));
         if (result.error.reason === "NOT_FOUND" || result.error.reason === "CONFLICT") router.refresh();
       }
     },
     async cancel(requestId: string) {
       const result = await cancel.execute({ requestId });
       if (result.status === "success") {
-        onSettled(describeCancelOutcome(result.data, "Email change"));
+        onSettled(describeCancelOutcome(t, result.data, t("auth.settings.feedback.emailChangeWhat")));
         router.refresh();
       } else if (result.status === "error") {
-        onSettled(describeSettingsFailure(result.error));
+        onSettled(describeSettingsFailure(t, result.error));
       }
     },
     async resendVerification() {
@@ -52,12 +54,16 @@ export function useEmailRequestActions({ onSettled }: { onSettled: (feedback: Fe
       if (result.status === "success") {
         onSettled(
           result.data.status === "completed"
-            ? { tone: "success", title: "Verification email sent", description: "Open the link in your mailbox to verify this address." }
-            : { tone: "info", title: "This address is already verified" },
+            ? {
+                tone: "success",
+                title: t("auth.settings.feedback.verificationSent.title"),
+                description: t("auth.settings.feedback.verificationSent.description"),
+              }
+            : { tone: "info", title: t("auth.settings.feedback.alreadyVerified") },
         );
         if (result.data.status === "unchanged") router.refresh();
       } else if (result.status === "error") {
-        onSettled(describeSettingsFailure(result.error));
+        onSettled(describeSettingsFailure(t, result.error));
       }
     },
   };

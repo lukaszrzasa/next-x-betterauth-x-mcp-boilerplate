@@ -1,5 +1,6 @@
 "use client";
 
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 import { useAction } from "@/src/lib/actions";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
 import { beginEnrollmentAction, beginReplacementAction } from "@/app/(AuthModule)/_/actions";
@@ -20,6 +21,7 @@ export function useAuthenticatorSetupForm({
   kind: "enroll" | "replace";
   onStarted: (setup: SetupStarted) => void;
 }) {
+  const t = useCatalog();
   const action = kind === "enroll" ? beginEnrollmentAction : beginReplacementAction;
   const { form, createSubmitHandler } = useSchemaForm(currentPasswordFormSchema);
   const { execute, isPending } = useAction(action, { onError: () => true });
@@ -28,7 +30,7 @@ export function useAuthenticatorSetupForm({
     const result = await execute({ currentPassword });
     if (result.status === "error") {
       if (attributeFieldError(form, result.error, ["currentPassword"])) return;
-      throw new Error(rootMessage(result.error));
+      throw new Error(rootMessage(t, result.error));
     }
     if (result.status !== "success") return;
     form.reset();

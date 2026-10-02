@@ -1,0 +1,225 @@
+{
+  "common": {
+    "actions": {
+      "cancel": "Anuluj",
+      "confirm": "Potwierdź",
+      "close": "Zamknij",
+      "retry": "Ponów",
+      "dismiss": "Zamknij",
+      "copy": "Kopiuj",
+      "copied": "Skopiowano",
+      "edit": "Edytuj",
+      "save": "Zapisz",
+      "back": "Wstecz",
+      "continue": "Dalej",
+      "refresh": "Odśwież",
+      "tryAgain": "Spróbuj ponownie",
+      "signIn": "Zaloguj się",
+      "signOut": "Wyloguj się",
+      "signingOut": "Wylogowywanie…",
+      "working": "Trwa…",
+      "viewDetails": "Zobacz szczegóły",
+      "clearFilters": "Wyczyść filtry",
+      "showAllTime": "Pokaż cały okres"
+    },
+    "form": {
+      "connectionError": "Nie udało się połączyć. Spróbuj ponownie.",
+      "checkValues": "Sprawdź wprowadzone wartości."
+    },
+    "unknown": "Nieznane",
+    "device": {
+      "unknown": "Nieznane urządzenie",
+      "browserOnPlatform": "{browser} na {platform}"
+    },
+    "timeLeft": {
+      "expired": "wygasło",
+      "hoursMinutes": "pozostało {hours} godz. {minutes} min",
+      "minutes": "pozostało {minutes} min",
+      "seconds": "pozostało {seconds} s"
+    },
+    "pagination": {
+      "rowsPerPage": "Wierszy na stronę",
+      "pageOf": "Strona {page} z {pages}",
+      "rows": "{total, plural, =0 {Brak wierszy} one {# wiersz} few {# wiersze} many {# wierszy} other {# wiersza}}",
+      "firstPage": "Pierwsza strona",
+      "previousPage": "Poprzednia strona",
+      "nextPage": "Następna strona",
+      "lastPage": "Ostatnia strona",
+      "range": "{first}–{last} z {total, number} ({itemLabel})",
+      "zero": "0 ({itemLabel})",
+      "sortBy": "Sortuj według: {title}, {direction}",
+      "ascending": "rosnąco",
+      "descending": "malejąco",
+      "navigation": "Stronicowanie",
+      "loading": "Ładowanie"
+    },
+    "theme": {
+      "change": "Zmień motyw",
+      "light": "Jasny",
+      "dark": "Ciemny",
+      "system": "Systemowy"
+    },
+    "meta": {
+      "description": "Punkt wyjścia do budowy nowego projektu."
+    },
+    "feedback": {
+      "retryIn": "Możesz {verb} za {seconds} s.",
+      "retryNow": "Możesz {verb} teraz.",
+      "tryAgainVerb": "spróbować ponownie"
+    },
+    "countdown": {
+      "seconds": "{seconds} s",
+      "now": "teraz"
+    },
+    "copy": {
+      "copied": "Skopiowano",
+      "failed": "Nie udało się skopiować; zaznacz tekst ręcznie"
+    },
+    "shell": {
+      "skipToContent": "Przejdź do treści",
+      "accountMenu": "Menu konta",
+      "navigation": "Nawigacja",
+      "navigationDrawer": "Panel nawigacji.",
+      "toggleSidebar": "Przełącz pasek boczny",
+      "breadcrumb": "Ścieżka nawigacji",
+      "admin": "Administracja"
+    },
+    "verification": {
+      "title": "Potwierdź swoją tożsamość",
+      "description": "Ta operacja wymaga drugiego składnika. Wpisz sześciocyfrowy kod {source, select, chosen {z wybranej metody} totp {z aplikacji uwierzytelniającej} other {wysłany na Twój adres e-mail}}.",
+      "methodLabel": "Metoda weryfikacji",
+      "methods": {
+        "totp": "Aplikacja uwierzytelniająca",
+        "email": "Kod e-mail"
+      },
+      "sendEmailCode": "Wyślij kod e-mailem",
+      "codeLabel": "Sześciocyfrowy kod",
+      "codeRequired": "Wpisz swój sześciocyfrowy kod.",
+      "codePattern": "Wpisz dokładnie sześć cyfr.",
+      "codeSent": "Kod został wysłany na Twój adres e-mail.",
+      "pleaseWait": "Proszę czekać…",
+      "verifyAndContinue": "Zweryfikuj i kontynuuj"
+    }
+  },
+  "nav": {
+    "groups": {
+      "general": "Ogólne",
+      "system": "System"
+    },
+    "home": "Strona główna",
+    "dashboard": "Panel administracyjny",
+    "users": "Użytkownicy",
+    "userDetails": "Szczegóły użytkownika",
+    "staffLog": "Dziennik zespołu",
+    "emailLogs": "Dziennik e-maili",
+    "panel": "Panel",
+    "settings": "Ustawienia",
+    "profile": "Profil",
+    "account": "Konto",
+    "admin": "Administracja"
+  },
+  "errors": {
+    "reason": {
+      "INVALID_INPUT": "Sprawdź wprowadzone wartości.",
+      "UNAUTHENTICATED": "Zaloguj się, aby kontynuować.",
+      "FORBIDDEN": "Nie masz uprawnień do tej operacji.",
+      "EMAIL_VERIFICATION_REQUIRED": "Najpierw zweryfikuj swój adres e-mail.",
+      "IMPERSONATION_FORBIDDEN": "Ta operacja nie jest dostępna podczas podszywania się.",
+      "NOT_FOUND": "To już nie istnieje.",
+      "CONFLICT": "Ta zmiana nie jest teraz możliwa.",
+      "TWO_FACTOR_REQUIRED": "Wymagana jest weryfikacja.",
+      "TWO_FACTOR_ENROLLMENT_REQUIRED": "Najpierw skonfiguruj uwierzytelnianie dwuskładnikowe.",
+      "STEP_UP_INVALID_CODE": "Ten kod weryfikacyjny jest nieprawidłowy.",
+      "STEP_UP_LOCKED": "Weryfikacja została zablokowana.",
+      "RATE_LIMITED": "Odczekaj chwilę przed kolejną próbą.",
+      "INTERNAL": "Coś poszło nie tak."
+    },
+    "describe": {
+      "RATE_LIMITED": {
+        "title": "Odczekaj chwilę przed kolejną próbą"
+      },
+      "NOT_FOUND": {
+        "title": "To już nie istnieje",
+        "description": "Odśwież stronę, aby zobaczyć aktualny stan."
+      },
+      "CONFLICT": {
+        "title": "Ta zmiana nie jest teraz możliwa"
+      },
+      "FORBIDDEN": {
+        "title": "Brak uprawnień"
+      },
+      "UNAUTHENTICATED": {
+        "title": "Twoja sesja wygasła",
+        "description": "Zaloguj się ponownie, aby kontynuować."
+      },
+      "STEP_UP_LOCKED": {
+        "title": "Weryfikacja została zablokowana"
+      },
+      "INVALID_INPUT": {
+        "title": "Sprawdź wprowadzone wartości"
+      },
+      "VERIFICATION_REQUIRED": {
+        "title": "Wymagana jest weryfikacja"
+      },
+      "UNCONFIRMED": {
+        "title": "Nie udało się potwierdzić wykonania operacji",
+        "description": "Mogła zostać wykonana lub nie. Odśwież stronę, aby sprawdzić aktualny stan, zanim spróbujesz ponownie."
+      }
+    },
+    "transport": "Nie udało się wykonać operacji. Sprawdź jej wynik, zanim spróbujesz ponownie.",
+    "auth": {
+      "stepUpLocked": "Zbyt wiele nieudanych prób weryfikacji. Spróbuj ponownie później.",
+      "emailCodesRequireVerifiedEmail": "Zweryfikuj swój adres e-mail, zanim użyjesz kodów weryfikacyjnych wysyłanych e-mailem.",
+      "emailCodeCooldown": "Odczekaj {seconds} sekund przed wysłaniem kolejnego kodu e-mailem.",
+      "stepUpProofShape": "Weryfikacja wymaga metody i sześciocyfrowego kodu.",
+      "methodUnavailable": "Ta metoda weryfikacji nie jest dostępna dla tego konta.",
+      "invalidCode": "Ten kod weryfikacyjny jest nieprawidłowy.",
+      "codeAlreadyUsed": "Ten kod weryfikacyjny został już użyty.",
+      "securityStateChanged": "Ustawienia bezpieczeństwa Twojego konta zmieniły się w trakcie tej operacji. Zweryfikuj się ponownie i spróbuj jeszcze raz.",
+      "accountNotFound": "To konto już nie istnieje.",
+      "impersonationForbidden": "Operacji chronionych uwierzytelnianiem dwuskładnikowym nie można wykonywać podczas podszywania się.",
+      "notFound": "Nie znaleziono.",
+      "missingPermission": "Nie masz uprawnień do tej operacji.",
+      "enrollmentRequired": "Skonfiguruj uwierzytelnianie dwuskładnikowe, aby wykonać tę operację.",
+      "entryPointUnavailable": "Ta operacja nie jest tutaj dostępna.",
+      "staleProof": "Dla tego konta nie jest oczekiwany dowód weryfikacji; wyślij ponownie bez niego.",
+      "inputFailedValidation": "Dane nie przeszły walidacji.",
+      "bodyNotJson": "Treść żądania musi być poprawnym JSON-em.",
+      "originNotAllowed": "Źródło żądania jest niedozwolone.",
+      "stepUpRequired": "Wymagana jest dodatkowa weryfikacja."
+    },
+    "provider": {
+      "default": "Coś poszło nie tak. Spróbuj ponownie.",
+      "INVALID_EMAIL_OR_PASSWORD": "Nieprawidłowy adres e-mail lub hasło.",
+      "USER_NOT_FOUND": "Żadne konto nie pasuje do tych danych.",
+      "INVALID_PASSWORD": "To hasło jest nieprawidłowe.",
+      "INVALID_EMAIL": "Wpisz poprawny adres e-mail.",
+      "INVALID_TOKEN": "Ten link jest już nieważny. Poproś o nowy.",
+      "EMAIL_NOT_VERIFIED": "Zweryfikuj swój adres e-mail przed zalogowaniem.",
+      "EMAIL_NOT_VERIFIED_FOR_OTP": "Zweryfikuj swój adres e-mail, zanim zalogujesz się kodem wysłanym e-mailem.",
+      "PASSWORD_TOO_SHORT": "Użyj co najmniej 8 znaków.",
+      "PASSWORD_TOO_LONG": "Użyj najwyżej 128 znaków.",
+      "USER_ALREADY_EXISTS": "Konto z tym adresem e-mail już istnieje.",
+      "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL": "Konto z tym adresem e-mail już istnieje. Użyj innego adresu.",
+      "SESSION_EXPIRED": "Twoja sesja wygasła. Zaloguj się ponownie, aby kontynuować.",
+      "CREDENTIAL_ACCOUNT_NOT_FOUND": "To konto nie ma logowania hasłem.",
+      "USER_EMAIL_NOT_FOUND": "Żadne konto nie używa tego adresu e-mail.",
+      "EMAIL_ALREADY_VERIFIED": "Ten adres e-mail jest już zweryfikowany.",
+      "FAILED_TO_CREATE_USER": "Nie udało się utworzyć konta. Spróbuj ponownie.",
+      "INVALID_CODE": "Ten kod jest nieprawidłowy.",
+      "OTP_HAS_EXPIRED": "Ten kod wygasł. Poproś o nowy.",
+      "OTP_NOT_ENABLED": "Kody e-mail nie są dostępne dla tego konta.",
+      "TOTP_NOT_ENABLED": "Dla tego konta nie skonfigurowano aplikacji uwierzytelniającej.",
+      "TOTP_ALREADY_ENABLED": "Aplikacja uwierzytelniająca jest już skonfigurowana dla tego konta.",
+      "TWO_FACTOR_NOT_ENABLED": "Uwierzytelnianie dwuskładnikowe nie jest włączone dla tego konta.",
+      "BACKUP_CODES_NOT_ENABLED": "Kody odzyskiwania nie są włączone dla tego konta.",
+      "INVALID_BACKUP_CODE": "Ten kod odzyskiwania jest nieprawidłowy.",
+      "INVALID_TWO_FACTOR_COOKIE": "Weryfikacja logowania wygasła. Zaloguj się ponownie.",
+      "TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE": "Zbyt wiele prób. Poproś o nowy kod.",
+      "ACCOUNT_TEMPORARILY_LOCKED": "Zbyt wiele nieudanych prób weryfikacji. Konto zostało tymczasowo zablokowane; spróbuj ponownie później.",
+      "TOO_MANY_ATTEMPTS": "Zbyt wiele prób. Spróbuj ponownie później.",
+      "BANNED_USER": "To konto zostało zablokowane.",
+      "SESSION_NOT_FRESH": "Zaloguj się ponownie, aby wykonać tę operację."
+    }
+  }
+}

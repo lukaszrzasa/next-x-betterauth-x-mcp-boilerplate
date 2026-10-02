@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Alert, AlertDescription, AlertTitle } from "@/src/components/ui/alert";
 import { Button } from "@/src/components/ui/button";
 import { FieldGroup } from "@/src/components/ui/field";
@@ -10,16 +11,14 @@ import { useResetPasswordForm } from "@/app/(AuthModule)/_/hooks/form/useResetPa
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 export function ResetPasswordForm({ token }: { token: string }) {
+  const t = useTranslations("auth.passwordReset.reset");
   const { form, onSubmit, passwordUpdated } = useResetPasswordForm(token);
 
   if (passwordUpdated) {
     return (
       <Alert>
-        <AlertTitle>Password updated</AlertTitle>
-        <AlertDescription>
-          Your sessions have been signed out. Sign in with your new password to
-          continue.
-        </AlertDescription>
+        <AlertTitle>{t("updatedTitle")}</AlertTitle>
+        <AlertDescription>{t("updatedDescription")}</AlertDescription>
       </Alert>
     );
   }
@@ -31,14 +30,14 @@ export function ResetPasswordForm({ token }: { token: string }) {
         <FormInput
           control={form.control}
           name="password"
-          label="New password"
+          label={t("newPassword")}
           type="password"
           autoComplete="new-password"
         />
         <FormInput
           control={form.control}
           name="confirmPassword"
-          label="Confirm new password"
+          label={t("confirmPassword")}
           type="password"
           autoComplete="new-password"
         />
@@ -47,11 +46,11 @@ export function ResetPasswordForm({ token }: { token: string }) {
           className="ui:h-11"
           disabled={form.formState.isSubmitting}
         >
-          {form.formState.isSubmitting ? "Updating…" : "Reset password"}
+          {form.formState.isSubmitting ? t("submitting") : t("submit")}
         </Button>
         {form.formState.errors.root && (
           <Button asChild variant="link">
-            <Link href={authRoutes.forgotPassword.href}>Request a new reset link</Link>
+            <Link href={authRoutes.forgotPassword.href}>{t("requestNewLink")}</Link>
           </Button>
         )}
       </FieldGroup>

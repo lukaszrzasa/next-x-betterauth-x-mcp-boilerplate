@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/src/components/ui/button";
 import {
   Dialog,
@@ -34,6 +35,7 @@ export function LogDialogFrame({
   onCloseAutoFocus: (event: Event) => void;
   children: ReactNode;
 }) {
+  const t = useTranslations("common.actions");
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent
@@ -47,7 +49,7 @@ export function LogDialogFrame({
         <div className="ui:min-h-0 ui:flex-1 ui:overflow-y-auto ui:p-5 ui:sm:p-6">{children}</div>
         <DialogFooter className="ui:border-t ui:p-4">
           <Button type="button" variant="outline" onClick={onClose}>
-            Close
+            {t("close")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -93,9 +95,10 @@ export function LogDialogMessage({
 
 /** Shown when a directly linked or history-selected record falls outside the current list criteria. */
 export function OutsideCriteriaNote() {
+  const t = useTranslations("logsAdmin.shared.dialog");
   return (
     <p className="ui:mb-4 ui:rounded-md ui:border ui:border-dashed ui:px-3 ui:py-2 ui:text-sm ui:text-muted-foreground">
-      This log is outside the current list filters, so it may not appear in the table behind this dialog.
+      {t("outsideCriteria")}
     </p>
   );
 }

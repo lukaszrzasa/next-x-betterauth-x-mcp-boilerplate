@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { useTranslations, type Messages } from "next-intl";
 import { SearchIcon, XIcon } from "lucide-react";
 import { DataTableToolbar } from "@/src/components/data-table/DataTableToolbar";
 import { Button } from "@/src/components/ui/button";
@@ -22,34 +23,16 @@ import {
   type UserVerifiedFilter,
 } from "@/app/(AuthModule)/admin/_/schema";
 import type { UsersQuery } from "@/app/(AuthModule)/admin/_/types";
-import { ROLE_LABELS } from "@/app/(AuthModule)/admin/_/components/users/UserBadges";
+import { useRoleLabel } from "@/app/(AuthModule)/admin/_/components/users/UserBadges";
 
-/** `all` plus every declared role, labelled from the one role-label table. */
-const ROLE_OPTIONS: { value: UserRoleFilter; label: string }[] = USER_ROLE_FILTERS.map((value) => ({
-  value,
-  label: value === "all" ? "All roles" : ROLE_LABELS[value],
-}));
-
-const VERIFIED_OPTIONS: { value: UserVerifiedFilter; label: string }[] = [
-  { value: "all", label: "Any verification" },
-  { value: "yes", label: "Verified" },
-  { value: "no", label: "Unverified" },
-];
-
-const STATUS_OPTIONS: { value: UserStatusFilter; label: string }[] = [
-  { value: "all", label: "Any access" },
-  { value: "active", label: "Active" },
-  { value: "banned", label: "Banned" },
-];
-
-/** The sort control's vocabulary: one value per sort/direction pair. */
-export const SORT_OPTIONS: { value: `${UserSort}:${SortDirection}`; label: string }[] = [
-  { value: "createdAt:desc", label: "Newest first" },
-  { value: "createdAt:asc", label: "Oldest first" },
-  { value: "name:asc", label: "Name A–Z" },
-  { value: "name:desc", label: "Name Z–A" },
-  { value: "email:asc", label: "Email A–Z" },
-  { value: "email:desc", label: "Email Z–A" },
+/** The sort control's vocabulary: one value per sort/direction pair, named in the catalog. */
+export const SORT_OPTIONS: { value: `${UserSort}:${SortDirection}`; key: keyof Messages["authAdmin"]["list"]["sort"] }[] = [
+  { value: "createdAt:desc", key: "createdAtDesc" },
+  { value: "createdAt:asc", key: "createdAtAsc" },
+  { value: "name:asc", key: "nameAsc" },
+  { value: "name:desc", key: "nameDesc" },
+  { value: "email:asc", key: "emailAsc" },
+  { value: "email:desc", key: "emailDesc" },
 ];
 
 export type UsersFiltersProps = {
@@ -77,8 +60,27 @@ export function UsersFilters({
     status: useId(),
     sort: useId(),
   };
+  const t = useTranslations("authAdmin.list");
+  const badges = useTranslations("authAdmin.badges");
+  const roleLabel = useRoleLabel();
   const [search, setSearch] = useState(query.q);
   const [shownQuery, setShownQuery] = useState(query.q);
+
+  /** `all` plus every declared role, labelled from the one role-label table. */
+  const roleOptions: { value: UserRoleFilter; label: string }[] = USER_ROLE_FILTERS.map((value) => ({
+    value,
+    label: value === "all" ? t("filters.allRoles") : roleLabel(value),
+  }));
+  const verifiedOptions: { value: UserVerifiedFilter; label: string }[] = [
+    { value: "all", label: t("filters.anyVerification") },
+    { value: "yes", label: badges("verified") },
+    { value: "no", label: badges("unverified") },
+  ];
+  const statusOptions: { value: UserStatusFilter; label: string }[] = [
+    { value: "all", label: t("filters.anyAccess") },
+    { value: "active", label: badges("access.active") },
+    { value: "banned", label: t("filters.banned") },
+  ];
 
   // Back/Forward (or a canonical redirect) changed the URL: show its search
   // text. Adjusted during render, the way React documents for derived state.
@@ -100,7 +102,7 @@ export function UsersFilters({
           }}
         >
           <Label htmlFor={ids.search} className="ui:sr-only">
-            Search users
+            {t("search.label")}
           </Label>
           <div className="ui:relative">
             <SearchIcon
@@ -112,7 +114,7 @@ export function UsersFilters({
               type="search"
               value={search}
               maxLength={USERS_SEARCH_MAX_LENGTH}
-              placeholder="Search by name, email or ID"
+              placeholder={t("search.placeholder")}
               autoComplete="off"
               className="ui:pl-9"
               onChange={(event) => {
@@ -127,7 +129,7 @@ export function UsersFilters({
         <>
           <div className="ui:flex ui:flex-col ui:gap-1.5">
             <Label htmlFor={ids.role} className="ui:text-xs ui:text-muted-foreground">
-              Role
+              {t("filters.role")}
             </Label>
             <NativeSelect
               id={ids.role}
@@ -137,7 +139,7 @@ export function UsersFilters({
                 onChange(withUsersQueryChange(query, { role: event.target.value as UserRoleFilter }))
               }
             >
-              {ROLE_OPTIONS.map((option) => (
+              {roleOptions.map((option) => (
                 <NativeSelectOption key={option.value} value={option.value}>
                   {option.label}
                 </NativeSelectOption>
@@ -146,7 +148,7 @@ export function UsersFilters({
           </div>
           <div className="ui:flex ui:flex-col ui:gap-1.5">
             <Label htmlFor={ids.verified} className="ui:text-xs ui:text-muted-foreground">
-              Email verification
+              {t("filters.verification")}
             </Label>
             <NativeSelect
               id={ids.verified}
@@ -158,7 +160,7 @@ export function UsersFilters({
                 )
               }
             >
-              {VERIFIED_OPTIONS.map((option) => (
+              {verifiedOptions.map((option) => (
                 <NativeSelectOption key={option.value} value={option.value}>
                   {option.label}
                 </NativeSelectOption>
@@ -167,7 +169,7 @@ export function UsersFilters({
           </div>
           <div className="ui:flex ui:flex-col ui:gap-1.5">
             <Label htmlFor={ids.status} className="ui:text-xs ui:text-muted-foreground">
-              Access
+              {t("filters.access")}
             </Label>
             <NativeSelect
               id={ids.status}
@@ -179,7 +181,7 @@ export function UsersFilters({
                 )
               }
             >
-              {STATUS_OPTIONS.map((option) => (
+              {statusOptions.map((option) => (
                 <NativeSelectOption key={option.value} value={option.value}>
                   {option.label}
                 </NativeSelectOption>
@@ -188,7 +190,7 @@ export function UsersFilters({
           </div>
           <div className="ui:flex ui:flex-col ui:gap-1.5">
             <Label htmlFor={ids.sort} className="ui:text-xs ui:text-muted-foreground">
-              Sort by
+              {t("filters.sort")}
             </Label>
             <NativeSelect
               id={ids.sort}
@@ -201,7 +203,7 @@ export function UsersFilters({
             >
               {SORT_OPTIONS.map((option) => (
                 <NativeSelectOption key={option.value} value={option.value}>
-                  {option.label}
+                  {t(`sort.${option.key}`)}
                 </NativeSelectOption>
               ))}
             </NativeSelect>
@@ -218,7 +220,7 @@ export function UsersFilters({
             onClick={() => onChange(clearUsersFilters(query))}
           >
             <XIcon aria-hidden="true" />
-            Clear filters
+            {t("clearFilters")}
           </Button>
         ) : undefined
       }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@/src/components/ui/button";
 import { FieldDescription, FieldGroup } from "@/src/components/ui/field";
 import { FormInput } from "@/src/components/forms/FormInput";
@@ -9,12 +10,12 @@ import {
   type EmailCodeDelivery,
 } from "@/app/(AuthModule)/_/hooks/form/useEmailChallengeForm";
 
-function describeDelivery(delivery: EmailCodeDelivery): string {
+function describeDelivery(t: (key: "sending" | "sent") => string, delivery: EmailCodeDelivery): string {
   switch (delivery.status) {
     case "sending":
-      return "Sending a code to your email address…";
+      return t("sending");
     case "sent":
-      return "We emailed you a six-digit code. Enter it below to finish signing in.";
+      return t("sent");
     case "failed":
       return delivery.message;
   }
@@ -28,6 +29,7 @@ export function EmailChallengeForm({
   autoRequest: boolean;
   onRequested: () => void;
 }) {
+  const t = useTranslations("auth.signIn");
   const { form, onSubmit, delivery, resendCode } = useEmailChallengeForm({
     autoRequest,
     onRequested,
@@ -38,18 +40,20 @@ export function EmailChallengeForm({
     <form onSubmit={onSubmit} noValidate>
       <FieldGroup>
         <FormError message={form.formState.errors.root?.message} />
-        <FieldDescription>{describeDelivery(delivery)}</FieldDescription>
+        <FieldDescription>
+          {describeDelivery((key) => t(`emailChallenge.${key}`), delivery)}
+        </FieldDescription>
         <FormInput
           control={form.control}
           name="code"
-          label="Email code"
+          label={t("emailChallenge.codeLabel")}
           inputMode="numeric"
           autoComplete="one-time-code"
           placeholder="000000"
           autoFocus
         />
         <Button type="submit" className="ui:h-11" disabled={pending}>
-          {pending ? "Verifying…" : "Verify and sign in"}
+          {pending ? t("verifying") : t("verify")}
         </Button>
         <Button
           type="button"
@@ -57,7 +61,7 @@ export function EmailChallengeForm({
           disabled={delivery.status === "sending"}
           onClick={() => void resendCode()}
         >
-          Send a new code
+          {t("emailChallenge.resend")}
         </Button>
       </FieldGroup>
     </form>

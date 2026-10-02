@@ -34,6 +34,8 @@ const redis = {
   },
 };
 mock.module("server-only", () => ({}));
+const { serverIntlMock } = await import("../helpers/intl.jsx");
+mock.module("next-intl/server", serverIntlMock());
 mock.module("../../src/lib/db/index.ts", () => ({ db: database, schema, ...schema }));
 mock.module("../../src/lib/redis/index.ts", () => ({
   redis,

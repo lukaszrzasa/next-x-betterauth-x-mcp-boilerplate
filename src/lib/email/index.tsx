@@ -6,6 +6,7 @@ import EmailChangeConfirmation, {
 import ResetPassword from "./templates/ResetPassword";
 import TwoFactorOtp from "./templates/TwoFactorOtp";
 import VerifyEmail from "./templates/VerifyEmail";
+import { emailLocale, emailTranslator } from "./i18n";
 import { sendEmail } from "./send";
 
 /**
@@ -13,6 +14,10 @@ import { sendEmail } from "./send";
  * logs the attempt (see `send.ts`), and declares the secrets it carries -
  * the token, the link built from it, the code - so the log keeps none of
  * them. A resolved promise means the provider accepted the message.
+ *
+ * Each message is written in the language of whoever asked for it
+ * (`emailLocale`): the subject and the body come from the `email` catalog,
+ * and the log keeps them as sent.
  */
 
 export { EmailDeliveryError, type EmailPurpose } from "./send";
@@ -37,12 +42,15 @@ export function sendVerificationEmail({
   name?: string;
   recipient?: Recipient;
 } & ProviderRequest) {
+  const locale = emailLocale(providerRequest);
+  const t = emailTranslator(locale);
   return sendEmail({
     purpose: "verification",
     to,
     recipient,
-    subject: "Verify your email address",
-    react: <VerifyEmail url={url} name={name} />,
+    locale,
+    subject: t("verify.subject"),
+    react: <VerifyEmail url={url} name={name} locale={locale} t={t} />,
     secrets: { url, token },
     providerRequest,
   });
@@ -62,12 +70,15 @@ export function sendPasswordResetEmail({
   name?: string;
   recipient?: Recipient;
 } & ProviderRequest) {
+  const locale = emailLocale(providerRequest);
+  const t = emailTranslator(locale);
   return sendEmail({
     purpose: "password-reset",
     to,
     recipient,
-    subject: "Reset your password",
-    react: <ResetPassword url={url} name={name} />,
+    locale,
+    subject: t("reset.subject"),
+    react: <ResetPassword url={url} name={name} locale={locale} t={t} />,
     secrets: { url, token },
     providerRequest,
   });
@@ -87,13 +98,16 @@ export function sendTwoFactorOtpEmail({
   name?: string;
   recipient?: Recipient;
 } & ProviderRequest) {
+  const locale = emailLocale(providerRequest);
+  const t = emailTranslator(locale);
   return sendEmail({
     purpose: "two-factor-code",
     to,
     recipient,
+    locale,
     // The code is in the subject so it is readable from a notification banner.
-    subject: `${code} is your verification code`,
-    react: <TwoFactorOtp code={code} expiresInMinutes={expiresInMinutes} name={name} />,
+    subject: t("otp.subject", { code }),
+    react: <TwoFactorOtp code={code} expiresInMinutes={expiresInMinutes} name={name} locale={locale} t={t} />,
     secrets: { code },
     providerRequest,
   });
@@ -107,7 +121,7 @@ export function sendEmailChangeConfirmationEmail({
   url,
   token,
   purpose,
-  expiresAtLabel,
+  expiresAt,
   name,
   recipient,
 }: {
@@ -115,20 +129,28 @@ export function sendEmailChangeConfirmationEmail({
   url: string;
   token: string;
   purpose: EmailChangePurpose;
-  expiresAtLabel: string;
+  /** The fixed deadline of the whole request. */
+  expiresAt: Date;
   name?: string;
   recipient?: Recipient;
 }) {
+  const locale = emailLocale();
+  const t = emailTranslator(locale);
   return sendEmail({
     purpose: purpose === "current" ? "email-change-current" : "email-change-new",
     to,
     recipient,
-    subject:
-      purpose === "current"
-        ? "Confirm your sign-in email change"
-        : "Confirm your new sign-in email address",
+    locale,
+    subject: purpose === "current" ? t("emailChange.current.subject") : t("emailChange.new.subject"),
     react: (
-      <EmailChangeConfirmation url={url} purpose={purpose} expiresAtLabel={expiresAtLabel} name={name} />
+      <EmailChangeConfirmation
+        url={url}
+        purpose={purpose}
+        expiresAt={expiresAt}
+        name={name}
+        locale={locale}
+        t={t}
+      />
     ),
     secrets: { url, token },
   });

@@ -22,15 +22,39 @@ function firstMatch(rules: typeof PLATFORMS, userAgent: string): string | null {
   return rules.find(([, matches]) => matches(userAgent))?.[0] ?? null;
 }
 
+/** The product names are proper nouns; only the sentence around them is language-specific. */
+export type DeviceWording = {
+  unknown: string;
+  /** "{browser} on {platform}" */
+  browserOnPlatform: (browser: string, platform: string) => string;
+};
+
+const ENGLISH: DeviceWording = {
+  unknown: "Unknown device",
+  browserOnPlatform: (browser, platform) => `${browser} on ${platform}`,
+};
+
+/** The `common.device` translator as `DeviceWording`, for callers inside a React tree. */
+export function deviceWording(
+  t: (key: "unknown" | "browserOnPlatform", values?: Record<string, string>) => string,
+): DeviceWording {
+  return {
+    unknown: t("unknown"),
+    browserOnPlatform: (browser, platform) => t("browserOnPlatform", { browser, platform }),
+  };
+}
+
 /**
  * A conservative, generic device label from a User-Agent string: the
  * platform family and, when obvious, the browser. Anything unrecognised is
- * "Unknown device"; the original string is for the details view.
+ * "Unknown device"; the original string is for the details view. The
+ * wording defaults to English; pass `deviceWording(useTranslations("common.device"))`
+ * for the viewer's language.
  */
-export function describeUserAgent(userAgent: string | null): string {
-  if (!userAgent) return "Unknown device";
+export function describeUserAgent(userAgent: string | null, wording: DeviceWording = ENGLISH): string {
+  if (!userAgent) return wording.unknown;
   const platform = firstMatch(PLATFORMS, userAgent);
   const browser = firstMatch(BROWSERS, userAgent);
-  if (platform && browser) return `${browser} on ${platform}`;
-  return platform ?? browser ?? "Unknown device";
+  if (platform && browser) return wording.browserOnPlatform(browser, platform);
+  return platform ?? browser ?? wording.unknown;
 }

@@ -4,7 +4,7 @@ import { APIError } from "better-auth/api";
 
 import { ActionError } from "@/src/lib/auth/errors";
 import { uniqueViolationConstraint } from "@/src/lib/postgresErrors";
-import { DENIAL_MESSAGES, emailInUseError, targetNotFoundError } from "@/app/(AuthModule)/admin/_/errors";
+import { DENIAL_MESSAGE_KEYS, emailInUseError, targetNotFoundError } from "@/app/(AuthModule)/admin/_/errors";
 
 /**
  * Better Auth refusals the operations' own checks should already have
@@ -28,7 +28,7 @@ export function translateProviderError(error: unknown): never {
   }
   if (code === "USER_NOT_FOUND") throw targetNotFoundError(error);
   if (code?.startsWith("YOU_ARE_NOT_ALLOWED") || code === "YOU_CANNOT_BAN_YOURSELF") {
-    throw new ActionError("FORBIDDEN", { message: DENIAL_MESSAGES.permission, cause: error });
+    throw new ActionError("FORBIDDEN", { message: { key: DENIAL_MESSAGE_KEYS.permission }, cause: error });
   }
   // A unique violation the provider's own pre-check raced past.
   if (uniqueViolationConstraint(error) === USER_EMAIL_UNIQUE) throw emailInUseError(error);

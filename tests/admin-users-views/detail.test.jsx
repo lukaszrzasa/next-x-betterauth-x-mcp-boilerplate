@@ -41,6 +41,7 @@ const { render, fireEvent, screen, cleanup, waitFor, within, act } = await impor
 const { ActionProvider } = await import("../../src/lib/actions");
 const { ConfirmDialogRoot } = await import("../../src/components/feedback/ConfirmDialog");
 const { ViewerProvider } = await import("../../src/components/shell/ViewerProvider");
+const { IntlWrapper } = await import("../helpers/intl");
 const { UserDetail } = await import("../../app/(AuthModule)/admin/_/components/users/detail/UserDetail");
 const { USER_ACTIONS } = await import("../../app/(AuthModule)/admin/_/types");
 
@@ -68,12 +69,14 @@ const userOf = (overrides = {}) => ({
 
 function renderDetail(user, listUrl = "/admin/users", role = "admin") {
   return render(
-    <ViewerProvider viewer={{ name: "Viewer", email: "v@example.com", image: null, role }}>
-      <ActionProvider>
-        <UserDetail user={user} listUrl={listUrl} />
-        <ConfirmDialogRoot />
-      </ActionProvider>
-    </ViewerProvider>,
+    <IntlWrapper>
+      <ViewerProvider viewer={{ name: "Viewer", email: "v@example.com", image: null, role }}>
+        <ActionProvider>
+          <UserDetail user={user} listUrl={listUrl} />
+          <ConfirmDialogRoot />
+        </ActionProvider>
+      </ViewerProvider>
+    </IntlWrapper>,
   );
 }
 
@@ -101,7 +104,7 @@ test("the header and sections present the account; controls follow capabilities,
     expect(screen.getByRole("button", { name })).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Remove ban" })).toBeNull();
   expect(screen.queryByText(/Delete/)).toBeNull();
-  expect(screen.getByText("20 Sep 2026, 14:32 UTC").getAttribute("datetime")).toBe("2026-09-20T14:32:00.000Z");
+  expect(screen.getByText("Sep 20, 2026 at 02:32 PM UTC").getAttribute("datetime")).toBe("2026-09-20T14:32:00.000Z");
   expect(screen.getByRole("button", { name: "Copy user ID" })).toBeTruthy();
 });
 
@@ -304,7 +307,7 @@ test("replacing a ban says the new period starts now; a partial ban offers to fi
   renderDetail(userOf({ accessStatus: "temporarily-banned", banExpires: "2026-10-01T12:30:00.000Z", banReason: "old" }));
   fireEvent.click(screen.getByRole("button", { name: "Update ban" }));
   const dialog = await screen.findByRole("dialog");
-  expect(dialog.textContent).toContain("banned until 1 Oct 2026, 12:30 UTC");
+  expect(dialog.textContent).toContain("banned until Oct 1, 2026 at 12:30 PM UTC");
   expect(dialog.textContent).toContain("period starts now");
   fireEvent.change(within(dialog).getByLabelText("Duration"), { target: { value: "24h" } });
   fireEvent.change(within(dialog).getByLabelText("Reason"), { target: { value: "Escalated" } });
@@ -414,12 +417,14 @@ test("the staff log is read again after a confirmed change, and never because th
   // cookie, the log's own read included. That is not news about the log.
   for (const name of ["Grace Hopper", "Grace B. Hopper"]) {
     view.rerender(
-      <ViewerProvider viewer={{ name: "Viewer", email: "v@example.com", image: null, role: "admin" }}>
-        <ActionProvider>
-          <UserDetail user={userOf({ name })} listUrl="/admin/users" />
-          <ConfirmDialogRoot />
-        </ActionProvider>
-      </ViewerProvider>,
+      <IntlWrapper>
+        <ViewerProvider viewer={{ name: "Viewer", email: "v@example.com", image: null, role: "admin" }}>
+          <ActionProvider>
+            <UserDetail user={userOf({ name })} listUrl="/admin/users" />
+            <ConfirmDialogRoot />
+          </ActionProvider>
+        </ViewerProvider>
+      </IntlWrapper>,
     );
     await act(async () => {});
   }

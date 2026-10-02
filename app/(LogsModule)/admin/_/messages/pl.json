@@ -1,0 +1,224 @@
+{
+  "errors": {
+    "logUnavailable": "Ten wpis dziennika jest niedostępny."
+  },
+  "shared": {
+    "period": {
+      "label": "Okres",
+      "ranges": {
+        "24h": "Ostatnie 24 godziny",
+        "7d": "Ostatnie 7 dni",
+        "30d": "Ostatnie 30 dni",
+        "90d": "Ostatnie 90 dni",
+        "all": "Cały okres",
+        "custom": "Własne daty (UTC)"
+      },
+      "in": {
+        "24h": "w ciągu ostatnich 24 godzin",
+        "7d": "w ciągu ostatnich 7 dni",
+        "30d": "w ciągu ostatnich 30 dni",
+        "90d": "w ciągu ostatnich 90 dni",
+        "custom": "między {from} a {to} (UTC)"
+      },
+      "from": "Od (UTC)",
+      "to": "Do (UTC, włącznie)",
+      "hint": {
+        "bounds": "Wybierz daty między {min} a {max}.",
+        "reversed": "Data początkowa nie może być późniejsza niż końcowa.",
+        "both": "Wybierz obie daty; zakres zadziała, gdy obie będą ustawione."
+      }
+    },
+    "empty": {
+      "recorded": "Brak zarejestrowanych pozycji ({noun}) {period}."
+    },
+    "entity": {
+      "unnamed": "Obiekt bez nazwy",
+      "unsupportedType": "(Nieobsługiwany typ obiektu: {type})",
+      "anonymous": "Anonimowo",
+      "unsupportedActor": "(Nieobsługiwany rodzaj wykonawcy: {kind})"
+    },
+    "dialog": {
+      "outsideCriteria": "Ten wpis nie spełnia bieżących filtrów listy, więc może nie być widoczny w tabeli za tym oknem."
+    },
+    "stackTrace": {
+      "title": "Ślad stosu",
+      "copy": "Kopiuj ślad stosu"
+    },
+    "unsupportedContent": "[nieobsługiwana treść]"
+  },
+  "emailLogs": {
+    "title": "Dziennik e-maili",
+    "description": "Jeden wiersz na próbę wysyłki, z treścią po redakcji. „Przyjęty” oznacza, że dostawca przyjął wiadomość; dostarczenie nie jest śledzone.",
+    "loading": "Ładowanie dziennika e-maili",
+    "error": {
+      "title": "Nie udało się wczytać dziennika e-maili",
+      "message": "Podczas wczytywania dziennika e-maili coś poszło nie tak. Nic nie zostało zmienione. Spróbuj ponownie za chwilę."
+    },
+    "search": {
+      "label": "Szukaj w dzienniku e-maili",
+      "placeholder": "Szukaj po temacie lub odbiorcy"
+    },
+    "filters": {
+      "status": "Status",
+      "anyStatus": "Dowolny status",
+      "sortBy": "Sortuj według",
+      "sort": {
+        "timeDesc": "Od najnowszych",
+        "timeAsc": "Od najstarszych",
+        "recipientAsc": "Odbiorca A–Z",
+        "recipientDesc": "Odbiorca Z–A",
+        "subjectAsc": "Temat A–Z",
+        "subjectDesc": "Temat Z–A"
+      },
+      "recipientFilters": "Filtry odbiorcy",
+      "recipientEmail": "E-mail odbiorcy (dokładnie)",
+      "recipientEmailPlaceholder": "imie@example.com",
+      "recipientEmailInvalid": "Wpisz pełny adres e-mail.",
+      "recipientUserId": "ID użytkownika odbiorcy (dokładnie)",
+      "recipientUserIdPlaceholder": "ID użytkownika",
+      "recipientUserIdInvalid": "Wpisz ID o długości najwyżej 128 znaków, bez znaków sterujących."
+    },
+    "empty": {
+      "noun": "próby wysyłki",
+      "filtered": "Żaden wpis dziennika e-maili nie pasuje do tych filtrów.",
+      "never": "Nie zarejestrowano żadnych prób wysyłki. Pojawią się tutaj, gdy wysyłka zostanie zapisana w dzienniku."
+    },
+    "caption": "Próby wysyłki e-maili, z czasem, odbiorcą, tematem, statusem i numerem próby",
+    "itemLabel": "wpisów",
+    "columns": {
+      "time": "Czas",
+      "recipient": "Odbiorca",
+      "subject": "Temat",
+      "status": "Status",
+      "attempt": "Próba",
+      "actions": "Akcje"
+    },
+    "attempt": {
+      "initial": "Pierwsza",
+      "number": "Próba {n}"
+    },
+    "viewDetailsOf": "Zobacz szczegóły e-maila do {email}, {time}",
+    "status": {
+      "sending": {
+        "label": "Wysyłanie",
+        "title": "Nie zarejestrowano jeszcze zakończenia"
+      },
+      "accepted": {
+        "label": "Przyjęty",
+        "title": "Dostawca przyjął wiadomość; dostarczenie do skrzynki nie jest śledzone"
+      },
+      "failed": {
+        "label": "Nieudany",
+        "title": "Próba nie powiodła się"
+      },
+      "unknown": {
+        "label": "Nieznany",
+        "title": "Nie udało się ustalić wyniku"
+      }
+    },
+    "dialog": {
+      "title": "Próba wysyłki e-maila",
+      "description": "Jedna próba wysyłki tak, jak została zapisana: metadane, treść po redakcji, łańcuch ponowień i diagnostyka.",
+      "loading": "Ładowanie wpisu dziennika e-maili",
+      "unavailable": {
+        "title": "Ten wpis jest niedostępny",
+        "message": "Nie istnieje albo nie masz już do niego dostępu."
+      },
+      "refused": {
+        "title": "Nie masz już dostępu do tego wpisu",
+        "message": "Twoja sesja lub uprawnienia uległy zmianie. Zaloguj się ponownie albo skontaktuj się z administratorem."
+      },
+      "failed": {
+        "title": "Nie udało się wczytać wpisu",
+        "message": "Nic nie zostało zmienione. Spróbuj ponownie za chwilę."
+      },
+      "unresolved": {
+        "lead": "Nie zarejestrowano zakończenia.",
+        "body": "Ta próba rozpoczęła się ponad {minutes} minut temu, a jej wynik nigdy nie został zapisany. Pozostaje oznaczona jako wysyłana."
+      },
+      "metadata": "Metadane",
+      "started": "Rozpoczęto",
+      "completed": "Zakończono",
+      "noCompletion": "Nie zarejestrowano zakończenia",
+      "notCompleted": "Jeszcze nie zakończono",
+      "recipient": "Odbiorca",
+      "status": "Status",
+      "acceptedNote": "Przyjęty przez dostawcę. Dostarczenie do skrzynki nie jest śledzone.",
+      "subject": "Temat",
+      "provider": "Dostawca",
+      "notRecorded": "Nie zapisano",
+      "providerMessageId": "ID wiadomości u dostawcy",
+      "requestedBy": "Zlecone przez",
+      "requestId": "ID żądania",
+      "logId": "ID wpisu",
+      "lastUpdated": "Ostatnia aktualizacja",
+      "content": "Treść",
+      "contentNote": "Zwykły tekst w zapisanej postaci. Kody, linki i inne wrażliwe wartości usunięto przed zapisem.",
+      "copyContent": "Kopiuj treść po redakcji",
+      "attempts": "Próby",
+      "thisAttempt": "Ta próba",
+      "chain": "Łańcuch",
+      "noRetries": "Bez ponowień",
+      "attemptsCount": "{count, plural, one {# próba} few {# próby} many {# prób} other {# próby}}",
+      "originalAttempt": "Pierwotna próba",
+      "viewInitial": "Zobacz pierwszą próbę",
+      "retriedAttempt": "Ponawiana próba",
+      "viewRetried": "Zobacz próbę, którą ta ponowiła",
+      "attemptName": {
+        "initial": "Pierwsza próba",
+        "n": "Próba nr {n}"
+      },
+      "shown": "(wyświetlana)",
+      "chainList": "Próby w tym łańcuchu",
+      "by": "przez ",
+      "attemptPages": "Strony prób",
+      "attemptsRange": "Próby {first}–{last} z {total, number}",
+      "previousAttempts": "Poprzednie próby",
+      "nextAttempts": "Następne próby",
+      "diagnostics": "Diagnostyka",
+      "errorCode": "Kod błędu",
+      "errorMessage": "Komunikat błędu"
+    },
+    "viewDetails": "Zobacz szczegóły"
+  },
+  "staffLogs": {
+    "title": "Dziennik zespołu",
+    "description": "Co zmienił zespół, od najnowszych. Nazwy we wpisie są pokazane tak, jak wyglądały w tamtym momencie.",
+    "loading": "Ładowanie dziennika zespołu",
+    "error": {
+      "title": "Nie udało się wczytać dziennika zespołu",
+      "message": "Podczas wczytywania dziennika zespołu coś poszło nie tak. Nic nie zostało zmienione. Spróbuj ponownie za chwilę."
+    },
+    "search": {
+      "label": "Szukaj w dzienniku zespołu",
+      "placeholder": "Szukaj, co zostało zrobione"
+    },
+    "filters": {
+      "staffMember": "Członek zespołu",
+      "anyone": "Ktokolwiek",
+      "action": "Działanie",
+      "anyAction": "Dowolne działanie"
+    },
+    "empty": {
+      "noun": "działania zespołu",
+      "filtered": "Żadne działanie zespołu nie pasuje do tych filtrów.",
+      "never": "Nie zarejestrowano jeszcze żadnych działań zespołu."
+    },
+    "caption": "Działania zespołu, z czasem, członkiem zespołu i opisem tego, co zrobiono",
+    "itemLabel": "działań",
+    "columns": {
+      "time": "Czas",
+      "staffMember": "Członek zespołu",
+      "action": "Działanie"
+    },
+    "widget": {
+      "label": "Działania zespołu",
+      "search": "Szukaj: {label}",
+      "searchPlaceholder": "Szukaj, co zostało zrobione",
+      "emptySearch": "Żadne działanie zespołu nie pasuje do tego wyszukiwania.",
+      "emptyNever": "Nie zarejestrowano tutaj żadnych działań zespołu.",
+      "failed": "Nie udało się wczytać dziennika zespołu.",
+      "loading": "Ładowanie dziennika zespołu"
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { AuthHeading } from "@/app/(AuthModule)/_/components/layout/AuthHeading";
 import { EmailConfirmation } from "@/app/(AuthModule)/_/components/signUp/EmailConfirmation";
 
@@ -6,13 +7,11 @@ export default async function EmailConfirmationPage({
 }: {
   searchParams: Promise<{ token?: string }>;
 }) {
-  const { token } = await searchParams;
+  const [{ token }, t] = await Promise.all([searchParams, getTranslations("auth.pages.emailConfirmation")]);
 
   return (
     <>
-      <AuthHeading title="Confirm your email">
-        This verifies the email address linked to your account.
-      </AuthHeading>
+      <AuthHeading title={t("title")}>{t("description")}</AuthHeading>
       <EmailConfirmation
         token={typeof token === "string" ? token : undefined}
       />

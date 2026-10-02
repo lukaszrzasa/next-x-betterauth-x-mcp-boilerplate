@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useViewer } from "@/src/components/shell/ViewerProvider";
 import { cn } from "@/src/lib/utils";
 import { resolveEntityLink } from "@/app/(LogsModule)/admin/_/entityNavigation";
@@ -16,8 +17,9 @@ const linkClass = "ui:font-medium ui:text-foreground ui:underline ui:underline-o
  */
 export function EntityLabel({ entity, className }: { entity: EntityView; className?: string }) {
   const { can } = useViewer();
+  const t = useTranslations("logsAdmin.shared.entity");
   const link = resolveEntityLink(entity, can);
-  const label = entity.label ?? "Unnamed entity";
+  const label = entity.label ?? t("unnamed");
 
   if (link.status === "linked") {
     return (
@@ -32,7 +34,7 @@ export function EntityLabel({ entity, className }: { entity: EntityView; classNa
       {label}
       {link.status === "unsupported" && (
         <span className="ui:ml-1.5 ui:text-xs ui:font-normal ui:text-muted-foreground">
-          (Unsupported entity type: {entity.type})
+          {t("unsupportedType", { type: entity.type })}
         </span>
       )}
     </span>
@@ -41,16 +43,17 @@ export function EntityLabel({ entity, className }: { entity: EntityView; classNa
 
 /** Who acted: a user snapshot (linked like any entity), Anonymous, or a kind from a newer release. */
 export function ActorLabel({ actor, className }: { actor: ActorView; className?: string }) {
+  const t = useTranslations("logsAdmin.shared.entity");
   if (actor.kind === "user" && actor.id) {
     return <EntityLabel entity={{ type: "user", id: actor.id, label: actor.label }} className={className} />;
   }
   if (actor.kind === "anonymous") {
-    return <span className={cn("ui:text-muted-foreground", className)}>Anonymous</span>;
+    return <span className={cn("ui:text-muted-foreground", className)}>{t("anonymous")}</span>;
   }
   return (
     <span className={className}>
       {actor.label}
-      <span className="ui:ml-1.5 ui:text-xs ui:text-muted-foreground">(Unsupported actor kind: {actor.kind})</span>
+      <span className="ui:ml-1.5 ui:text-xs ui:text-muted-foreground">{t("unsupportedActor", { kind: actor.kind })}</span>
     </span>
   );
 }

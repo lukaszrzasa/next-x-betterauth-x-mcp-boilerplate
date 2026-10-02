@@ -12,7 +12,7 @@ export async function consumeSetupInitiation(ctx: AuthedCtx): Promise<void> {
   const { limit, windowSeconds } = AUTHENTICATOR_SETUP_POLICY.initiations;
   const budget = await consumeBudget(settingsThrottleKeys.setupInitiations(ctx.user.id), limit, windowSeconds);
   if (!budget.allowed) {
-    throw rateLimitedError(budget.retryAfterSeconds, "Too many authenticator setups started. Try again later.");
+    throw rateLimitedError(budget.retryAfterSeconds, { key: "auth.errors.tooManySetups" });
   }
 }
 
@@ -21,7 +21,7 @@ export async function reserveCodeAttempt(requestId: string): Promise<void> {
   const { limit, windowSeconds } = AUTHENTICATOR_SETUP_POLICY.codeAttempts;
   const decision = await reserveAttempt(settingsThrottleKeys.setupCodeAttempts(requestId), limit, windowSeconds);
   if (!decision.allowed) {
-    throw rateLimitedError(decision.retryAfterSeconds, "Too many incorrect codes. Start the setup again later.");
+    throw rateLimitedError(decision.retryAfterSeconds, { key: "auth.errors.tooManyIncorrectCodes" });
   }
 }
 

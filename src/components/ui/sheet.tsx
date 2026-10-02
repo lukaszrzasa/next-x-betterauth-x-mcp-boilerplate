@@ -4,6 +4,7 @@ import * as React from "react";
 import { cn } from "@/src/lib/utils";
 import { XIcon } from "lucide-react";
 import { Dialog as SheetPrimitive } from "radix-ui";
+import { useTranslations } from "next-intl";
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -44,6 +45,7 @@ function SheetContent({
   side?: "top" | "right" | "bottom" | "left";
   showCloseButton?: boolean;
 }) {
+  const t = useTranslations("common.actions");
   return (
     <SheetPrimitive.Portal>
       <SheetOverlay />
@@ -68,7 +70,7 @@ function SheetContent({
             className="ui:absolute ui:top-4 ui:right-4 ui:rounded-xs ui:opacity-70 ui:transition-opacity ui:hover:opacity-100 ui:focus:ring-2 ui:focus:ring-ring ui:focus:ring-offset-2 ui:focus:outline-hidden ui:disabled:pointer-events-none"
           >
             <XIcon className="ui:size-4" />
-            <span className="ui:sr-only">Close</span>
+            <span className="ui:sr-only">{t("close")}</span>
           </SheetPrimitive.Close>
         )}
       </SheetPrimitive.Content>

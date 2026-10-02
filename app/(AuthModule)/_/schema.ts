@@ -16,41 +16,41 @@ export const emailSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .max(254, "Use at most 254 characters.")
-  .pipe(z.email("Enter a valid email address."))
+  .max(254, "auth.validation.maxLength")
+  .pipe(z.email("auth.validation.email"))
   .prefault("");
 
 /** A display name: trimmed, 1-100 characters, any script, no control characters. */
 export const nameSchema = z
   .string()
   .trim()
-  .min(1, "Enter your name.")
-  .max(100, "Use at most 100 characters.")
-  .refine((value) => !CONTROL_CHARACTERS.test(value), "Names cannot contain control characters.")
+  .min(1, "auth.validation.nameRequired")
+  .max(100, "auth.validation.maxLength")
+  .refine((value) => !CONTROL_CHARACTERS.test(value), "auth.validation.nameControlCharacters")
   .prefault("");
 
 /** A password being set: enforces the password policy. Never trimmed. */
 export const newPasswordSchema = z
   .string()
-  .min(8, "Use at least 8 characters.")
-  .max(128, "Use at most 128 characters.")
+  .min(8, "auth.validation.minLength")
+  .max(128, "auth.validation.maxLength")
   .prefault("");
 
 /** A password being confirmed: the server compares the hash, so only "not empty" applies. Never trimmed. */
 export const currentPasswordSchema = z
   .string()
-  .min(1, "Enter your password.")
-  .max(128, "Use at most 128 characters.")
+  .min(1, "auth.validation.passwordRequired")
+  .max(128, "auth.validation.maxLength")
   .prefault("");
 
 export const authenticatorCodeSchema = z
   .string()
-  .regex(CODE_PATTERN, "Enter a six-digit authenticator code.")
+  .regex(CODE_PATTERN, "auth.validation.authenticatorCode")
   .prefault("");
 
 const emailCodeSchema = z
   .string()
-  .regex(CODE_PATTERN, "Enter the six-digit code from the email.")
+  .regex(CODE_PATTERN, "auth.validation.emailCode")
   .prefault("");
 
 const recoveryCodeSchema = z
@@ -58,7 +58,7 @@ const recoveryCodeSchema = z
   .trim()
   .regex(
     /^[A-Za-z0-9]{5}-[A-Za-z0-9]{5}$/,
-    "Enter a recovery code in the format xxxxx-xxxxx.",
+    "auth.validation.recoveryCode",
   )
   .prefault("");
 
@@ -76,7 +76,7 @@ function passwordsMatch(input: { password: string; confirmPassword: string }) {
 }
 
 const passwordMismatchError = {
-  message: "Passwords do not match.",
+  message: "auth.validation.passwordsMismatch",
   path: ["confirmPassword"],
 };
 

@@ -307,11 +307,11 @@ describe("input and results", () => {
     expect(await operations.getEmailLogOperation({ id: LOG_ID }, meta)).toMatchObject({ status: "sending", completedAt: null });
   });
 
-  test("a missing record is NOT_FOUND with a safe message", async () => {
+  test("a missing record is NOT_FOUND with a safe, translatable message", async () => {
     const missing = "01900000-0000-7000-8000-00000000ffff";
     await expect(operations.getEmailLogOperation({ id: missing }, meta)).rejects.toMatchObject({
       reason: "NOT_FOUND",
-      message: "This log is not available.",
+      descriptor: { key: "logsAdmin.errors.logUnavailable" },
     });
   });
 

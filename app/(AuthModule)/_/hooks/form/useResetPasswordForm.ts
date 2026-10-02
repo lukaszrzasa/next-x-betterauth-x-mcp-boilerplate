@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
+import type { MessageKey } from "@/src/lib/i18n";
 import { describeFailure, useAction } from "@/src/lib/actions";
 import { completePasswordResetAction } from "@/app/(AuthModule)/_/actions";
 import { resetPasswordSchema } from "@/app/(AuthModule)/_/schema";
@@ -15,6 +17,7 @@ import { authRoutes } from "@/app/(AuthModule)/_/routes";
  * dropped from the address bar once it is spent.
  */
 export function useResetPasswordForm(token: string) {
+  const t = useCatalog();
   const [passwordUpdated, setPasswordUpdated] = useState(false);
   const { form, createSubmitHandler } = useSchemaForm(resetPasswordSchema);
   // Refusals are shown as the form's root error; the shared alert stays quiet.
@@ -23,7 +26,7 @@ export function useResetPasswordForm(token: string) {
   const onSubmit = createSubmitHandler(async ({ password }) => {
     const result = await execute({ token, newPassword: password });
     if (result.status === "error") {
-      const { title, description } = describeFailure(result.error);
+      const { title, description } = describeFailure((key) => t(key as MessageKey), result.error);
       throw new Error(
         result.error.reason === "FORBIDDEN" || result.error.reason === "INVALID_INPUT"
           ? result.error.message

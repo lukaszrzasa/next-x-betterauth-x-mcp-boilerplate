@@ -13,6 +13,7 @@ mock.module("next/navigation", () => ({
 const React = await import("react");
 const { render, fireEvent, screen, cleanup, within } = await import("@testing-library/react");
 const { ViewerProvider } = await import("../../src/components/shell/ViewerProvider");
+const { IntlWrapper } = await import("../helpers/intl");
 const { UsersList } = await import("../../app/(AuthModule)/admin/_/components/users/list/UsersList");
 const { USERS_QUERY_DEFAULTS } = await import("../../app/(AuthModule)/admin/_/queryState");
 const { SEARCH_DEBOUNCE_MS } = await import("../../src/lib/data-table/useTableNavigation");
@@ -53,9 +54,11 @@ const pageOf = (overrides = {}) => ({
 
 function renderList(page, role = "admin") {
   return render(
-    <ViewerProvider viewer={{ name: "Viewer", email: "v@example.com", image: null, role }}>
-      <UsersList page={page} />
-    </ViewerProvider>,
+    <IntlWrapper>
+      <ViewerProvider viewer={{ name: "Viewer", email: "v@example.com", image: null, role }}>
+        <UsersList page={page} />
+      </ViewerProvider>
+    </IntlWrapper>,
   );
 }
 
@@ -76,8 +79,8 @@ test("rows show identity, roles, verification, effective access and UTC dates; l
   const roles = grace.getByRole("list", { name: "Roles" });
   expect(within(roles).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["User", "wizard"]);
   expect(grace.getByText("Unverified")).toBeTruthy();
-  expect(grace.getByText("Temporarily banned").getAttribute("title")).toBe("Ban ends 1 Oct 2026, 12:30 UTC");
-  expect(grace.getByText("15 Aug 2026").getAttribute("datetime")).toBe("2026-08-15T09:00:00.000Z");
+  expect(grace.getByText("Temporarily banned").getAttribute("title")).toBe("Ban ends Oct 1, 2026 at 12:30 PM UTC");
+  expect(grace.getByText("Aug 15, 2026").getAttribute("datetime")).toBe("2026-08-15T09:00:00.000Z");
   expect(document.querySelector("tr[onclick]")).toBeNull();
 });
 
@@ -134,9 +137,11 @@ test("the search box follows the URL on history navigation and clear filters kee
   fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
   expect(push).toHaveBeenLastCalledWith("/admin/users?sort=name&direction=asc&pageSize=50", { scroll: false });
   view.rerender(
-    <ViewerProvider viewer={{ name: "Viewer", email: "v@example.com", image: null, role: "admin" }}>
-      <UsersList page={pageOf({ query: { ...USERS_QUERY_DEFAULTS, q: "back" } })} />
-    </ViewerProvider>,
+    <IntlWrapper>
+      <ViewerProvider viewer={{ name: "Viewer", email: "v@example.com", image: null, role: "admin" }}>
+        <UsersList page={pageOf({ query: { ...USERS_QUERY_DEFAULTS, q: "back" } })} />
+      </ViewerProvider>
+    </IntlWrapper>,
   );
   expect(screen.getByLabelText("Search users").value).toBe("back");
 });

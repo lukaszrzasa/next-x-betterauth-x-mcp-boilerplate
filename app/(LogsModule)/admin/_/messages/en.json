@@ -1,0 +1,224 @@
+{
+  "errors": {
+    "logUnavailable": "This log is not available."
+  },
+  "shared": {
+    "period": {
+      "label": "Period",
+      "ranges": {
+        "24h": "Last 24 hours",
+        "7d": "Last 7 days",
+        "30d": "Last 30 days",
+        "90d": "Last 90 days",
+        "all": "All time",
+        "custom": "Custom dates (UTC)"
+      },
+      "in": {
+        "24h": "in the last 24 hours",
+        "7d": "in the last 7 days",
+        "30d": "in the last 30 days",
+        "90d": "in the last 90 days",
+        "custom": "between {from} and {to} (UTC)"
+      },
+      "from": "From (UTC)",
+      "to": "To (UTC, included)",
+      "hint": {
+        "bounds": "Choose dates between {min} and {max}.",
+        "reversed": "The start date must not be after the end date.",
+        "both": "Choose both dates; the range applies once both are set."
+      }
+    },
+    "empty": {
+      "recorded": "No {noun} were recorded {period}."
+    },
+    "entity": {
+      "unnamed": "Unnamed entity",
+      "unsupportedType": "(Unsupported entity type: {type})",
+      "anonymous": "Anonymous",
+      "unsupportedActor": "(Unsupported actor kind: {kind})"
+    },
+    "dialog": {
+      "outsideCriteria": "This log is outside the current list filters, so it may not appear in the table behind this dialog."
+    },
+    "stackTrace": {
+      "title": "Stack trace",
+      "copy": "Copy stack trace"
+    },
+    "unsupportedContent": "[unsupported content]"
+  },
+  "emailLogs": {
+    "title": "Email logs",
+    "description": "One row per sending attempt, with redacted content. Accepted means the provider took the message; delivery is not tracked.",
+    "loading": "Loading email logs",
+    "error": {
+      "title": "Email logs could not be loaded",
+      "message": "Something went wrong while loading the email logs. Nothing was changed. Try again in a moment."
+    },
+    "search": {
+      "label": "Search email logs",
+      "placeholder": "Search subject or recipient"
+    },
+    "filters": {
+      "status": "Status",
+      "anyStatus": "Any status",
+      "sortBy": "Sort by",
+      "sort": {
+        "timeDesc": "Newest first",
+        "timeAsc": "Oldest first",
+        "recipientAsc": "Recipient A–Z",
+        "recipientDesc": "Recipient Z–A",
+        "subjectAsc": "Subject A–Z",
+        "subjectDesc": "Subject Z–A"
+      },
+      "recipientFilters": "Recipient filters",
+      "recipientEmail": "Recipient email (exact)",
+      "recipientEmailPlaceholder": "name@example.com",
+      "recipientEmailInvalid": "Enter a complete email address.",
+      "recipientUserId": "Recipient user ID (exact)",
+      "recipientUserIdPlaceholder": "User ID",
+      "recipientUserIdInvalid": "Enter an ID of at most 128 characters without control characters."
+    },
+    "empty": {
+      "noun": "email attempts",
+      "filtered": "No email logs match these filters.",
+      "never": "No email attempts have been recorded. Attempts appear here once sending is logged."
+    },
+    "caption": "Email sending attempts, with time, recipient, subject, status and attempt number",
+    "itemLabel": "email logs",
+    "columns": {
+      "time": "Time",
+      "recipient": "Recipient",
+      "subject": "Subject",
+      "status": "Status",
+      "attempt": "Attempt",
+      "actions": "Actions"
+    },
+    "attempt": {
+      "initial": "Initial",
+      "number": "Attempt {n}"
+    },
+    "viewDetailsOf": "View details of the email to {email}, {time}",
+    "status": {
+      "sending": {
+        "label": "Sending",
+        "title": "No completion recorded yet"
+      },
+      "accepted": {
+        "label": "Accepted",
+        "title": "The provider accepted the message; delivery to the inbox is not tracked"
+      },
+      "failed": {
+        "label": "Failed",
+        "title": "The attempt failed"
+      },
+      "unknown": {
+        "label": "Unknown",
+        "title": "The outcome could not be determined"
+      }
+    },
+    "dialog": {
+      "title": "Email attempt",
+      "description": "One sending attempt as recorded: metadata, redacted content, its retry chain and diagnostics.",
+      "loading": "Loading email log",
+      "unavailable": {
+        "title": "This log is not available",
+        "message": "It does not exist, or you can no longer view it."
+      },
+      "refused": {
+        "title": "You can no longer view this log",
+        "message": "Your session or access changed. Sign in again, or ask an administrator."
+      },
+      "failed": {
+        "title": "The log could not be loaded",
+        "message": "Nothing was changed. Try again in a moment."
+      },
+      "unresolved": {
+        "lead": "No completion recorded.",
+        "body": "This attempt started more than {minutes} minutes ago and its outcome was never recorded. It stays listed as sending."
+      },
+      "metadata": "Metadata",
+      "started": "Started",
+      "completed": "Completed",
+      "noCompletion": "No completion recorded",
+      "notCompleted": "Not completed yet",
+      "recipient": "Recipient",
+      "status": "Status",
+      "acceptedNote": "Accepted by the provider. Delivery to the inbox is not tracked.",
+      "subject": "Subject",
+      "provider": "Provider",
+      "notRecorded": "Not recorded",
+      "providerMessageId": "Provider message ID",
+      "requestedBy": "Requested by",
+      "requestId": "Request ID",
+      "logId": "Log ID",
+      "lastUpdated": "Last updated",
+      "content": "Content",
+      "contentNote": "Plain text as recorded. Codes, links and other sensitive values were removed before storage.",
+      "copyContent": "Copy redacted content",
+      "attempts": "Attempts",
+      "thisAttempt": "This attempt",
+      "chain": "Chain",
+      "noRetries": "No retries",
+      "attemptsCount": "{count, number} attempts",
+      "originalAttempt": "Original attempt",
+      "viewInitial": "View the initial attempt",
+      "retriedAttempt": "Retried attempt",
+      "viewRetried": "View the attempt this one retried",
+      "attemptName": {
+        "initial": "Initial attempt",
+        "n": "Attempt #{n}"
+      },
+      "shown": "(shown)",
+      "chainList": "Attempts in this chain",
+      "by": "by ",
+      "attemptPages": "Attempt pages",
+      "attemptsRange": "Attempts {first}–{last} of {total, number}",
+      "previousAttempts": "Previous attempts",
+      "nextAttempts": "Next attempts",
+      "diagnostics": "Diagnostics",
+      "errorCode": "Error code",
+      "errorMessage": "Error message"
+    },
+    "viewDetails": "View details"
+  },
+  "staffLogs": {
+    "title": "Staff log",
+    "description": "What staff changed, newest first. Names inside an entry are shown as they were at the time.",
+    "loading": "Loading the staff log",
+    "error": {
+      "title": "The staff log could not be loaded",
+      "message": "Something went wrong while loading the staff log. Nothing was changed. Try again in a moment."
+    },
+    "search": {
+      "label": "Search the staff log",
+      "placeholder": "Search what was done"
+    },
+    "filters": {
+      "staffMember": "Staff member",
+      "anyone": "Anyone",
+      "action": "Action",
+      "anyAction": "Any action"
+    },
+    "empty": {
+      "noun": "staff actions",
+      "filtered": "No staff actions match these filters.",
+      "never": "No staff actions have been logged yet."
+    },
+    "caption": "Staff actions, with time, staff member and what was done",
+    "itemLabel": "staff actions",
+    "columns": {
+      "time": "Time",
+      "staffMember": "Staff member",
+      "action": "Action"
+    },
+    "widget": {
+      "label": "Staff actions",
+      "search": "Search {label}",
+      "searchPlaceholder": "Search what was done",
+      "emptySearch": "No staff actions match this search.",
+      "emptyNever": "No staff actions have been logged here.",
+      "failed": "The staff log could not be loaded.",
+      "loading": "Loading the staff log"
+    }
+  }
+}

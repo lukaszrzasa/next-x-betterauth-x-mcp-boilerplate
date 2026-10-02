@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 import { useAction } from "@/src/lib/actions";
 import { confirmEmailProofAction } from "@/app/(AuthModule)/_/actions";
 import { describeProofOutcome, describeSettingsFailure, type Feedback } from "@/app/(AuthModule)/_/hooks/settings/feedback";
@@ -12,16 +13,17 @@ import { authRoutes } from "@/app/(AuthModule)/_/routes";
  * is dropped from the address bar once the result is terminal.
  */
 export function useEmailProofConfirmation(token: string) {
+  const t = useCatalog();
   const [result, setResult] = useState<Feedback | null>(null);
   const { execute, isPending } = useAction(confirmEmailProofAction, { onError: () => true });
 
   async function confirmProof() {
     const outcome = await execute({ token });
     if (outcome.status === "success") {
-      setResult(describeProofOutcome(outcome.data));
+      setResult(describeProofOutcome(t, outcome.data));
       window.history.replaceState(null, "", authRoutes.emailChangeConfirmation.href);
     } else if (outcome.status === "error") {
-      setResult(describeSettingsFailure(outcome.error));
+      setResult(describeSettingsFailure(t, outcome.error));
     }
   }
 

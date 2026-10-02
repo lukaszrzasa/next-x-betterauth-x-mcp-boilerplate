@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { FormError } from "@/src/components/forms/FormError";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { Button } from "@/src/components/ui/button";
@@ -17,12 +18,13 @@ export function UserEmailForm({
   onCancel: () => void;
   onSettled: (feedback: Feedback) => void;
 }) {
+  const t = useTranslations("authAdmin.detail.profile");
   const { form, onSubmit, reset, unchanged, pending } = useUserEmailForm({ user, onSettled });
 
   return (
     <form
       noValidate
-      aria-label="Edit email address"
+      aria-label={t("editEmailDialog")}
       onSubmit={onSubmit}
       className="ui:flex ui:flex-col ui:gap-4"
     >
@@ -31,7 +33,7 @@ export function UserEmailForm({
         <FormInput
           control={form.control}
           name="email"
-          label="Email address"
+          label={t("email")}
           type="email"
           autoComplete="off"
           maxLength={254}
@@ -39,10 +41,7 @@ export function UserEmailForm({
           disabled={pending}
         />
       </FieldGroup>
-      <p className="ui:text-xs ui:text-muted-foreground">
-        Changing the address marks it unverified, signs the user out everywhere and sends a
-        verification email to the new address. Older password-reset links stop working.
-      </p>
+      <p className="ui:text-xs ui:text-muted-foreground">{t("emailNote")}</p>
       <div className="ui:flex ui:flex-wrap ui:justify-end ui:gap-2">
         <Button
           type="button"
@@ -54,10 +53,10 @@ export function UserEmailForm({
             onCancel();
           }}
         >
-          Cancel
+          {t("cancel")}
         </Button>
         <Button type="submit" size="sm" disabled={unchanged || pending}>
-          {pending ? "Saving…" : "Save email"}
+          {pending ? t("saving") : t("saveEmail")}
         </Button>
       </div>
     </form>

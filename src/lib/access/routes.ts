@@ -6,6 +6,7 @@ import {
   type RoleName,
   type UserRole,
 } from "@/src/lib/auth/permissions";
+import type { MessageKey } from "@/src/lib/i18n/messageKey";
 
 /**
  * Declarative routes and page access. Each module declares its routes once
@@ -35,8 +36,8 @@ export type RouteIcon = "dashboard" | "users" | "staffLogs" | "emailLogs";
 export type RouteDef = {
   href: string;
   access: Access;
-  /** Shown in navigation and breadcrumbs; a plain-path entry has none. */
-  label?: string;
+  /** Catalog key of the name shown in navigation and breadcrumbs (`nav.*`); a plain-path entry has none. */
+  label?: MessageKey;
   icon?: RouteIcon;
   /** Active-link matching for navigation: `exact` (default `section`, which includes descendants). */
   match?: "exact" | "section";

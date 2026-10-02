@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { getInstallationState } from "@/src/lib/auth/installation";
 import { AuthHeading } from "@/app/(AuthModule)/_/components/layout/AuthHeading";
 import { SetupForm } from "@/app/(AuthModule)/_/components/setup/SetupForm";
@@ -12,12 +13,11 @@ export default async function SetupPage() {
   if (!canSetup) {
     notFound();
   }
+  const t = await getTranslations("auth.pages.setup");
 
   return (
     <>
-      <AuthHeading title="Set up your new project">
-        Create the root administrator account to get started.
-      </AuthHeading>
+      <AuthHeading title={t("title")}>{t("description")}</AuthHeading>
       <SetupForm />
     </>
   );

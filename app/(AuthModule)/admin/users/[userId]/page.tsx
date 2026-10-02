@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { page, redirectRefused } from "@/src/lib/app/access";
 import { AppBreadcrumbs } from "@/src/components/shell/AppBreadcrumbs";
 import { appRoutes } from "@/src/lib/app/routes";
@@ -43,13 +44,14 @@ export default page<PageProps<"/admin/users/[userId]">>(
 
     const canList = session ? authorize(session.user, authRoutes.adminUsers.access) : false;
     const listUrl = canList ? resolveReturnTo(query[RETURN_TO_PARAM]) : null;
+    const [t, nav] = await Promise.all([getTranslations("authAdmin"), getTranslations()]);
     // The Users crumb links back only for viewers who may open the list.
-    const usersCrumb = { label: authRoutes.adminUsers.label, href: listUrl ?? undefined };
+    const usersCrumb = { label: nav(authRoutes.adminUsers.label), href: listUrl ?? undefined };
 
     return (
       <>
         <AppBreadcrumbs
-          items={[{ label: "Admin", href: appRoutes.dashboard.href }, usersCrumb, { label: user.name }]}
+          items={[{ label: t("breadcrumbs.admin"), href: appRoutes.dashboard.href }, usersCrumb, { label: user.name }]}
         />
         <UserDetail user={user} listUrl={listUrl} />
       </>

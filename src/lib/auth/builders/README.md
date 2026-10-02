@@ -32,6 +32,8 @@ Operations are isolated from Next.js specifics. Adapters map these operations to
 * `toServerAction`: Designed for `"use server"` files. It sets `entryPoint: "server-action"` and safely standardizes success/error return shapes.
 * `toRouteHandler`: Wraps operations into standard HTTP endpoints. It strictly maps HTTP statuses, sanitizes payloads, and sets `entryPoint: "route-handler"`.
 
+Adapters are also where a refusal gets its words. A handler or service throws `ActionError` with a `MessageDescriptor` (`{ key: "auth.errors.requestExpired", values }`); the adapter renders it in the request's locale (`ctx.locale`, from the proxy's `x-locale` header) before it reaches the client. An error with only a developer `message` answers with the generic sentence for its reason, and the message stays in the log. Input issues are translated the same way in `parseInput`.
+
 ## 4. Enterprise-Grade Security Features
 
 This architecture defends against common vulnerabilities by default:

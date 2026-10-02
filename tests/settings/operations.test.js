@@ -978,9 +978,9 @@ describe("email change: choosing the new address", () => {
   const awaitingAddress = () => requestRow({ state: "awaiting_new_address", currentConfirmedAt: new Date(), currentTokenHash: null });
 
   test("only after the current mailbox agreed, and only once", async () => {
-    expect((await attempt(authenticated.selectNew)).error).toMatchObject({ reason: "CONFLICT", message: "Confirm your current address first." });
+    expect((await attempt(authenticated.selectNew)).error).toMatchObject({ reason: "CONFLICT", message: "auth.errors.confirmCurrentAddressFirst" });
     world.request = requestRow({ state: "awaiting_new", newEmail: "x@example.com" });
-    expect((await attempt(authenticated.selectNew)).error.message).toContain("already chosen");
+    expect((await attempt(authenticated.selectNew)).error.message).toBe("auth.errors.newAddressAlreadyChosen");
     expect(names()).not.toContain("selectNewAddress");
   });
 

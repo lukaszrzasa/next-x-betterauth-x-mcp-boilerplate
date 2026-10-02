@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { authClient } from "@/src/lib/auth/client";
 import { signInSchema } from "@/app/(AuthModule)/_/schema";
 import { unwrapAuthResult } from "@/app/(AuthModule)/_/utils/unwrapAuthResult";
@@ -9,6 +10,7 @@ import { useSessionRedirect } from "@/app/(AuthModule)/_/hooks/useSessionRedirec
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 
 export function useSignInForm() {
+  const t = useTranslations("auth.client");
   const redirect = useSessionRedirect();
   const [twoFactorRequired, setTwoFactorRequired] = useState(false);
   const { form, createSubmitHandler } = useSchemaForm(signInSchema);
@@ -16,7 +18,7 @@ export function useSignInForm() {
   const onSubmit = createSubmitHandler(async (input) => {
     const data = unwrapAuthResult(
       await authClient.signIn.email(input),
-      "Unable to sign in.",
+      t("signInFailed"),
     );
 
     // Enrolled accounts get a challenge instead of a session; the response shape differs.

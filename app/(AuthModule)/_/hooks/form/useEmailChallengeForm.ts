@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { authClient } from "@/src/lib/auth/client";
 import { emailChallengeSchema } from "@/app/(AuthModule)/_/schema";
 import { unwrapAuthResult } from "@/app/(AuthModule)/_/utils/unwrapAuthResult";
@@ -12,8 +13,6 @@ export type EmailCodeDelivery =
   | { status: "sending" }
   | { status: "sent" }
   | { status: "failed"; message: string };
-
-const SEND_FAILED_MESSAGE = "The code could not be sent. Try again in a moment.";
 
 /**
  * Completes sign-in with a six-digit code emailed by Better Auth.
@@ -29,6 +28,7 @@ export function useEmailChallengeForm({
   autoRequest: boolean;
   onRequested: () => void;
 }) {
+  const t = useTranslations("auth");
   const redirect = useSessionRedirect();
   const [delivery, setDelivery] = useState<EmailCodeDelivery>({
     status: autoRequest ? "sending" : "sent",
@@ -41,11 +41,11 @@ export function useEmailChallengeForm({
     const { error } = await authClient.twoFactor.sendOtp();
     setDelivery(
       error
-        ? { status: "failed", message: error.message || SEND_FAILED_MESSAGE }
+        ? { status: "failed", message: error.message || t("signIn.emailChallenge.sendFailed") }
         : { status: "sent" },
     );
     if (!error) onRequested();
-  }, [onRequested]);
+  }, [onRequested, t]);
 
   useEffect(() => {
     // Strict Mode runs effects twice; the ref keeps this to one request per mount.
@@ -57,7 +57,7 @@ export function useEmailChallengeForm({
   const onSubmit = createSubmitHandler(async ({ code }) => {
     unwrapAuthResult(
       await authClient.twoFactor.verifyOtp({ code, trustDevice: false }),
-      "Unable to verify this code.",
+      t("client.verifyCodeFailed"),
     );
     redirect(authRoutes.panel.href);
   });

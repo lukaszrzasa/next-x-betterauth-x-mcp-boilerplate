@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/src/components/ui/button";
 import { Checkbox } from "@/src/components/ui/checkbox";
 import { Label } from "@/src/components/ui/label";
@@ -14,14 +15,12 @@ export function RecoveryCodes({
   codes: string[];
   onContinue: () => void;
 }) {
+  const t = useTranslations("auth.enrollment.recoveryCodes");
   const [codesSaved, setCodesSaved] = useState(false);
 
   return (
     <FieldGroup>
-      <FieldDescription>
-        Your authenticator is ready. Save these recovery codes somewhere safe:
-        each one can replace your authenticator code once when signing in.
-      </FieldDescription>
+      <FieldDescription>{t("intro")}</FieldDescription>
       <Card className="ui:bg-muted">
         <CardContent>
           <ul className="ui:grid ui:list-none ui:grid-cols-2 ui:gap-3 ui:p-0 ui:text-sm">
@@ -33,10 +32,7 @@ export function RecoveryCodes({
           </ul>
         </CardContent>
       </Card>
-      <FieldDescription>
-        These codes are shown only now. You will still need your account
-        password to use them.
-      </FieldDescription>
+      <FieldDescription>{t("note")}</FieldDescription>
       <div className="ui:flex ui:items-start ui:gap-3">
         <Checkbox
           id="codes-saved"
@@ -44,11 +40,11 @@ export function RecoveryCodes({
           onCheckedChange={(checked) => setCodesSaved(checked === true)}
         />
         <Label htmlFor="codes-saved" className="ui:leading-relaxed">
-          I have saved my recovery codes in a safe place.
+          {t("saved")}
         </Label>
       </div>
       <Button className="ui:h-11" disabled={!codesSaved} onClick={onContinue}>
-        Continue to panel
+        {t("continue")}
       </Button>
     </FieldGroup>
   );

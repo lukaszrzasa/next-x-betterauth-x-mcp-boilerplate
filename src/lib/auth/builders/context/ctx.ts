@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { RequiredStepUp } from "@/src/lib/auth/stepUpPolicy";
+import type { Locale } from "@/src/lib/i18n/locales";
 import type { CtxInit, Logger, Session, User } from "./types";
 
 /**
@@ -26,6 +27,7 @@ export class Ctx<TUser extends User | null = User> {
   readonly requestId: string;
   readonly ip: string | null;
   readonly userAgent: string | null;
+  readonly locale: Locale;
   readonly log: Logger;
 
   /**
@@ -43,6 +45,7 @@ export class Ctx<TUser extends User | null = User> {
     this.requestId = init.requestId;
     this.ip = init.ip;
     this.userAgent = init.userAgent;
+    this.locale = init.locale;
     this.#requestHeaders = new Headers(init.requestHeaders);
     this.log = init.log;
   }

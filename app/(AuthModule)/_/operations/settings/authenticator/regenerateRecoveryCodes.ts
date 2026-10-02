@@ -47,7 +47,7 @@ export const regenerateRecoveryCodesOperation = defineAction({
       const account = await requireFactorAccount(ctx);
       const factor = await findFactor(ctx);
       if (!account.twoFactorEnabled || factor?.verified !== true) {
-        throw lifecycleError("CONFLICT", "INACTIVE", "No authenticator is set up; there are no recovery codes to replace.");
+        throw lifecycleError("CONFLICT", "INACTIVE", { key: "auth.errors.noRecoveryCodesToReplace" });
       }
       await assertSecurityStateCurrent(ctx.user.id, securityVersionOf(ctx.user));
 

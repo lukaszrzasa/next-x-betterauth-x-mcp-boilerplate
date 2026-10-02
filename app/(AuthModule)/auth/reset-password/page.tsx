@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Button } from "@/src/components/ui/button";
 import { requireGuest } from "@/app/(AuthModule)/_/guards";
 import { AuthHeading } from "@/app/(AuthModule)/_/components/layout/AuthHeading";
@@ -12,29 +13,25 @@ export default async function ResetPasswordPage({
   searchParams: Promise<{ token?: string; error?: string }>;
 }) {
   await requireGuest();
-  const { token, error } = await searchParams;
+  const [{ token, error }, t] = await Promise.all([searchParams, getTranslations("auth.pages.resetPassword")]);
 
   if (typeof token !== "string" || error) {
     return (
       <>
-        <AuthHeading title="Reset link unavailable">
-          This reset link is missing, invalid, or expired.
-        </AuthHeading>
+        <AuthHeading title={t("unavailableTitle")}>{t("unavailableDescription")}</AuthHeading>
         <Button asChild>
-          <Link href={authRoutes.forgotPassword.href}>Request a new link</Link>
+          <Link href={authRoutes.forgotPassword.href}>{t("requestNewLink")}</Link>
         </Button>
-        <AuthFooter href={authRoutes.signIn.href} label="Back to sign in" />
+        <AuthFooter href={authRoutes.signIn.href} label={t("backToSignIn")} />
       </>
     );
   }
 
   return (
     <>
-      <AuthHeading title="Set a new password">
-        Choose a new password for your account.
-      </AuthHeading>
+      <AuthHeading title={t("title")}>{t("description")}</AuthHeading>
       <ResetPasswordForm token={token} />
-      <AuthFooter href={authRoutes.signIn.href} label="Back to sign in" />
+      <AuthFooter href={authRoutes.signIn.href} label={t("backToSignIn")} />
     </>
   );
 }

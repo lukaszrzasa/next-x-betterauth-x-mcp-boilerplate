@@ -24,15 +24,15 @@ import { SESSION_PAGE_SIZE } from "@/app/(AuthModule)/_/types/settings";
 export const opaqueIdSchema = z
   .string()
   .trim()
-  .min(1, "An identifier is required.")
+  .min(1, "auth.validation.identifierRequired")
   .max(128)
-  .refine((value) => !/[\u0000-\u001F\u007F/\\]/.test(value), "Invalid identifier.");
+  .refine((value) => !/[\u0000-\u001F\u007F/\\]/.test(value), "auth.validation.identifierInvalid");
 
 /** 32 random bytes as base64url: exactly 43 characters of that alphabet, validated before any lookup. */
 export const CONFIRMATION_TOKEN_LENGTH = 43;
 export const confirmationTokenSchema = z
   .string()
-  .regex(new RegExp(`^[A-Za-z0-9_-]{${CONFIRMATION_TOKEN_LENGTH}}$`), "This link is not valid.");
+  .regex(new RegExp(`^[A-Za-z0-9_-]{${CONFIRMATION_TOKEN_LENGTH}}$`), "auth.validation.linkInvalid");
 
 /** Bounded, one-based; the service clamps to the last existing page. */
 export const SESSIONS_MAX_PAGE = 1_000_000;
@@ -41,7 +41,7 @@ export const sessionPageSchema = z.int().min(1).max(SESSIONS_MAX_PAGE);
 const optionalAuthenticatorCodeSchema = z
   .string()
   .trim()
-  .refine((value) => value === "" || /^\d{6}$/.test(value), "Enter a six-digit authenticator code.")
+  .refine((value) => value === "" || /^\d{6}$/.test(value), "auth.validation.authenticatorCode")
   .prefault("");
 
 // ---------------------------------------------------------------------------
@@ -75,12 +75,12 @@ export const changePasswordSchema = z
     revokeOtherSessions: z.boolean(),
   })
   .refine((input) => input.currentPassword !== input.newPassword, {
-    message: "Choose a password different from the current one.",
+    message: "auth.validation.passwordUnchanged",
     path: ["newPassword"],
   });
 
 export const completePasswordResetSchema = z.strictObject({
-  token: z.string().trim().min(1, "This reset link is invalid or expired.").max(256),
+  token: z.string().trim().min(1, "auth.validation.resetLinkInvalid").max(256),
   newPassword: newPasswordSchema,
 });
 
@@ -121,11 +121,11 @@ export const changePasswordFormSchema = z
     revokeOtherSessions: z.boolean().prefault(true),
   })
   .refine((input) => input.newPassword === input.confirmNewPassword, {
-    message: "Passwords do not match.",
+    message: "auth.validation.passwordsMismatch",
     path: ["confirmNewPassword"],
   })
   .refine((input) => input.currentPassword !== input.newPassword, {
-    message: "Choose a password different from the current one.",
+    message: "auth.validation.passwordUnchanged",
     path: ["newPassword"],
   });
 

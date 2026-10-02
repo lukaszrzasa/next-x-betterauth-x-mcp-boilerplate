@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { RefreshCwIcon, ShieldCheckIcon, ShieldOffIcon, ShieldPlusIcon } from "lucide-react";
 import { DetailRow, DetailSection } from "@/src/components/detail/DetailSection";
 import { FormDialog } from "@/src/components/feedback/FormDialog";
@@ -14,7 +15,7 @@ import type { Feedback } from "@/app/(AuthModule)/_/hooks/settings/feedback";
 import type { AccountSettings } from "@/app/(AuthModule)/_/types/settings";
 import {
   AuthenticatorSetupFlow,
-  SETUP_STEP_TITLES,
+  setupStepTitleKey,
   type SetupKind,
   type SetupStepName,
 } from "@/app/(AuthModule)/_/components/settings/account/AuthenticatorSetupFlow";
@@ -24,23 +25,25 @@ type Flow = { kind: SetupKind; key: number; step: SetupStepName };
 
 /** Marks a factor the account cannot turn off; the reason is in a tooltip, not a native title. */
 function RequiredBadge() {
+  const t = useTranslations("auth.settings.authenticator");
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Badge variant="outline" tabIndex={0} className="ui:cursor-default">
-          Required for your account
+          {t("requiredBadge")}
         </Badge>
       </TooltipTrigger>
-      <TooltipContent>Your role requires an authenticator; it can be replaced but not disabled.</TooltipContent>
+      <TooltipContent>{t("requiredTooltip")}</TooltipContent>
     </Tooltip>
   );
 }
 
 function StatusBadge({ enabled }: { enabled: boolean }) {
-  if (enabled) return <Badge variant="secondary">Enabled</Badge>;
+  const t = useTranslations("auth.settings.authenticator");
+  if (enabled) return <Badge variant="secondary">{t("enabled")}</Badge>;
   return (
     <Badge variant="outline" className="ui:text-muted-foreground">
-      Not set up
+      {t("notSetUp")}
     </Badge>
   );
 }
@@ -55,11 +58,12 @@ function AuthenticatorControls({
   onStart: (kind: SetupKind) => void;
   onDisable: () => void;
 }) {
+  const t = useTranslations("auth.settings.authenticator");
   if (!account.twoFactorEnabled) {
     return (
       <Button type="button" variant="outline" size="sm" onClick={() => onStart("enroll")}>
         <ShieldPlusIcon aria-hidden="true" />
-        Set up authenticator
+        {t("setUp")}
       </Button>
     );
   }
@@ -67,12 +71,12 @@ function AuthenticatorControls({
     <>
       <Button type="button" variant="outline" size="sm" onClick={() => onStart("replace")}>
         <RefreshCwIcon aria-hidden="true" />
-        Replace authenticator
+        {t("replace")}
       </Button>
       {!account.twoFactorRequired && (
         <Button type="button" variant="outline" size="sm" onClick={onDisable}>
           <ShieldOffIcon aria-hidden="true" />
-          Disable
+          {t("disable")}
         </Button>
       )}
     </>
@@ -86,6 +90,8 @@ function AuthenticatorControls({
  * a tooltip.
  */
 export function AuthenticatorSection({ account }: { account: AccountSettings }) {
+  const t = useTranslations("auth.settings.authenticator");
+  const tAll = useTranslations();
   const [flow, setFlow] = useState<Flow | null>(null);
   const [disabling, setDisabling] = useState(false);
   const { feedback, setFeedback, dismiss } = useFeedback<Feedback>();
@@ -101,20 +107,20 @@ export function AuthenticatorSection({ account }: { account: AccountSettings }) 
   };
   const recovery =
     feedback?.recovery === "retryFactorSessionRefresh"
-      ? { label: "Retry", pending: retry.pending, onClick: () => void retry.run() }
+      ? { label: tAll("auth.settings.common.retry"), pending: retry.pending, onClick: () => void retry.run() }
       : undefined;
 
   return (
     <DetailSection
-      title="Authenticator"
+      title={t("title")}
       titleAddon={account.twoFactorRequired ? <RequiredBadge /> : undefined}
-      description="A code from an authenticator app at sign-in and for sensitive changes."
+      description={t("description")}
       icon={ShieldCheckIcon}
     >
       <ActionFeedback feedback={feedback} onDismiss={dismiss} recovery={recovery} />
       <div>
         <DetailRow
-          label="Status"
+          label={t("status")}
           control={
             account.emailVerified ? (
               <AuthenticatorControls account={account} onStart={start} onDisable={disable} />
@@ -124,7 +130,7 @@ export function AuthenticatorSection({ account }: { account: AccountSettings }) 
           <StatusBadge enabled={account.twoFactorEnabled} />
           {!account.emailVerified && (
             <p className="ui:mt-1 ui:text-xs ui:text-muted-foreground">
-              Verify your email address to manage the authenticator.
+              {t("unverifiedHint")}
             </p>
           )}
         </DetailRow>
@@ -134,7 +140,7 @@ export function AuthenticatorSection({ account }: { account: AccountSettings }) 
         <FormDialog
           open
           onOpenChange={(next) => !next && setFlow(null)}
-          title={SETUP_STEP_TITLES[flow.kind][flow.step]}
+          title={tAll(setupStepTitleKey(flow.kind, flow.step))}
           className={flow.step === "codes" ? "ui:sm:max-w-xl" : undefined}
         >
           <AuthenticatorSetupFlow
@@ -146,7 +152,7 @@ export function AuthenticatorSection({ account }: { account: AccountSettings }) 
           />
         </FormDialog>
       )}
-      <FormDialog open={disabling} onOpenChange={setDisabling} title="Disable your authenticator">
+      <FormDialog open={disabling} onOpenChange={setDisabling} title={t("disableDialogTitle")}>
         <DisableAuthenticatorForm onCancel={() => setDisabling(false)} onSettled={setFeedback} />
       </FormDialog>
     </DetailSection>

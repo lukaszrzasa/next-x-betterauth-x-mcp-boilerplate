@@ -1,6 +1,7 @@
 "use client";
 
 import QRCode from "react-qr-code";
+import { useTranslations } from "next-intl";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { FieldDescription, FieldGroup } from "@/src/components/ui/field";
@@ -15,6 +16,7 @@ export function EnrollmentVerifyStep({
   totpURI: string;
   onVerified: () => void;
 }) {
+  const t = useTranslations("auth.enrollment.verify");
   const { form, onSubmit } = useEnrollmentVerifyStep(onVerified);
   const pending = form.formState.isSubmitting;
 
@@ -22,29 +24,26 @@ export function EnrollmentVerifyStep({
     <form onSubmit={onSubmit} noValidate>
       <FieldGroup>
         <FormError message={form.formState.errors.root?.message} />
-        <FieldDescription>
-          Scan this QR code with your authenticator app, then enter its
-          six-digit code.
-        </FieldDescription>
+        <FieldDescription>{t("description")}</FieldDescription>
         <Card>
           <CardContent className="ui:flex ui:justify-center">
             <QRCode
               value={totpURI}
               size={190}
-              title="Scan to enroll your authenticator"
+              title={t("qrTitle")}
             />
           </CardContent>
         </Card>
         <FormInput
           control={form.control}
           name="code"
-          label="Authenticator code"
+          label={t("codeLabel")}
           inputMode="numeric"
           autoComplete="one-time-code"
           placeholder="000000"
         />
         <Button type="submit" className="ui:h-11" disabled={pending}>
-          {pending ? "Verifying…" : "Verify authenticator"}
+          {pending ? t("submitting") : t("submit")}
         </Button>
       </FieldGroup>
     </form>

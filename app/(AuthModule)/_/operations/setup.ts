@@ -21,7 +21,7 @@ export const setupRootAdmin = defineAction({
     const rootUserId = await withInstallationTransaction(ctx, async (installation) => {
       if (await installation.isInstalled()) {
         throw new ActionError("FORBIDDEN", {
-          message: "Setup is only available for an empty installation.",
+          message: { key: "auth.errors.setupUnavailable" },
         });
       }
       // Root is an admin who must enroll an authenticator before anything else.

@@ -3,16 +3,17 @@ import { navigation, visibleNavigation } from "../../src/lib/app/navigation";
 import { authRoutes } from "../../app/(AuthModule)/_/routes";
 import { logsRoutes } from "../../app/(LogsModule)/_/routes";
 import { appRoutes } from "../../src/lib/app/routes";
+import { t } from "../helpers/intl.jsx";
 
 const hrefs = (viewer) =>
   visibleNavigation(viewer).map((group) => [group.label, group.items.map((item) => item.href)]);
 
 test("admin receives both groups; moderator receives General only", () => {
   expect(hrefs({ role: "admin" })).toEqual([
-    ["General", ["/admin", "/admin/users"]],
-    ["System", ["/admin/staff-logs", "/admin/email-logs"]],
+    ["nav.groups.general", ["/admin", "/admin/users"]],
+    ["nav.groups.system", ["/admin/staff-logs", "/admin/email-logs"]],
   ]);
-  expect(hrefs({ role: "moderator" })).toEqual([["General", ["/admin", "/admin/users"]]]);
+  expect(hrefs({ role: "moderator" })).toEqual([["nav.groups.general", ["/admin", "/admin/users"]]]);
 });
 
 test("ordinary users and guests receive nothing", () => {
@@ -25,19 +26,21 @@ test("account settings are absent from shell navigation", () => {
   expect(all.some((href) => href.startsWith("/settings"))).toBe(false);
 });
 
-test("navigation items are serializable declarations with icon identifiers", () => {
+test("navigation items are serializable declarations with icon identifiers and catalog labels", () => {
   for (const group of navigation) {
+    expect(t.has(group.label)).toBe(true);
     for (const item of group.items) {
       expect(typeof item.icon).toBe("string");
+      expect(t.has(item.label)).toBe(true);
       expect(JSON.parse(JSON.stringify(item))).toEqual(item);
     }
   }
 });
 
 test("the System category lists the logs module's pages; categories do not follow module names", () => {
-  const system = navigation.find((group) => group.label === "System");
+  const system = navigation.find((group) => group.label === "nav.groups.system");
   expect(system.items).toEqual([logsRoutes.staffLogs, logsRoutes.emailLogs]);
-  expect(navigation.some((group) => group.label === "Logs")).toBe(false);
+  expect(navigation.some((group) => group.label === "nav.groups.logs")).toBe(false);
 });
 
 test("every declared path is owned by exactly one route table", () => {

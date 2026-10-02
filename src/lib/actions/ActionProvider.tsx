@@ -7,8 +7,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useTranslations } from "next-intl";
 import { sendStepUpEmail } from "@/src/lib/auth/stepUpActions";
 import { createActionRuntime } from "./actionRuntime";
+import { describeFailure } from "./describeFailure";
 import {
   presentVerification,
   VerificationModalRoot,
@@ -52,15 +54,23 @@ export function ActionProvider({
     <ActionContext.Provider value={value}>
       {children}
       <VerificationModalRoot />
-      {error && (
-        <div role="alert">
-          <p>{error.message}</p>
-          <button type="button" onClick={() => setError(null)}>
-            Dismiss
-          </button>
-        </div>
-      )}
+      {error && <SharedFailure error={error} onDismiss={() => setError(null)} />}
     </ActionContext.Provider>
+  );
+}
+
+/** The fallback presentation of a failure no caller handled: the catalog's words for its reason. */
+function SharedFailure({ error, onDismiss }: { error: ActionFailure; onDismiss: () => void }) {
+  const t = useTranslations();
+  const { title, description } = describeFailure(t, error);
+  return (
+    <div role="alert">
+      <p>{title}</p>
+      {description && <p>{description}</p>}
+      <button type="button" onClick={onDismiss}>
+        {t("common.actions.dismiss")}
+      </button>
+    </div>
   );
 }
 

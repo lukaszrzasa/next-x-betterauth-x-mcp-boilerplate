@@ -55,7 +55,7 @@ function lockPool(): Pool {
 /** Contention: the caller may retry, nothing was written. */
 function accountBusyError(cause: unknown): ActionError {
   return new ActionError("CONFLICT", {
-    message: "Another change to this account is still in progress. Try again in a moment.",
+    message: { key: "auth.errors.accountBusy" },
     data: { retryable: true },
     cause,
   });

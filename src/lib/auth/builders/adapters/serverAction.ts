@@ -3,6 +3,8 @@ import "server-only";
 import { headers } from "next/headers";
 
 import { ActionError } from "@/src/lib/auth/errors";
+import { requestLocale } from "@/src/lib/i18n/resolveLocale";
+import { localizeActionError } from "./localize";
 import { optionalData } from "./response";
 
 import type { Action } from "@/src/lib/auth/builders/actionTypes";
@@ -14,8 +16,8 @@ export function toServerAction<TInput, TOutput>(
   action: Action<TInput, TOutput>,
 ): ServerAction<TInput, TOutput> {
   return async (input, meta = {}) => {
+    const requestHeaders = await headers();
     try {
-      const requestHeaders = await headers();
 
       const data = await action(input, {
         stepUp: meta.stepUp,
@@ -36,7 +38,7 @@ export function toServerAction<TInput, TOutput>(
         ok: false,
         reason: error.reason,
         status: error.status,
-        message: error.message,
+        message: localizeActionError(error, requestLocale(requestHeaders)),
         ...optionalData(error.data),
       };
     }

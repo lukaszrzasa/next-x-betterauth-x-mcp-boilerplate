@@ -7,10 +7,10 @@ import { STAFF_ROLES } from "@/src/lib/auth/permissions";
  * declared in their module's table; the dashboard itself is no module's.
  */
 export const appRoutes = defineRoutes({
-  home: { href: "/", label: "Home", access: "public" },
+  home: { href: "/", label: "nav.home", access: "public" },
   dashboard: {
     href: "/admin",
-    label: "Dashboard",
+    label: "nav.dashboard",
     icon: "dashboard",
     match: "exact",
     access: { roles: STAFF_ROLES },

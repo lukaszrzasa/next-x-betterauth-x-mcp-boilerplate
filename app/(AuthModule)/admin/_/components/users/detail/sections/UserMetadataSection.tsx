@@ -1,31 +1,32 @@
 "use client";
 
 import { InfoIcon } from "lucide-react";
+import { useFormatter, useTranslations } from "next-intl";
 import { CopyButton } from "@/src/components/actions/CopyButton";
 import { DetailRow, DetailSection } from "@/src/components/detail/DetailSection";
-import { formatUtcDateTime, toIsoInstant } from "@/src/lib/date/format";
+import { toIsoInstant } from "@/src/lib/date/format";
 import type { UserDetail } from "@/app/(AuthModule)/admin/_/types";
 
 function Timestamp({ value }: { value: string }) {
-  return <time dateTime={toIsoInstant(value)}>{formatUtcDateTime(value)}</time>;
+  const format = useFormatter();
+  return <time dateTime={toIsoInstant(value)}>{format.dateTime(new Date(value), "dateTime")}</time>;
 }
 
 export function UserMetadataSection({ user }: { user: UserDetail }) {
+  const t = useTranslations("authAdmin.detail.metadata");
   return (
-    <DetailSection title="Account details" icon={InfoIcon}>
+    <DetailSection title={t("title")} icon={InfoIcon}>
       <div>
-        <DetailRow label="User ID" control={<CopyButton value={user.id} label="Copy user ID" />}>
+        <DetailRow label={t("userId")} control={<CopyButton value={user.id} label={t("copyUserId")} />}>
           <code className="ui:font-mono ui:text-xs ui:break-all">{user.id}</code>
         </DetailRow>
-        <DetailRow label="Created">
+        <DetailRow label={t("created")}>
           <Timestamp value={user.createdAt} />
         </DetailRow>
-        <DetailRow label="Last updated">
+        <DetailRow label={t("lastUpdated")}>
           <Timestamp value={user.updatedAt} />
         </DetailRow>
-        <DetailRow label="Root designation">
-          {user.isRoot ? "Yes, the installation's root account" : "No"}
-        </DetailRow>
+        <DetailRow label={t("rootDesignation")}>{user.isRoot ? t("rootYes") : t("rootNo")}</DetailRow>
       </div>
     </DetailSection>
   );

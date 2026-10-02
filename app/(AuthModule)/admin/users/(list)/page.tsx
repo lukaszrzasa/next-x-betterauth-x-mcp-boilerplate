@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { page, redirectRefused } from "@/src/lib/app/access";
 import { AppBreadcrumbs } from "@/src/components/shell/AppBreadcrumbs";
 import { appRoutes } from "@/src/lib/app/routes";
@@ -42,18 +43,20 @@ export default page<PageProps<"/admin/users">>(
     if (result.page !== query.page) {
       redirect(usersListUrl(result.query));
     }
+    const [t, nav] = await Promise.all([getTranslations("authAdmin"), getTranslations()]);
 
     return (
       <>
         <AppBreadcrumbs
-          items={[{ label: "Admin", href: appRoutes.dashboard.href }, authRoutes.adminUsers]}
+          items={[
+            { label: t("breadcrumbs.admin"), href: appRoutes.dashboard.href },
+            { label: nav(authRoutes.adminUsers.label), href: authRoutes.adminUsers.href },
+          ]}
         />
         <div className="ui:flex ui:flex-col ui:gap-6">
           <div className="ui:flex ui:flex-col ui:gap-1">
-            <h1 className="ui:text-2xl ui:font-semibold ui:tracking-tight">Users</h1>
-            <p className="ui:text-sm ui:text-muted-foreground">
-              Every account, including banned and staff accounts. Open a user to review or change it.
-            </p>
+            <h1 className="ui:text-2xl ui:font-semibold ui:tracking-tight">{t("list.title")}</h1>
+            <p className="ui:text-sm ui:text-muted-foreground">{t("list.description")}</p>
           </div>
           <UsersList page={result} />
         </div>

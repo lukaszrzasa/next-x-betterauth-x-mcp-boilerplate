@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { page, redirectRefused } from "@/src/lib/app/access";
 import { AppBreadcrumbs } from "@/src/components/shell/AppBreadcrumbs";
 import { appRoutes } from "@/src/lib/app/routes";
@@ -39,18 +40,17 @@ export default page<PageProps<"/admin/staff-logs">>(logsRoutes.staffLogs, async 
   if (serializeRawSearchParams(raw) !== serializeStaffLogsSearch(result.query)) {
     redirect(staffLogsUrl(result.query));
   }
+  const t = await getTranslations("logsAdmin.staffLogs");
 
   return (
     <>
       <AppBreadcrumbs
-        items={[{ label: "Admin", href: appRoutes.dashboard.href }, { label: "System" }, logsRoutes.staffLogs]}
+        items={[{ label: "nav.admin", href: appRoutes.dashboard.href }, { label: "nav.groups.system" }, logsRoutes.staffLogs]}
       />
       <div className="ui:flex ui:flex-col ui:gap-6">
         <div className="ui:flex ui:flex-col ui:gap-1">
-          <h1 className="ui:text-2xl ui:font-semibold ui:tracking-tight">Staff log</h1>
-          <p className="ui:text-sm ui:text-muted-foreground">
-            What staff changed, newest first. Names inside an entry are shown as they were at the time.
-          </p>
+          <h1 className="ui:text-2xl ui:font-semibold ui:tracking-tight">{t("title")}</h1>
+          <p className="ui:text-sm ui:text-muted-foreground">{t("description")}</p>
         </div>
         <StaffLogsList page={result} options={options} />
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { MailIcon, MailCheckIcon } from "lucide-react";
 import { EditButton } from "@/src/components/actions/EditButton";
 import { DetailRow, DetailSection } from "@/src/components/detail/DetailSection";
@@ -27,6 +28,7 @@ type Open = "change" | "correct" | "newAddress" | null;
  * unverified one is verified as usual or corrected through its own flow.
  */
 export function EmailSection({ account }: { account: AccountSettings }) {
+  const t = useTranslations("auth.settings.email");
   const [open, setOpen] = useState<Open>(null);
   const { feedback, setFeedback, dismiss } = useFeedback<Feedback>();
   const actions = useEmailRequestActions({ onSettled: setFeedback });
@@ -42,10 +44,10 @@ export function EmailSection({ account }: { account: AccountSettings }) {
   const cancelRequest = async () => {
     if (request.state === "none") return;
     const confirmed = await confirm({
-      title: "Cancel this email change?",
-      description: "The links already sent stop working. Your sign-in address stays as it is.",
-      confirmLabel: "Cancel request",
-      cancelLabel: "Keep request",
+      title: t("cancelConfirm.title"),
+      description: t("cancelConfirm.description"),
+      confirmLabel: t("cancelConfirm.confirm"),
+      cancelLabel: t("cancelConfirm.keep"),
     });
     if (confirmed) {
       dismiss();
@@ -54,20 +56,20 @@ export function EmailSection({ account }: { account: AccountSettings }) {
   };
 
   return (
-    <DetailSection title="Email address" description="The address you sign in with and where account email is sent." icon={MailIcon}>
+    <DetailSection title={t("title")} description={t("description")} icon={MailIcon}>
       <ActionFeedback feedback={feedback} onDismiss={dismiss} />
       <div>
         <DetailRow
-          label="Current address"
+          label={t("currentAddress")}
           control={
             account.emailVerified ? (
               <EditButton disabled={actions.pending} onClick={() => show("change")}>
-                {pendingRequest ? "Start over" : "Change email"}
+                {pendingRequest ? t("startOver") : t("changeEmail")}
               </EditButton>
             ) : (
               <Button type="button" variant="outline" size="sm" disabled={actions.pending} onClick={() => { dismiss(); void actions.resendVerification(); }}>
                 <MailCheckIcon aria-hidden="true" />
-                Verify email
+                {t("verifyEmail")}
               </Button>
             )
           }
@@ -75,15 +77,14 @@ export function EmailSection({ account }: { account: AccountSettings }) {
           <span className="ui:flex ui:flex-wrap ui:items-center ui:gap-2">
             <span className="ui:font-medium ui:break-all">{account.email}</span>
             {account.emailVerified ? (
-              <Badge variant="secondary">Verified</Badge>
+              <Badge variant="secondary">{t("verified")}</Badge>
             ) : (
-              <Badge variant="outline" className="ui:text-muted-foreground">Unverified</Badge>
+              <Badge variant="outline" className="ui:text-muted-foreground">{t("unverified")}</Badge>
             )}
           </span>
           {!account.emailVerified && (
             <p className="ui:mt-1 ui:text-xs ui:text-muted-foreground">
-              Changing the password or the authenticator needs a verified address. Entered the wrong email
-              when signing up?{" "}
+              {t("unverifiedHint")}{" "}
               <Button
                 type="button"
                 variant="link"
@@ -92,14 +93,14 @@ export function EmailSection({ account }: { account: AccountSettings }) {
                 disabled={actions.pending}
                 onClick={() => show("correct")}
               >
-                {pendingRequest ? "Start the correction over" : "Correct it"}
+                {pendingRequest ? t("restartCorrection") : t("correctIt")}
               </Button>
             </p>
           )}
         </DetailRow>
 
         {request.state !== "none" && (
-          <DetailRow label="Pending change">
+          <DetailRow label={t("pendingChange")}>
             <EmailRequestStatus
               request={request}
               pending={actions.pending}
@@ -114,19 +115,19 @@ export function EmailSection({ account }: { account: AccountSettings }) {
       <FormDialog
         open={open === "change"}
         onOpenChange={(next) => !next && close()}
-        title={pendingRequest ? "Start a new email change" : "Change your sign-in email"}
+        title={pendingRequest ? t("dialogChangeNew") : t("dialogChange")}
       >
         <EmailChangeForm email={account.email} replacing={pendingRequest} onCancel={close} onSettled={setFeedback} />
       </FormDialog>
       <FormDialog
         open={open === "correct"}
         onOpenChange={(next) => !next && close()}
-        title="Correct your email address"
+        title={t("dialogCorrect")}
       >
         <EmailCorrectionForm email={account.email} twoFactorEnabled={account.twoFactorEnabled} onCancel={close} onSettled={setFeedback} />
       </FormDialog>
       {request.state === "awaiting_new_address" && (
-        <FormDialog open={open === "newAddress"} onOpenChange={(next) => !next && close()} title="Enter your new email address">
+        <FormDialog open={open === "newAddress"} onOpenChange={(next) => !next && close()} title={t("dialogNewAddress")}>
           <NewEmailForm requestId={request.id} onCancel={close} onSettled={setFeedback} />
         </FormDialog>
       )}

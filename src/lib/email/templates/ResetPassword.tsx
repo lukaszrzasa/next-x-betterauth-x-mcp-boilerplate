@@ -1,3 +1,4 @@
+import type { Locale } from "@/src/lib/i18n/locales";
 import {
   appName,
   EmailButton,
@@ -5,27 +6,24 @@ import {
   EmailHeading,
   EmailLayout,
   EmailText,
+  type EmailTranslator,
 } from "./_components";
 
 export type ResetPasswordProps = {
   url: string;
   name?: string;
+  locale: Locale;
+  t: EmailTranslator;
 };
 
-export default function ResetPassword({ url, name }: ResetPasswordProps) {
+export default function ResetPassword({ url, name, locale, t }: ResetPasswordProps) {
+  const greeting = name ? t("greeting", { name }) : "";
   return (
-    <EmailLayout preview={`Reset your ${appName} password`}>
-      <EmailHeading>Reset your password</EmailHeading>
-      <EmailText>
-        {name ? `Hi ${name}, ` : ""}we received a request to reset the password for
-        your {appName} account. This link expires in one hour and can only be used
-        once.
-      </EmailText>
-      <EmailButton href={url}>Reset password</EmailButton>
-      <EmailFallbackLink
-        href={url}
-        note="If you did not request a password reset, no action is needed — your password stays unchanged."
-      />
+    <EmailLayout locale={locale} preview={t("reset.preview", { appName })}>
+      <EmailHeading>{t("reset.heading")}</EmailHeading>
+      <EmailText>{t("reset.body", { greeting, appName })}</EmailText>
+      <EmailButton href={url}>{t("reset.button")}</EmailButton>
+      <EmailFallbackLink href={url} intro={t("layout.fallbackIntro")} note={t("reset.note")} />
     </EmailLayout>
   );
 }

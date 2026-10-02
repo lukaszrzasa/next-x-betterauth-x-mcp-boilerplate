@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 import { useAction } from "@/src/lib/actions";
 import { useSchemaForm } from "@/src/lib/forms/useSchemaForm";
 import { changePasswordAction } from "@/app/(AuthModule)/_/actions";
@@ -16,6 +17,7 @@ import { attributeFieldError, rootMessage } from "./formErrors";
  */
 export function useChangePasswordForm({ onSettled }: { onSettled: (feedback: Feedback) => void }) {
   const router = useRouter();
+  const t = useCatalog();
   const { form, createSubmitHandler } = useSchemaForm(changePasswordFormSchema);
   const { execute, isPending } = useAction(changePasswordAction, { onError: () => true });
 
@@ -23,9 +25,9 @@ export function useChangePasswordForm({ onSettled }: { onSettled: (feedback: Fee
     const result = await execute({ currentPassword, newPassword, revokeOtherSessions });
     if (result.status === "error") {
       if (attributeFieldError(form, result.error, ["currentPassword", "newPassword"])) return;
-      throw new Error(rootMessage(result.error));
+      throw new Error(rootMessage(t, result.error));
     }
-    const feedback = syncFeedbackFor("changePassword", result);
+    const feedback = syncFeedbackFor(t, "changePassword", result);
     if (!feedback) return;
     // Never keep either password around after the server answered.
     form.reset({ currentPassword: "", newPassword: "", confirmNewPassword: "", revokeOtherSessions });

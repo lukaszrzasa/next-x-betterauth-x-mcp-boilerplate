@@ -1,4 +1,5 @@
 import type { StepUpMethod, RequiredStepUp } from "./stepUpPolicy";
+import { isMessageDescriptor, type MessageDescriptor } from "@/src/lib/i18n/messageKey";
 
 /**
  * Every way an action can refuse, with the HTTP status a surface that has one
@@ -45,20 +46,35 @@ export type TwoFactorRequiredData = {
  * result object, because Next replaces a thrown error's message with an opaque
  * digest in production and the payload above would not survive the trip.
  */
+/** What `Error.message` holds: the developer string, a descriptor's key, or the reason. */
+function loggedMessage(reason: ActionErrorReason, message: string | MessageDescriptor | undefined): string {
+  if (typeof message === "string") return message;
+  return message ? message.key : reason;
+}
+
 export class ActionError extends Error {
   readonly reason: ActionErrorReason;
   readonly status: number;
   readonly data: unknown;
+  /**
+   * What the person is told, as a catalog key with its values; the boundary
+   * adapter renders it in the request's locale. Null when the error carries
+   * only a developer message (or none), in which case the adapter answers
+   * with the generic text for the reason. `message` itself is for logs.
+   */
+  readonly descriptor: MessageDescriptor | null;
 
   constructor(
     reason: ActionErrorReason,
-    options: { message?: string; data?: unknown; cause?: unknown } = {},
+    options: { message?: string | MessageDescriptor; data?: unknown; cause?: unknown } = {},
   ) {
-    super(options.message ?? reason, { cause: options.cause });
+    const descriptor = isMessageDescriptor(options.message) ? options.message : null;
+    super(loggedMessage(reason, options.message), { cause: options.cause });
     this.name = "ActionError";
     this.reason = reason;
     this.status = ACTION_ERROR_STATUS[reason];
     this.data = options.data;
+    this.descriptor = descriptor;
   }
 
   static is(value: unknown): value is ActionError {
@@ -67,7 +83,7 @@ export class ActionError extends Error {
 
   static twoFactorRequired(data: TwoFactorRequiredData) {
     return new ActionError("TWO_FACTOR_REQUIRED", {
-      message: `Step-up verification required (${data.policy})`,
+      message: { key: "errors.auth.stepUpRequired" },
       data,
     });
   }

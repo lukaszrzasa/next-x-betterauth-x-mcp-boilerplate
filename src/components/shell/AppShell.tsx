@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   SidebarInset,
   SidebarLayout,
@@ -27,12 +28,13 @@ export function getShellMode(pathname: string): ShellMode {
 }
 
 function SkipLink() {
+  const t = useTranslations("common.shell");
   return (
     <a
       href="#main-content"
       className="ui:sr-only ui:focus:not-sr-only ui:focus:fixed ui:focus:top-2 ui:focus:left-2 ui:focus:z-50 ui:focus:rounded-md ui:focus:bg-background ui:focus:px-3 ui:focus:py-2 ui:focus:text-sm ui:focus:ring-2 ui:focus:ring-ring"
     >
-      Skip to content
+      {t("skipToContent")}
     </a>
   );
 }

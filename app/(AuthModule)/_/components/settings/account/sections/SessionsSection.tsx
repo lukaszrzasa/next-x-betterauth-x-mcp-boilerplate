@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { LogOutIcon, MonitorSmartphoneIcon } from "lucide-react";
 import { DetailSection } from "@/src/components/detail/DetailSection";
 import { Button } from "@/src/components/ui/button";
@@ -10,13 +11,14 @@ import { SessionList } from "@/app/(AuthModule)/_/components/settings/account/Se
 
 /** Where the account is signed in, and the three ways to end sessions. */
 export function SessionsSection({ sessions }: { sessions: SessionPage }) {
+  const t = useTranslations("auth.settings.sessions");
   const revocation = useSessionRevocation();
   const hasOthers = sessions.total > 1;
 
   return (
     <DetailSection
-      title="Sessions"
-      description="Devices and browsers currently signed in to your account."
+      title={t("title")}
+      description={t("description")}
       icon={MonitorSmartphoneIcon}
       actions={
         <>
@@ -28,7 +30,7 @@ export function SessionsSection({ sessions }: { sessions: SessionPage }) {
             onClick={revocation.signOutOthers}
           >
             <LogOutIcon aria-hidden="true" />
-            Sign out other devices
+            {t("signOutOthers")}
           </Button>
           <Button
             type="button"
@@ -37,7 +39,7 @@ export function SessionsSection({ sessions }: { sessions: SessionPage }) {
             disabled={revocation.pending}
             onClick={revocation.signOutEverywhere}
           >
-            Sign out everywhere
+            {t("signOutEverywhere")}
           </Button>
         </>
       }

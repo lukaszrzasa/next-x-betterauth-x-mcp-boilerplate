@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Skeleton } from "@/src/components/ui/skeleton";
 import {
   Table,
@@ -16,12 +19,15 @@ import {
 export function DataTableSkeleton({
   columnWidths,
   rows = 8,
-  label = "Loading",
+  label: givenLabel,
 }: {
   columnWidths: readonly string[];
   rows?: number;
+  /** Already translated; defaults to the catalog's "Loading". */
   label?: string;
 }) {
+  const t = useTranslations("common.pagination");
+  const label = givenLabel ?? t("loading");
   return (
     <div role="status" aria-label={label} className="ui:flex ui:flex-col ui:gap-4">
       <div className="ui:flex ui:flex-col ui:gap-3 ui:md:flex-row ui:md:items-end">

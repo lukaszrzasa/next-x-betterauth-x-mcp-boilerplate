@@ -7,6 +7,7 @@ import {useViewer} from "@/src/components/shell/ViewerProvider";
 import {buildRoute} from "@/src/lib/routes";
 import {cn} from "@/src/lib/utils";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 const linkClass = "ui:font-medium ui:text-foreground ui:underline ui:underline-offset-4 ui:hover:text-primary";
 
@@ -51,11 +52,16 @@ function Block({ block }: { block: StaffLogBlockView }) {
     case "value":
       return <span className="ui:rounded ui:bg-muted ui:px-1 ui:py-0.5 ui:font-medium">{block.value}</span>;
     case "unsupported":
-      return <span className="ui:text-muted-foreground ui:italic">[unsupported content]</span>;
+      return <UnsupportedBlock />;
     default: {
       return block;
     }
   }
+}
+
+function UnsupportedBlock() {
+  const t = useTranslations("logsAdmin.shared");
+  return <span className="ui:text-muted-foreground ui:italic">{t("unsupportedContent")}</span>;
 }
 
 /** The message as one sentence, in block order. */

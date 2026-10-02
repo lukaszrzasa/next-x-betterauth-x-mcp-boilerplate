@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/src/components/ui/button";
 import { AuthenticatorChallengeForm } from "./AuthenticatorChallengeForm";
 import { EmailChallengeForm } from "./EmailChallengeForm";
@@ -10,11 +11,11 @@ type ChallengeMethod = "authenticator" | "recovery" | "email";
 
 const METHODS: readonly ChallengeMethod[] = ["authenticator", "recovery", "email"];
 
-const SWITCH_LABELS: Record<ChallengeMethod, string> = {
-  authenticator: "Use an authenticator code",
-  recovery: "Use a recovery code",
-  email: "Email me a code instead",
-};
+const SWITCH_LABELS = {
+  authenticator: "useAuthenticator",
+  recovery: "useRecovery",
+  email: "useEmail",
+} as const;
 
 /**
  * Second sign-in step. The authenticator is the default; a recovery code or an
@@ -22,6 +23,7 @@ const SWITCH_LABELS: Record<ChallengeMethod, string> = {
  * form, but an email code is requested automatically only once per sign-in.
  */
 export function TwoFactorForm({ onRestart }: { onRestart: () => void }) {
+  const t = useTranslations("auth.signIn.twoFactor");
   const [method, setMethod] = useState<ChallengeMethod>("authenticator");
   const [emailCodeSent, setEmailCodeSent] = useState(false);
   const markEmailCodeSent = useCallback(() => setEmailCodeSent(true), []);
@@ -44,11 +46,11 @@ export function TwoFactorForm({ onRestart }: { onRestart: () => void }) {
             variant="link"
             onClick={() => setMethod(candidate)}
           >
-            {SWITCH_LABELS[candidate]}
+            {t(SWITCH_LABELS[candidate])}
           </Button>
         ))}
         <Button type="button" variant="link" onClick={onRestart}>
-          Start sign-in again
+          {t("restart")}
         </Button>
       </div>
     </>

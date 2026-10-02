@@ -21,7 +21,7 @@ export async function confirmCommitted(
     current = await loadTarget(ctx, userId);
   } catch (readError) {
     throw new ActionError("INTERNAL", {
-      message: "The change could not be confirmed. Refresh the page before trying again.",
+      message: { key: "authAdmin.errors.changeNotConfirmed" },
       cause: readError instanceof Error ? new Error(readError.message, { cause: error }) : error,
     });
   }

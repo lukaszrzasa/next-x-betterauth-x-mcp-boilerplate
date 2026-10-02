@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
+import { useFormatter, useTranslations } from "next-intl";
 import { DataTable } from "@/src/components/data-table/DataTable";
 import type { TablePageState, TableSort } from "@/src/components/data-table/types";
 import type { RawSearchParams } from "@/src/lib/data-table/queryState";
@@ -45,7 +46,9 @@ export function EmailLogsList({ page, headingId }: { page: EmailLogsPage; headin
   const serialize = useCallback((query: EmailLogsQuery) => serializeEmailLogsSearch(query, selectedId), [selectedId]);
   const { navigate, navigateDebounced, flush, pending } = useTableNavigation({ pathname, query: page.query, serialize });
   const { query } = page;
-  const columns = useMemo(() => emailLogsColumns({ onOpen: selection.open }), [selection.open]);
+  const t = useTranslations("logsAdmin.emailLogs");
+  const format = useFormatter();
+  const columns = useMemo(() => emailLogsColumns({ onOpen: selection.open, t, format }), [selection.open, t, format]);
 
   const sorting: TableSort = { id: query.sort, desc: query.direction === "desc" };
   const onSortingChange = (next: TableSort) => {
@@ -85,16 +88,16 @@ export function EmailLogsList({ page, headingId }: { page: EmailLogsPage; headin
           <EmptyState
             query={query}
             pending={pending}
-            noun="email attempts"
-            filteredText="No email logs match these filters."
-            neverText="No email attempts have been recorded. Attempts appear here once sending is logged."
+            noun={t("empty.noun")}
+            filteredText={t("empty.filtered")}
+            neverText={t("empty.never")}
             onClear={() => navigate(clearEmailLogsFilters(query))}
             onAllTime={() => navigate(withEmailLogsQueryChange(query, { range: "all", from: "", to: "" }))}
             filtered={hasEmailLogsFilters({ ...query, range: "30d", from: "", to: "" })}
           />
         }
-        caption="Email sending attempts, with time, recipient, subject, status and attempt number"
-        itemLabel="email logs"
+        caption={t("caption")}
+        itemLabel={t("itemLabel")}
         pageSizeOptions={LOG_PAGE_SIZES}
       />
       <EmailLogDialog

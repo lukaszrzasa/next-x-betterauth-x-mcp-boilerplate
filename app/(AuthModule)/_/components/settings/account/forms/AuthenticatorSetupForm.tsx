@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { FormError } from "@/src/components/forms/FormError";
 import { FormInput } from "@/src/components/forms/FormInput";
 import { Button } from "@/src/components/ui/button";
@@ -17,21 +18,19 @@ export function AuthenticatorSetupForm({
   onStarted: (setup: SetupStarted) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("auth.settings.authenticator.setupForm");
+  const tCommon = useTranslations("auth.settings.common");
   const { form, onSubmit, pending } = useAuthenticatorSetupForm({ kind, onStarted });
 
   return (
-    <form noValidate aria-label={kind === "enroll" ? "Set up authenticator" : "Replace authenticator"} onSubmit={onSubmit} className="ui:flex ui:flex-col ui:gap-4">
+    <form noValidate aria-label={kind === "enroll" ? t("labelEnroll") : t("labelReplace")} onSubmit={onSubmit} className="ui:flex ui:flex-col ui:gap-4">
       <FieldGroup className="ui:gap-4">
         <FormError message={form.formState.errors.root?.message} />
-        <FieldDescription>
-          {kind === "enroll"
-            ? "Confirm your password, then scan the code with an authenticator app. Nothing changes until you enter its first code."
-            : "Confirm your password; you will also be asked for a code from your current authenticator. The current one keeps working until the new one is proven."}
-        </FieldDescription>
+        <FieldDescription>{kind === "enroll" ? t("hintEnroll") : t("hintReplace")}</FieldDescription>
         <FormInput
           control={form.control}
           name="currentPassword"
-          label="Current password"
+          label={tCommon("currentPassword")}
           type="password"
           autoComplete="current-password"
           maxLength={128}
@@ -40,10 +39,10 @@ export function AuthenticatorSetupForm({
       </FieldGroup>
       <div className="ui:flex ui:flex-wrap ui:justify-end ui:gap-2">
         <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={onCancel}>
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Preparing…" : "Continue"}
+          {pending ? t("submitting") : t("submit")}
         </Button>
       </div>
     </form>

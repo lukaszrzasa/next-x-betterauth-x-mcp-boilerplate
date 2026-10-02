@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@/src/components/ui/button";
 import { FieldGroup } from "@/src/components/ui/field";
 import { FormInput } from "@/src/components/forms/FormInput";
@@ -14,6 +15,7 @@ export function EnrollmentPasswordStep({
 }: {
   onStarted: (setup: AuthenticatorSetup) => void;
 }) {
+  const t = useTranslations("auth.enrollment.password");
   const { form, onSubmit } = useEnrollmentPasswordStep(onStarted);
   const pending = form.formState.isSubmitting;
 
@@ -24,12 +26,12 @@ export function EnrollmentPasswordStep({
         <FormInput
           control={form.control}
           name="password"
-          label="Confirm your password"
+          label={t("label")}
           type="password"
           autoComplete="current-password"
         />
         <Button type="submit" className="ui:h-11" disabled={pending}>
-          {pending ? "Preparing…" : "Set up authenticator"}
+          {pending ? t("submitting") : t("submit")}
         </Button>
       </FieldGroup>
     </form>

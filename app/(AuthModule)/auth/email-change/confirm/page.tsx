@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { AuthHeading } from "@/app/(AuthModule)/_/components/layout/AuthHeading";
 import { EmailConfirmation } from "@/app/(AuthModule)/_/components/emailChange/EmailConfirmation";
 import { inspectEmailProofQuery } from "@/app/(AuthModule)/_/queries";
@@ -20,7 +21,7 @@ export default async function EmailChangeConfirmationPage({
 }: {
   searchParams: Promise<{ token?: string | string[] }>;
 }) {
-  const { token } = await searchParams;
+  const [{ token }, t] = await Promise.all([searchParams, getTranslations("auth.pages.emailChange")]);
   const parsed = confirmationTokenSchema.safeParse(typeof token === "string" ? token : "");
 
   let inspection: EmailProofInspection | null = null;
@@ -35,9 +36,7 @@ export default async function EmailChangeConfirmationPage({
 
   return (
     <>
-      <AuthHeading title="Confirm your email address">
-        This confirms one step of a sign-in email change requested from your account settings.
-      </AuthHeading>
+      <AuthHeading title={t("title")}>{t("description")}</AuthHeading>
       <EmailConfirmation token={parsed.success ? parsed.data : null} inspection={inspection} />
     </>
   );

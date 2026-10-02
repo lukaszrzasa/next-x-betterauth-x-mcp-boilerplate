@@ -1,0 +1,225 @@
+{
+  "common": {
+    "actions": {
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "close": "Close",
+      "retry": "Retry",
+      "dismiss": "Dismiss",
+      "copy": "Copy",
+      "copied": "Copied",
+      "edit": "Edit",
+      "save": "Save",
+      "back": "Back",
+      "continue": "Continue",
+      "refresh": "Refresh",
+      "tryAgain": "Try again",
+      "signIn": "Sign in",
+      "signOut": "Sign out",
+      "signingOut": "Signing out…",
+      "working": "Working…",
+      "viewDetails": "View details",
+      "clearFilters": "Clear filters",
+      "showAllTime": "Show all time"
+    },
+    "form": {
+      "connectionError": "Unable to connect. Please try again.",
+      "checkValues": "Check the values you entered."
+    },
+    "unknown": "Unknown",
+    "device": {
+      "unknown": "Unknown device",
+      "browserOnPlatform": "{browser} on {platform}"
+    },
+    "timeLeft": {
+      "expired": "expired",
+      "hoursMinutes": "{hours}h {minutes}m left",
+      "minutes": "{minutes}m left",
+      "seconds": "{seconds}s left"
+    },
+    "pagination": {
+      "rowsPerPage": "Rows per page",
+      "pageOf": "Page {page} of {pages}",
+      "rows": "{total, plural, =0 {No rows} one {# row} other {# rows}}",
+      "firstPage": "First page",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "lastPage": "Last page",
+      "range": "{first}–{last} of {total, number} {itemLabel}",
+      "zero": "0 {itemLabel}",
+      "sortBy": "Sort by {title}, {direction}",
+      "ascending": "ascending",
+      "descending": "descending",
+      "navigation": "Pagination",
+      "loading": "Loading"
+    },
+    "theme": {
+      "change": "Change theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "meta": {
+      "description": "A starting point for building a new project."
+    },
+    "feedback": {
+      "retryIn": "You can {verb} in {seconds}s.",
+      "retryNow": "You can {verb} now.",
+      "tryAgainVerb": "try again"
+    },
+    "countdown": {
+      "seconds": "{seconds}s",
+      "now": "now"
+    },
+    "copy": {
+      "copied": "Copied",
+      "failed": "Copy failed; select the text instead"
+    },
+    "shell": {
+      "skipToContent": "Skip to content",
+      "accountMenu": "Account menu",
+      "navigation": "Navigation",
+      "navigationDrawer": "Dashboard navigation drawer.",
+      "toggleSidebar": "Toggle sidebar",
+      "breadcrumb": "Breadcrumb",
+      "admin": "Admin"
+    },
+    "verification": {
+      "title": "Verify your identity",
+      "description": "This action needs a second factor. Enter the six-digit code {source, select, chosen {from your chosen method} totp {from your authenticator app} other {sent to your email address}}.",
+      "methodLabel": "Verification method",
+      "methods": {
+        "totp": "Authenticator app",
+        "email": "Email code"
+      },
+      "sendEmailCode": "Send email code",
+      "codeLabel": "Six-digit code",
+      "codeRequired": "Enter your six-digit code.",
+      "codePattern": "Enter exactly six digits.",
+      "codeSent": "A code was sent to your email address.",
+      "pleaseWait": "Please wait…",
+      "verifyAndContinue": "Verify and continue"
+    }
+  },
+  "nav": {
+    "groups": {
+      "general": "General",
+      "system": "System"
+    },
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "userDetails": "User details",
+    "staffLog": "Staff log",
+    "emailLogs": "Email logs",
+    "panel": "Panel",
+    "settings": "Settings",
+    "profile": "Profile",
+    "account": "Account",
+    "admin": "Admin"
+  },
+  "errors": {
+    "reason": {
+      "INVALID_INPUT": "Check the values you entered.",
+      "UNAUTHENTICATED": "Sign in to continue.",
+      "FORBIDDEN": "You are not allowed to do this.",
+      "EMAIL_VERIFICATION_REQUIRED": "Verify your email address first.",
+      "IMPERSONATION_FORBIDDEN": "This action is not available while impersonating.",
+      "NOT_FOUND": "This no longer exists.",
+      "CONFLICT": "That change is not possible right now.",
+      "TWO_FACTOR_REQUIRED": "Verification is required.",
+      "TWO_FACTOR_ENROLLMENT_REQUIRED": "Set up two-factor authentication first.",
+      "STEP_UP_INVALID_CODE": "That verification code is not valid.",
+      "STEP_UP_LOCKED": "Verification is locked.",
+      "RATE_LIMITED": "Please wait before trying again.",
+      "INTERNAL": "Something went wrong."
+    },
+    "describe": {
+      "RATE_LIMITED": {
+        "title": "Please wait before trying again"
+      },
+      "NOT_FOUND": {
+        "title": "This no longer exists",
+        "description": "Refresh the page to see the current state."
+      },
+      "CONFLICT": {
+        "title": "That change is not possible right now"
+      },
+      "FORBIDDEN": {
+        "title": "Not allowed"
+      },
+      "UNAUTHENTICATED": {
+        "title": "Your session has ended",
+        "description": "Sign in again to continue."
+      },
+      "STEP_UP_LOCKED": {
+        "title": "Verification is locked"
+      },
+      "INVALID_INPUT": {
+        "title": "Check the values you entered"
+      },
+      "VERIFICATION_REQUIRED": {
+        "title": "Verification is required"
+      },
+      "UNCONFIRMED": {
+        "title": "The action could not be confirmed",
+        "description": "It may or may not have applied. Refresh the page to see the current state before trying again."
+      }
+    },
+    "transport": "The action could not be completed. Check its result before trying again.",
+    "auth": {
+      "stepUpLocked": "Too many failed verification attempts. Try again later.",
+      "emailCodesRequireVerifiedEmail": "Verify your email address before using email verification codes.",
+      "emailCodeCooldown": "Wait {seconds} seconds before requesting another email code.",
+      "stepUpProofShape": "Step-up requires a method and a six-digit code.",
+      "methodUnavailable": "This verification method is not available for this account.",
+      "invalidCode": "That verification code is not valid.",
+      "codeAlreadyUsed": "That verification code has already been used.",
+      "securityStateChanged": "Your account's security settings changed while this request was in progress. Verify again and retry.",
+      "accountNotFound": "This account no longer exists.",
+      "impersonationForbidden": "Two-factor protected actions cannot be run while impersonating.",
+      "notFound": "Not found.",
+      "missingPermission": "You do not have permission to do this.",
+      "enrollmentRequired": "Set up two-factor authentication to perform this action.",
+      "entryPointUnavailable": "This operation is not available here.",
+      "staleProof": "Verification proof is not expected for this account; submit again without it.",
+      "inputFailedValidation": "Input failed validation.",
+      "bodyNotJson": "Request body must be valid JSON.",
+      "originNotAllowed": "Request origin is not allowed.",
+      "stepUpRequired": "Step-up verification required."
+    },
+    "provider": {
+      "default": "Something went wrong. Please try again.",
+      "INVALID_EMAIL_OR_PASSWORD": "That email address or password is not correct.",
+      "USER_NOT_FOUND": "No account matches these details.",
+      "INVALID_PASSWORD": "That password is not correct.",
+      "INVALID_EMAIL": "Enter a valid email address.",
+      "INVALID_TOKEN": "This link is no longer valid. Request a new one.",
+      "EMAIL_NOT_VERIFIED": "Verify your email address before signing in.",
+      "EMAIL_NOT_VERIFIED_FOR_OTP": "Verify your email address before signing in with an email code.",
+      "PASSWORD_TOO_SHORT": "Use at least 8 characters.",
+      "PASSWORD_TOO_LONG": "Use at most 128 characters.",
+      "USER_ALREADY_EXISTS": "An account with this email address already exists.",
+      "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL": "An account with this email address already exists. Use another address.",
+      "SESSION_EXPIRED": "Your session has expired. Sign in again to continue.",
+      "CREDENTIAL_ACCOUNT_NOT_FOUND": "This account has no password sign-in.",
+      "USER_EMAIL_NOT_FOUND": "No account uses this email address.",
+      "EMAIL_ALREADY_VERIFIED": "This email address is already verified.",
+      "FAILED_TO_CREATE_USER": "The account could not be created. Please try again.",
+      "INVALID_CODE": "That code is not valid.",
+      "OTP_HAS_EXPIRED": "That code has expired. Request a new one.",
+      "OTP_NOT_ENABLED": "Email codes are not available for this account.",
+      "TOTP_NOT_ENABLED": "No authenticator is set up for this account.",
+      "TOTP_ALREADY_ENABLED": "An authenticator is already set up for this account.",
+      "TWO_FACTOR_NOT_ENABLED": "Two-factor authentication is not enabled for this account.",
+      "BACKUP_CODES_NOT_ENABLED": "Recovery codes are not enabled for this account.",
+      "INVALID_BACKUP_CODE": "That recovery code is not valid.",
+      "INVALID_TWO_FACTOR_COOKIE": "The sign-in challenge has expired. Sign in again.",
+      "TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE": "Too many attempts. Request a new code.",
+      "ACCOUNT_TEMPORARILY_LOCKED": "Too many failed verification attempts. Your account is temporarily locked; try again later.",
+      "TOO_MANY_ATTEMPTS": "Too many attempts. Try again later.",
+      "BANNED_USER": "This account has been banned.",
+      "SESSION_NOT_FRESH": "Sign in again to perform this action."
+    }
+  }
+}

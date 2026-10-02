@@ -5,6 +5,7 @@ import { createCallable } from "react-call";
 import { useMutationFlow } from "react-call/mutation-flow";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { MailIcon, ShieldCheckIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/src/components/ui/button";
 import {
   Dialog,
@@ -28,15 +29,9 @@ import type { VerificationPresenter, VerificationRequest } from "./types";
 
 type Submission = { kind: "send" } | { kind: "verify"; proof: StepUpProof };
 
-const METHOD_LABELS: Record<StepUpMethod, string> = {
-  totp: "Authenticator app",
-  email: "Email code",
-};
-
-/** Where the code comes from, completing "Enter the six-digit code…". */
-function codeSource(chooses: boolean, method: StepUpMethod): string {
-  if (chooses) return " from your chosen method";
-  return method === "totp" ? " from your authenticator app" : " sent to your email address";
+/** Where the code comes from, selecting the wording of "Enter the six-digit code…". */
+function codeSource(chooses: boolean, method: StepUpMethod): "chosen" | StepUpMethod {
+  return chooses ? "chosen" : method;
 }
 
 /**
@@ -50,6 +45,8 @@ const VerificationModal = createCallable<
   VerificationRequest,
   "finished" | "cancelled"
 >(function VerificationModal({ call, challenge, signal, submit, sendEmail }) {
+  const t = useTranslations("common.verification");
+  const tActions = useTranslations("common.actions");
   const ids = { method: useId(), code: useId(), feedback: useId() };
   const [notice, setNotice] = useState("");
   const {
@@ -88,7 +85,7 @@ const VerificationModal = createCallable<
           setError("root.send", { message: error.message });
         else flow.end("finished");
       } else {
-        setNotice("A code was sent to your email address.");
+        setNotice(t("codeSent"));
       }
     },
   );
@@ -97,7 +94,7 @@ const VerificationModal = createCallable<
     if (!runSubmission.pending) call.end("cancelled");
   };
   const feedback = runSubmission.pending
-    ? "Please wait…"
+    ? t("pleaseWait")
     : (errors.code?.message ?? errors.root?.send?.message ?? notice);
 
   return (
@@ -115,19 +112,17 @@ const VerificationModal = createCallable<
           <DialogHeader>
             <DialogTitle className="ui:flex ui:items-center ui:gap-2">
               <ShieldCheckIcon aria-hidden="true" className="ui:size-5 ui:text-muted-foreground" />
-              Verify your identity
+              {t("title")}
             </DialogTitle>
             <DialogDescription>
-              This action needs a second factor. Enter the six-digit code
-              {codeSource(challenge.methods.length > 1, method)}
-              .
+              {t("description", { source: codeSource(challenge.methods.length > 1, method) })}
             </DialogDescription>
           </DialogHeader>
           <fieldset disabled={runSubmission.pending} className="ui:contents">
             <FieldGroup className="ui:gap-4">
               {challenge.methods.length > 1 && (
                 <Field>
-                  <FieldLabel htmlFor={ids.method}>Verification method</FieldLabel>
+                  <FieldLabel htmlFor={ids.method}>{t("methodLabel")}</FieldLabel>
                   <NativeSelect
                     id={ids.method}
                     className="ui:w-full"
@@ -141,7 +136,7 @@ const VerificationModal = createCallable<
                   >
                     {challenge.methods.map((available) => (
                       <NativeSelectOption key={available} value={available}>
-                        {METHOD_LABELS[available]}
+                        {t(`methods.${available}`)}
                       </NativeSelectOption>
                     ))}
                   </NativeSelect>
@@ -156,7 +151,7 @@ const VerificationModal = createCallable<
                     onClick={() => runSubmission({ kind: "send" })}
                   >
                     <MailIcon aria-hidden="true" />
-                    Send email code
+                    {t("sendEmailCode")}
                   </Button>
                 </div>
               )}
@@ -164,12 +159,12 @@ const VerificationModal = createCallable<
                 control={control}
                 name="code"
                 rules={{
-                  required: "Enter your six-digit code.",
-                  pattern: { value: CODE_PATTERN, message: "Enter exactly six digits." },
+                  required: t("codeRequired"),
+                  pattern: { value: CODE_PATTERN, message: t("codePattern") },
                 }}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor={ids.code}>Six-digit code</FieldLabel>
+                    <FieldLabel htmlFor={ids.code}>{t("codeLabel")}</FieldLabel>
                     <Input
                       {...field}
                       id={ids.code}
@@ -198,9 +193,9 @@ const VerificationModal = createCallable<
             </p>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={cancel}>
-                Cancel
+                {tActions("cancel")}
               </Button>
-              <Button type="submit">Verify and continue</Button>
+              <Button type="submit">{t("verifyAndContinue")}</Button>
             </DialogFooter>
           </fieldset>
         </form>

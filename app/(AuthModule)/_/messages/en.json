@@ -1,0 +1,625 @@
+{
+  "errors": {
+    "incorrectPassword": "That password is not correct.",
+    "accountNotFound": "This account no longer exists.",
+    "emailRequestInactive": "This email change request is no longer active.",
+    "emailRequestExpired": "This email change request has expired. Start again to continue.",
+    "emailUnavailable": "This address cannot be used as your sign-in email.",
+    "emailUnchanged": "Enter a different address.",
+    "setupReplaced": "This authenticator setup is no longer active. Start the setup again.",
+    "setupExpired": "This authenticator setup has expired. Start the setup again.",
+    "invalidAuthenticatorCode": "That authenticator code is not valid.",
+    "accountBusy": "Another change to this account is still in progress. Try again in a moment.",
+    "tooManyIncorrectPasswords": "Too many incorrect passwords. Try again later.",
+    "tooManySetups": "Too many authenticator setups started. Try again later.",
+    "tooManyIncorrectCodes": "Too many incorrect codes. Start the setup again later.",
+    "tooManyEmailRequests": "Too many email change requests. Try again later.",
+    "tooManyAttempts": "Too many attempts. Try again later.",
+    "resetLinkInvalid": "This reset link is invalid or expired.",
+    "passwordLength": "Use between 8 and 128 characters.",
+    "authenticatorAlreadySetUp": "An authenticator is already set up. Replace it instead.",
+    "noAuthenticatorToReplace": "No authenticator is set up yet. Set one up instead.",
+    "noRecoveryCodesToReplace": "No authenticator is set up; there are no recovery codes to replace.",
+    "authenticatorRequired": "Your account is required to keep an authenticator; it cannot be disabled.",
+    "setupUnavailable": "Setup is only available for an empty installation.",
+    "useCorrectEmail": "Your current address is not verified; use Correct email instead.",
+    "useChangeEmail": "Your address is verified; use Change email instead.",
+    "authenticatorNotEnrolled": "This account has no authenticator; submit again without a code.",
+    "authenticatorCodeRequired": "Enter the current code from your authenticator app.",
+    "nothingToResend": "There is no email to resend at this step.",
+    "linkCooldown": "Wait a minute before requesting another link.",
+    "verificationCooldown": "Wait a minute before requesting another verification email.",
+    "newAddressAlreadyChosen": "The new address is already chosen. Cancel and start again to change it.",
+    "confirmCurrentAddressFirst": "Confirm your current address first."
+  },
+  "validation": {
+    "maxLength": "Use at most {maximum} characters.",
+    "minLength": "Use at least {minimum} characters.",
+    "email": "Enter a valid email address.",
+    "nameRequired": "Enter your name.",
+    "nameControlCharacters": "Names cannot contain control characters.",
+    "passwordRequired": "Enter your password.",
+    "authenticatorCode": "Enter a six-digit authenticator code.",
+    "emailCode": "Enter the six-digit code from the email.",
+    "recoveryCode": "Enter a recovery code in the format xxxxx-xxxxx.",
+    "passwordsMismatch": "Passwords do not match.",
+    "identifierRequired": "An identifier is required.",
+    "identifierInvalid": "Invalid identifier.",
+    "linkInvalid": "This link is not valid.",
+    "passwordUnchanged": "Choose a password different from the current one.",
+    "resetLinkInvalid": "This reset link is invalid or expired."
+  },
+  "layout": {
+    "metaTitle": "Account",
+    "tagline": "Clone it, rename it, ship it.",
+    "decorativeLabel": "Decorative placeholder",
+    "heroKicker": "Your next project starts here",
+    "heroLine1": "Every great product",
+    "heroLine2": "starts with a first commit."
+  },
+  "pages": {
+    "emailConfirmation": {
+      "title": "Confirm your email",
+      "description": "This verifies the email address linked to your account."
+    },
+    "enroll": {
+      "title": "Set up your authenticator",
+      "description": "Your account requires an authenticator before you can access the app."
+    },
+    "forgotPassword": {
+      "title": "Forgot your password?",
+      "description": "It happens. Enter your email and we’ll send you a link to reset it.",
+      "backToSignIn": "← Back to sign in"
+    },
+    "resetPassword": {
+      "unavailableTitle": "Reset link unavailable",
+      "unavailableDescription": "This reset link is missing, invalid, or expired.",
+      "requestNewLink": "Request a new link",
+      "backToSignIn": "Back to sign in",
+      "title": "Set a new password",
+      "description": "Choose a new password for your account."
+    },
+    "setup": {
+      "title": "Set up your new project",
+      "description": "Create the root administrator account to get started."
+    },
+    "signIn": {
+      "title": "Welcome back",
+      "description": "Enter your details to sign in to your account.",
+      "newHere": "New here?",
+      "createAccount": "Create an account"
+    },
+    "signUp": {
+      "title": "Create your account",
+      "description": "Enter your details to create your account.",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in"
+    },
+    "emailChange": {
+      "title": "Confirm your email address",
+      "description": "This confirms one step of a sign-in email change requested from your account settings."
+    }
+  },
+  "settingsPages": {
+    "title": "Settings",
+    "navLabel": "Settings",
+    "profileErrorTitle": "Your profile could not be loaded",
+    "profileErrorMessage": "Something went wrong while loading your profile. Nothing was changed. Try again in a moment.",
+    "loadingProfile": "Loading profile",
+    "loadingProfileText": "Loading profile…",
+    "accountErrorTitle": "Your account settings could not be loaded",
+    "accountErrorMessage": "Something went wrong while loading your account. Nothing was changed. Try again in a moment.",
+    "loadingAccount": "Loading account",
+    "loadingAccountText": "Loading account…"
+  },
+  "signIn": {
+    "email": "Email address",
+    "emailPlaceholder": "you@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "forgotPassword": "Forgot password?",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "authenticator": {
+      "description": "One more step: enter the six-digit code from your authenticator app.",
+      "codeLabel": "Authenticator code"
+    },
+    "emailChallenge": {
+      "sending": "Sending a code to your email address…",
+      "sent": "We emailed you a six-digit code. Enter it below to finish signing in.",
+      "sendFailed": "The code could not be sent. Try again in a moment.",
+      "codeLabel": "Email code",
+      "resend": "Send a new code"
+    },
+    "recovery": {
+      "description": "Enter one of your saved recovery codes. Each code can only be used once.",
+      "codeLabel": "Recovery code"
+    },
+    "verify": "Verify and sign in",
+    "verifying": "Verifying…",
+    "twoFactor": {
+      "useAuthenticator": "Use an authenticator code",
+      "useRecovery": "Use a recovery code",
+      "useEmail": "Email me a code instead",
+      "restart": "Start sign-in again"
+    }
+  },
+  "signUp": {
+    "name": "Full name",
+    "namePlaceholder": "Your name",
+    "email": "Email address",
+    "emailPlaceholder": "you@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "At least 8 characters",
+    "confirmPassword": "Confirm password",
+    "confirmPasswordPlaceholder": "Repeat your password",
+    "note": "We’ll send a confirmation link to your email. You can start using your account right away.",
+    "submit": "Create account",
+    "submitting": "Creating account…",
+    "confirmation": {
+      "verifying": {
+        "title": "Confirming your email",
+        "description": "Please wait while we verify your confirmation link."
+      },
+      "confirmed": {
+        "title": "Email confirmed",
+        "description": "Your email address has been successfully verified."
+      },
+      "failed": {
+        "title": "Unable to confirm email",
+        "description": "This link is missing, invalid, or expired. Use the confirmation link from your email."
+      },
+      "continue": "Continue"
+    }
+  },
+  "passwordReset": {
+    "forgot": {
+      "inboxTitle": "Check your inbox",
+      "inboxDescription": "If an account matches that email, you’ll receive a password reset link shortly.",
+      "email": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "submit": "Send reset link",
+      "submitting": "Sending…"
+    },
+    "reset": {
+      "updatedTitle": "Password updated",
+      "updatedDescription": "Your sessions have been signed out. Sign in with your new password to continue.",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Reset password",
+      "submitting": "Updating…",
+      "requestNewLink": "Request a new reset link"
+    }
+  },
+  "setup": {
+    "createdTitle": "Administrator created",
+    "createdDescription": "Sign in to finish authenticator setup before accessing your account.",
+    "continueToSignIn": "Continue to sign in",
+    "name": "Full name",
+    "email": "Email address",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "submit": "Create administrator",
+    "submitting": "Creating administrator…"
+  },
+  "enrollment": {
+    "password": {
+      "label": "Confirm your password",
+      "submit": "Set up authenticator",
+      "submitting": "Preparing…"
+    },
+    "verify": {
+      "description": "Scan this QR code with your authenticator app, then enter its six-digit code.",
+      "qrTitle": "Scan to enroll your authenticator",
+      "codeLabel": "Authenticator code",
+      "submit": "Verify authenticator",
+      "submitting": "Verifying…"
+    },
+    "recoveryCodes": {
+      "intro": "Your authenticator is ready. Save these recovery codes somewhere safe: each one can replace your authenticator code once when signing in.",
+      "note": "These codes are shown only now. You will still need your account password to use them.",
+      "saved": "I have saved my recovery codes in a safe place.",
+      "continue": "Continue to panel"
+    }
+  },
+  "signOut": {
+    "button": "Sign out",
+    "pending": "Signing out…",
+    "failed": "Unable to sign out. Please try again."
+  },
+  "client": {
+    "verifyCodeFailed": "Unable to verify this code.",
+    "startSetupFailed": "Unable to start authenticator setup.",
+    "verifyAuthenticatorFailed": "Unable to verify the authenticator code.",
+    "resetRequestFailed": "Unable to request a reset. Try again later.",
+    "signInFailed": "Unable to sign in.",
+    "signUpFailed": "Unable to create your account."
+  },
+  "emailProof": {
+    "inactive": {
+      "title": "This link is not active",
+      "description": "It was already used, replaced or cancelled. If you still want to change your email, start again from your account settings."
+    },
+    "expired": {
+      "title": "This link has expired",
+      "description": "The request's 24-hour window has passed. Start the change again from your account settings."
+    },
+    "goToSignIn": "Go to sign in",
+    "currentIntro": "Confirm that {maskedEmail} agrees to the sign-in email change. Afterwards, return to your account settings to enter the new address.",
+    "newIntro": "Confirm {maskedEmail} as the new sign-in email. This completes the change and signs out every existing session.",
+    "validUntil": "This link works until {expiresAt, date, dateTime}.",
+    "confirm": "Confirm email address",
+    "confirming": "Confirming…"
+  },
+  "settings": {
+    "feedback": {
+      "lifecycle": {
+        "EXPIRED": {
+          "title": "This request has expired",
+          "description": "The 24-hour window has passed. Start again to continue."
+        },
+        "INACTIVE": {
+          "title": "This request is no longer active",
+          "description": "It was completed, cancelled or replaced. Refresh to see the current state."
+        },
+        "DESTINATION_UNAVAILABLE": {
+          "title": "That address cannot be used",
+          "description": "Another account uses it. Start again with a different address."
+        },
+        "SECURITY_STATE_CHANGED": {
+          "title": "Your security settings changed meanwhile",
+          "description": "Verify again and retry."
+        },
+        "SETUP_REPLACED": {
+          "title": "This authenticator setup is no longer active",
+          "description": "Start the setup again."
+        }
+      },
+      "rateLimited": "Please wait before trying again",
+      "effects": {
+        "session-refresh": "your other sessions could not be updated yet",
+        "session-renewal": "this session could not be renewed",
+        "session-revocation": "signing out could not be confirmed"
+      },
+      "effectsJoin": " and ",
+      "completed": {
+        "updateName": "Name updated",
+        "changePassword": "Password changed",
+        "disableAuthenticator": "Authenticator disabled",
+        "revokeSession": "Session signed out",
+        "revokeOtherSessions": "Other devices signed out",
+        "revokeAllSessions": "Signed out everywhere",
+        "retryProfileSessionRefresh": "Sessions updated",
+        "retryFactorSessionRefresh": "Sessions updated"
+      },
+      "unchanged": {
+        "default": "No change",
+        "updateName": "The name is already up to date",
+        "disableAuthenticator": "No authenticator is enabled",
+        "revokeSession": "That session is already gone",
+        "revokeOtherSessions": "There are no other sessions"
+      },
+      "partialTitles": {
+        "default": "Not fully completed:",
+        "updateName": "Name updated, but",
+        "changePassword": "Password changed, but",
+        "disableAuthenticator": "Authenticator disabled, but",
+        "revokeSession": "Not confirmed:",
+        "revokeOtherSessions": "Not confirmed:",
+        "revokeAllSessions": "Not confirmed:"
+      },
+      "partialTitle": "{title} {effects}.",
+      "hints": {
+        "renewal": "Your new password is saved. If this session stops working, sign in again with the new password.",
+        "committed": "The change itself is saved. Retry to finish the remaining step.",
+        "signOut": "Retry to finish signing out."
+      },
+      "retry": "Retry",
+      "cancelled": "{what} cancelled",
+      "alreadyClosed": "{what} was already closed",
+      "emailChangeWhat": "Email change",
+      "emailRequest": {
+        "sent": "Confirmation link {verb, select, resent {resent} other {sent}} to your {stage, select, current {current address} other {new address}}",
+        "sentDescription": "Open the link in that mailbox to continue. The request keeps its original deadline.",
+        "saved": "Request saved",
+        "rateLimitedTitle": "Request saved, but the email was not sent yet",
+        "rateLimitedDescription": "Wait before requesting another link; the request is still active.",
+        "failedTitle": "Request saved, but the email could not be sent",
+        "failedDescription": "The request is still active. Use Resend to try delivering the link again."
+      },
+      "proof": {
+        "currentConfirmed": {
+          "title": "Current address confirmed",
+          "description": "Return to your account settings, signed in as usual, to enter the new address."
+        },
+        "completedPending": {
+          "title": "Your email was changed, but signing out existing sessions could not be confirmed.",
+          "description": "Sign in with your new email address. Existing sessions are signed out on their next request."
+        },
+        "completed": {
+          "title": "Your sign-in email has been changed",
+          "description": "Every existing session was signed out. Sign in with your new email address."
+        },
+        "expired": {
+          "title": "This link has expired",
+          "description": "Start the change again from your account settings."
+        },
+        "destinationUnavailable": {
+          "title": "That address cannot be used",
+          "description": "Another account uses it. Start again with a different address."
+        },
+        "accountChanged": {
+          "title": "This request is no longer valid",
+          "description": "Your account changed since it was started. Start again from your account settings."
+        },
+        "inactive": {
+          "title": "This link is not active",
+          "description": "It was already used, replaced or cancelled."
+        }
+      },
+      "verificationSent": {
+        "title": "Verification email sent",
+        "description": "Open the link in your mailbox to verify this address."
+      },
+      "alreadyVerified": "This address is already verified"
+    },
+    "common": {
+      "cancel": "Cancel",
+      "continue": "Continue",
+      "currentPassword": "Current password",
+      "retry": "Retry"
+    },
+    "profile": {
+      "title": "Profile",
+      "description": "How you appear across the application.",
+      "displayName": "Display name",
+      "editName": "Edit name",
+      "dialogTitle": "Edit your display name",
+      "form": {
+        "label": "Edit display name",
+        "name": "Name",
+        "hint": "Between 1 and 100 characters.",
+        "submit": "Save name",
+        "submitting": "Saving…"
+      }
+    },
+    "email": {
+      "title": "Email address",
+      "description": "The address you sign in with and where account email is sent.",
+      "currentAddress": "Current address",
+      "startOver": "Start over",
+      "changeEmail": "Change email",
+      "verifyEmail": "Verify email",
+      "verified": "Verified",
+      "unverified": "Unverified",
+      "unverifiedHint": "Changing the password or the authenticator needs a verified address. Entered the wrong email when signing up?",
+      "correctIt": "Correct it",
+      "restartCorrection": "Start the correction over",
+      "pendingChange": "Pending change",
+      "cancelConfirm": {
+        "title": "Cancel this email change?",
+        "description": "The links already sent stop working. Your sign-in address stays as it is.",
+        "confirm": "Cancel request",
+        "keep": "Keep request"
+      },
+      "dialogChangeNew": "Start a new email change",
+      "dialogChange": "Change your sign-in email",
+      "dialogCorrect": "Correct your email address",
+      "dialogNewAddress": "Enter your new email address",
+      "status": {
+        "awaiting_current": {
+          "title": "Waiting for your current address",
+          "next": "Open the confirmation link sent to your current address. Then return here to enter the new address."
+        },
+        "awaiting_new_address": {
+          "title": "Current address confirmed",
+          "next": "Enter the new email address. A confirmation link will be sent to it."
+        },
+        "awaiting_new": {
+          "title": "Waiting for the new address",
+          "next": "Open the confirmation link sent to the new address. Confirming it completes the change and signs out every session; sign in afterwards with the new address."
+        },
+        "currentAddress": "Current address",
+        "newAddress": "New address",
+        "expires": "Expires",
+        "enterNewAddress": "Enter new address",
+        "resendIn": "Resend in {seconds}s",
+        "resend": "Resend link",
+        "cancelRequest": "Cancel request"
+      },
+      "changeForm": {
+        "label": "Change email address",
+        "sending": "Sending…",
+        "startOver": "Start over",
+        "continue": "Continue",
+        "currentEmail": "Current email address",
+        "hint": "A confirmation link is sent here first. After confirming it, you choose the new address in this section, and the new mailbox confirms as well.",
+        "replacingHint": "The request currently in progress is cancelled.",
+        "confirm": {
+          "titleNew": "Start a new email change?",
+          "title": "Change your sign-in email?",
+          "replacing": "The current request is cancelled and its links stop working. ",
+          "description": "{prefix}A confirmation link is sent to {email}. After confirming it you will choose the new address here, and the new mailbox confirms it as well. Nothing changes until then; the request expires after 24 hours.",
+          "confirmNew": "Start over",
+          "confirm": "Send confirmation",
+          "keep": "Keep current address"
+        }
+      },
+      "correctionForm": {
+        "label": "Correct email address",
+        "hint": "Use this when {email} is wrong or unreachable. A confirmation link is sent to the corrected address only; nothing is sent to the current one. Confirming it completes the change and signs out every session.",
+        "newEmail": "Corrected email address",
+        "authenticatorCode": "Authenticator code",
+        "submit": "Send confirmation",
+        "submitting": "Sending…"
+      },
+      "newEmailForm": {
+        "label": "Enter new email address",
+        "newEmail": "New email address",
+        "hint": "A confirmation link is sent to this address. Once chosen it cannot be edited; cancel and start again to pick another.",
+        "submit": "Send confirmation",
+        "submitting": "Sending…"
+      }
+    },
+    "password": {
+      "title": "Password",
+      "description": "Used together with your email address to sign in.",
+      "label": "Password",
+      "change": "Change password",
+      "policy": "Between 8 and 128 characters.",
+      "unverifiedHint": "Verify your email address to change the password here. A forgotten password can always be reset from the sign-in page.",
+      "dialogTitle": "Change your password",
+      "form": {
+        "label": "Change password",
+        "newPassword": "New password",
+        "confirmNewPassword": "Confirm new password",
+        "hint": "Between 8 and 128 characters; a password manager is welcome.",
+        "revokeOthers": "Sign out other devices (recommended)",
+        "submit": "Change password",
+        "submitting": "Changing…"
+      }
+    },
+    "authenticator": {
+      "title": "Authenticator",
+      "description": "A code from an authenticator app at sign-in and for sensitive changes.",
+      "requiredBadge": "Required for your account",
+      "requiredTooltip": "Your role requires an authenticator; it can be replaced but not disabled.",
+      "enabled": "Enabled",
+      "notSetUp": "Not set up",
+      "setUp": "Set up authenticator",
+      "replace": "Replace authenticator",
+      "disable": "Disable",
+      "status": "Status",
+      "unverifiedHint": "Verify your email address to manage the authenticator.",
+      "disableDialogTitle": "Disable your authenticator",
+      "disableForm": {
+        "label": "Disable authenticator",
+        "submit": "Disable authenticator",
+        "submitting": "Disabling…",
+        "confirm": {
+          "title": "Disable your authenticator?",
+          "description": "Sign-in will no longer ask for an authenticator code, and your recovery codes stop working. You will be asked to verify with your current authenticator.",
+          "confirm": "Disable authenticator"
+        }
+      },
+      "setupFlow": {
+        "titles": {
+          "enroll": {
+            "password": "Set up an authenticator",
+            "code": "Scan and confirm",
+            "codes": "Save your recovery codes"
+          },
+          "replace": {
+            "password": "Replace your authenticator",
+            "code": "Scan and confirm the new one",
+            "codes": "Save your new recovery codes"
+          }
+        },
+        "done": {
+          "enroll": "Authenticator activated",
+          "replace": "Authenticator replaced"
+        },
+        "partialWarning": "Your authenticator is active, but your other sessions could not be updated yet. Retry from the section afterwards.",
+        "codesUnavailableTitle": "{done}, but its recovery codes could not be shown",
+        "codesUnavailableDescription": "Generate new recovery codes to get a set you can save.",
+        "partialTitle": "{done}, but",
+        "partialDescription": "your other sessions could not be updated yet."
+      },
+      "setupForm": {
+        "labelEnroll": "Set up authenticator",
+        "labelReplace": "Replace authenticator",
+        "hintEnroll": "Confirm your password, then scan the code with an authenticator app. Nothing changes until you enter its first code.",
+        "hintReplace": "Confirm your password; you will also be asked for a code from your current authenticator. The current one keeps working until the new one is proven.",
+        "submit": "Continue",
+        "submitting": "Preparing…"
+      },
+      "codeForm": {
+        "label": "Confirm new authenticator",
+        "hintEnroll": "Scan this code with your authenticator app, then enter the six-digit code it shows for the app.",
+        "hintReplace": "Scan this code with your authenticator app, then enter the six-digit code it shows for the new entry. A code from your current authenticator does not complete this step.",
+        "qrTitle": "Scan to set up your authenticator",
+        "manualKey": "Cannot scan? Enter this key manually:",
+        "code": "Code from the new authenticator",
+        "expiresAt": "This setup expires at {expiresAt, date, dateTime}.",
+        "cancel": "Cancel setup",
+        "submitEnroll": "Activate authenticator",
+        "submitReplace": "Replace authenticator",
+        "submitting": "Verifying…"
+      }
+    },
+    "recoveryCodes": {
+      "title": "Recovery codes",
+      "description": "One-time codes that replace your authenticator when it is unavailable.",
+      "codes": "Codes",
+      "generate": "Generate new codes",
+      "hint": "Generating a new set replaces every previous code immediately. Codes are shown once, when generated.",
+      "dialogSave": "Save your new recovery codes",
+      "dialogGenerate": "Generate new recovery codes",
+      "unavailable": {
+        "title": "New codes were generated but could not be shown",
+        "description": "Your previous codes no longer work. Generate again to get a set you can save."
+      },
+      "generated": {
+        "title": "New recovery codes generated",
+        "description": "Your previous codes no longer work."
+      },
+      "form": {
+        "label": "Generate new recovery codes",
+        "submit": "Generate new codes",
+        "submitting": "Generating…",
+        "confirm": {
+          "title": "Generate new recovery codes?",
+          "description": "Your previous recovery codes immediately stop working. The new set is shown once; save it before closing.",
+          "confirm": "Generate new codes"
+        }
+      },
+      "result": {
+        "region": "New recovery codes",
+        "intro": "These codes are shown only now. Each one replaces an authenticator code once when signing in; you still need your password.",
+        "copyAll": "Copy all",
+        "download": "Download .txt",
+        "copied": "Copied to the clipboard.",
+        "copyFailed": "Copying failed; select the codes and copy them manually.",
+        "saved": "I have saved these codes in a safe place.",
+        "done": "Done",
+        "fileHeading": "{appName} recovery codes",
+        "fileGenerated": "Generated {issuedAt, date, dateTime}",
+        "fileNote": "Each code can be used once in place of an authenticator code."
+      }
+    },
+    "sessions": {
+      "title": "Sessions",
+      "description": "Devices and browsers currently signed in to your account.",
+      "signOutOthers": "Sign out other devices",
+      "signOutEverywhere": "Sign out everywhere",
+      "signOut": "Sign out",
+      "thisDevice": "This device",
+      "signedIn": "Signed in",
+      "ip": "IP {ip}",
+      "unknownIp": "unknown",
+      "details": "Details",
+      "expires": "Expires {time}",
+      "listLabel": "Sessions",
+      "count": "{total, plural, one {# active session} other {# active sessions}}",
+      "pageOf": " · page {page} of {pages}",
+      "pagesLabel": "Session pages",
+      "previous": "Previous",
+      "next": "Next",
+      "confirmOthers": {
+        "title": "Sign out other devices?",
+        "description": "Every session except this one ends immediately. They can sign in again.",
+        "confirm": "Sign out other devices"
+      },
+      "confirmEverywhere": {
+        "title": "Sign out everywhere?",
+        "description": "Every session ends immediately, including this one. You will be taken to the sign-in page.",
+        "confirm": "Sign out everywhere"
+      },
+      "confirmSession": {
+        "title": "Sign this session out?",
+        "description": "{device}, signed in {signedIn, date, dateTime}, is signed out immediately. It can sign in again.",
+        "confirm": "Sign out session"
+      }
+    }
+  }
+}

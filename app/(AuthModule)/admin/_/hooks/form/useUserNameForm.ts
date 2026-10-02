@@ -11,6 +11,7 @@ import {
   type Feedback,
 } from "@/app/(AuthModule)/admin/_/hooks/feedback";
 import { useAccountRefresh } from "@/app/(AuthModule)/admin/_/hooks/useAccountRefresh";
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 import { userNameFormSchema } from "@/app/(AuthModule)/admin/_/schema";
 import type { UserDetail } from "@/app/(AuthModule)/admin/_/types";
 
@@ -27,6 +28,7 @@ export function useUserNameForm({
   user: UserDetail;
   onSettled: (feedback: Feedback) => void;
 }) {
+  const t = useCatalog();
   const refresh = useAccountRefresh();
   const { form, createSubmitHandler } = useSchemaForm(userNameFormSchema, { name: user.name });
   const { execute, isPending } = useAction(updateUserNameAction, {
@@ -44,10 +46,10 @@ export function useUserNameForm({
     const result = await execute({ userId: user.id, name });
     if (result.status === "error") {
       if (readFieldError(result.error)?.field === "name") return;
-      const { description, title } = describeUserFailure(result.error);
+      const { description, title } = describeUserFailure(t, result.error);
       throw new Error(description ?? title);
     }
-    const feedback = feedbackFor("updateName", result);
+    const feedback = feedbackFor(t, "updateName", result);
     if (!feedback) return;
     onSettled(feedback);
     if (result.status === "success" && result.data.status !== "unchanged") refresh();

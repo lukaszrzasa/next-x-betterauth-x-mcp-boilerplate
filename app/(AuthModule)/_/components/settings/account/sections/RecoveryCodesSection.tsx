@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { LifeBuoyIcon, RefreshCwIcon } from "lucide-react";
 import { DetailRow, DetailSection } from "@/src/components/detail/DetailSection";
 import { FormDialog } from "@/src/components/feedback/FormDialog";
@@ -24,6 +25,7 @@ function RegenerateFlow({
   onClose: () => void;
   onIssued: () => void;
 }) {
+  const t = useTranslations("auth.settings.recoveryCodes");
   const [issued, setIssued] = useState<Issued | null>(null);
 
   if (!issued) {
@@ -31,7 +33,7 @@ function RegenerateFlow({
       <RegenerateRecoveryCodesForm
         onIssued={(result) => {
           if (result.status === "completed-codes-unavailable") {
-            onSettled({ tone: "warning", title: "New codes were generated but could not be shown", description: "Your previous codes no longer work. Generate again to get a set you can save." });
+            onSettled({ tone: "warning", title: t("unavailable.title"), description: t("unavailable.description") });
             onClose();
             return;
           }
@@ -47,7 +49,7 @@ function RegenerateFlow({
       codes={issued.recoveryCodes}
       issuedAt={issued.issuedAt}
       onAcknowledge={() => {
-        onSettled({ tone: "success", title: "New recovery codes generated", description: "Your previous codes no longer work." });
+        onSettled({ tone: "success", title: t("generated.title"), description: t("generated.description") });
         onClose();
       }}
     />
@@ -60,28 +62,29 @@ function RegenerateFlow({
  * No count of unused codes is displayed.
  */
 export function RecoveryCodesSection({ account }: { account: AccountSettings }) {
+  const t = useTranslations("auth.settings.recoveryCodes");
   const [flow, setFlow] = useState<{ key: number; issued: boolean } | null>(null);
   const { feedback, setFeedback, dismiss } = useFeedback<Feedback>();
 
   if (!account.twoFactorEnabled) return null;
 
   return (
-    <DetailSection title="Recovery codes" description="One-time codes that replace your authenticator when it is unavailable." icon={LifeBuoyIcon}>
+    <DetailSection title={t("title")} description={t("description")} icon={LifeBuoyIcon}>
       <ActionFeedback feedback={feedback} onDismiss={dismiss} />
       <div>
         <DetailRow
-          label="Codes"
+          label={t("codes")}
           control={
             account.emailVerified ? (
               <Button type="button" variant="outline" size="sm" onClick={() => { dismiss(); setFlow({ key: Date.now(), issued: false }); }}>
                 <RefreshCwIcon aria-hidden="true" />
-                Generate new codes
+                {t("generate")}
               </Button>
             ) : undefined
           }
         >
           <span className="ui:text-muted-foreground">
-            Generating a new set replaces every previous code immediately. Codes are shown once, when generated.
+            {t("hint")}
           </span>
         </DetailRow>
       </div>
@@ -89,7 +92,7 @@ export function RecoveryCodesSection({ account }: { account: AccountSettings }) 
         <FormDialog
           open
           onOpenChange={(next) => !next && setFlow(null)}
-          title={flow.issued ? "Save your new recovery codes" : "Generate new recovery codes"}
+          title={flow.issued ? t("dialogSave") : t("dialogGenerate")}
           className={flow.issued ? "ui:sm:max-w-xl" : undefined}
         >
           <RegenerateFlow

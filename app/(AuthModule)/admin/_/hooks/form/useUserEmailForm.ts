@@ -12,6 +12,7 @@ import {
   type Feedback,
 } from "@/app/(AuthModule)/admin/_/hooks/feedback";
 import { useAccountRefresh } from "@/app/(AuthModule)/admin/_/hooks/useAccountRefresh";
+import { useCatalog } from "@/src/lib/i18n/useCatalog";
 import { userEmailFormSchema } from "@/app/(AuthModule)/admin/_/schema";
 import type { UserDetail } from "@/app/(AuthModule)/admin/_/types";
 
@@ -29,6 +30,7 @@ export function useUserEmailForm({
   user: UserDetail;
   onSettled: (feedback: Feedback) => void;
 }) {
+  const t = useCatalog();
   const refresh = useAccountRefresh();
   const { form, createSubmitHandler } = useSchemaForm(userEmailFormSchema, { email: user.email });
   const { execute, isPending } = useAction(updateUserEmailAction, {
@@ -44,20 +46,20 @@ export function useUserEmailForm({
 
   const onSubmit = createSubmitHandler(async ({ email }) => {
     const confirmed = await confirm({
-      title: "Change email address?",
-      description: `${user.name}'s address will change from ${user.email} to ${email}. The new address starts unverified, every current session is signed out, and a verification email is sent to the new address. You will be asked to verify your identity.`,
-      confirmLabel: "Change email",
-      cancelLabel: "Keep current address",
+      title: t("authAdmin.detail.profile.emailConfirm.title"),
+      description: t("authAdmin.detail.profile.emailConfirm.description", { name: user.name, from: user.email, to: email }),
+      confirmLabel: t("authAdmin.detail.profile.emailConfirm.confirm"),
+      cancelLabel: t("authAdmin.detail.profile.emailConfirm.cancel"),
     });
     if (!confirmed) return;
 
     const result = await execute({ userId: user.id, email });
     if (result.status === "error") {
       if (readFieldError(result.error)?.field === "email") return;
-      const { description, title } = describeUserFailure(result.error);
+      const { description, title } = describeUserFailure(t, result.error);
       throw new Error(description ?? title);
     }
-    const feedback = feedbackFor("updateEmail", result);
+    const feedback = feedbackFor(t, "updateEmail", result);
     if (!feedback) return;
     onSettled(feedback);
     if (result.status === "success" && result.data.status !== "unchanged") refresh();

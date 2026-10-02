@@ -21,7 +21,10 @@ const listEmailLogsQuery = mock();
 const listStaffLogsQuery = mock();
 const listStaffLogFilterOptionsQuery = mock();
 
+import { serverIntlMock } from "../helpers/intl.jsx";
+
 mock.module("server-only", () => ({}));
+mock.module("next-intl/server", serverIntlMock());
 mock.module("next/navigation", () => ({
   redirect: (to) => {
     throw new Redirect(to);

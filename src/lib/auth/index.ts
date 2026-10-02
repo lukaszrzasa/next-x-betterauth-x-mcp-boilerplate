@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { admin, twoFactor } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { ac, roles } from "./permissions";
+import { localizeProviderErrors } from "./localizeProviderErrors";
 import { rejectSupersededResetTokens } from "./resetTokenPolicy";
 import { TOTP_PERIOD_SECONDS } from "./stepUpPolicy";
 
@@ -51,8 +52,9 @@ const requireVerifiedEmailForOtp = createAuthMiddleware(async (ctx) => {
   const pending = await ctx.context.internalAdapter.findVerificationValue(challenge);
   const user = pending && (await ctx.context.internalAdapter.findUserById(pending.value));
   if (user && !user.emailVerified) {
+    // Its own code, so the localized message is the specific one (`errors.provider`).
     throw new APIError("FORBIDDEN", {
-      code: "EMAIL_NOT_VERIFIED",
+      code: "EMAIL_NOT_VERIFIED_FOR_OTP",
       message: "Verify your email address before signing in with an email code.",
     });
   }
@@ -70,7 +72,7 @@ const runBeforeHooks = createAuthMiddleware(async (ctx) => {
 
 export const auth = betterAuth({
   appName,
-  hooks: { before: runBeforeHooks },
+  hooks: { before: runBeforeHooks, after: localizeProviderErrors },
   user: {
     additionalFields: {
       // Server-owned enrollment policy, enforced before protected access.

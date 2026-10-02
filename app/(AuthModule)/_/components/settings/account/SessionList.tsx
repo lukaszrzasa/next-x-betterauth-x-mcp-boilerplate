@@ -2,12 +2,13 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { useFormatter, useTranslations } from "next-intl";
 import { LogOutIcon } from "lucide-react";
 import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
-import { formatUtcDateTime, toIsoInstant } from "@/src/lib/date/format";
+import { toIsoInstant } from "@/src/lib/date/format";
 import { withQuery } from "@/src/lib/routes";
-import { describeUserAgent } from "@/src/lib/userAgent";
+import { describeUserAgent, deviceWording } from "@/src/lib/userAgent";
 import { authRoutes } from "@/app/(AuthModule)/_/routes";
 import type { SessionItem, SessionPage } from "@/app/(AuthModule)/_/types/settings";
 
@@ -30,22 +31,29 @@ function SessionRow({
   pending: boolean;
   onRevoke: (session: SessionItem) => void;
 }) {
+  const t = useTranslations("auth.settings.sessions");
+  const tDevice = useTranslations("common.device");
+  const format = useFormatter();
   return (
     <li className="ui:flex ui:flex-col ui:gap-2 ui:py-3 ui:first:pt-0 ui:sm:flex-row ui:sm:items-start ui:sm:justify-between ui:sm:gap-6">
       <div className="ui:min-w-0 ui:text-sm">
         <p className="ui:flex ui:flex-wrap ui:items-center ui:gap-2 ui:font-medium">
-          {describeUserAgent(session.userAgent)}
-          {session.isCurrent && <Badge variant="secondary">This device</Badge>}
+          {describeUserAgent(session.userAgent, deviceWording(tDevice))}
+          {session.isCurrent && <Badge variant="secondary">{t("thisDevice")}</Badge>}
         </p>
         <p className="ui:text-muted-foreground">
-          Signed in <time dateTime={toIsoInstant(session.createdAt)}>{formatUtcDateTime(session.createdAt)}</time>
-          {" · "}IP {session.ipAddress ?? "unknown"}
+          {t("signedIn")}{" "}
+          <time dateTime={toIsoInstant(session.createdAt)}>
+            {format.dateTime(new Date(session.createdAt), "dateTime")}
+          </time>
+          {" · "}
+          {t("ip", { ip: session.ipAddress ?? t("unknownIp") })}
         </p>
         {session.userAgent && (
           <details className="ui:mt-1 ui:text-xs ui:text-muted-foreground">
-            <summary className="ui:cursor-pointer">Details</summary>
+            <summary className="ui:cursor-pointer">{t("details")}</summary>
             <p className="ui:mt-1 ui:break-all">{session.userAgent}</p>
-            <p>Expires {formatUtcDateTime(session.expiresAt)}</p>
+            <p>{t("expires", { time: format.dateTime(new Date(session.expiresAt), "dateTime") })}</p>
           </details>
         )}
       </div>
@@ -53,7 +61,7 @@ function SessionRow({
         <div className="ui:shrink-0">
           <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => onRevoke(session)}>
             <LogOutIcon aria-hidden="true" />
-            Sign out
+            {t("signOut")}
           </Button>
         </div>
       )}
@@ -72,22 +80,23 @@ function PageLink({ page, enabled, children }: { page: number; enabled: boolean;
 
 /** The count, and Previous/Next as real links so the server re-reads and clamps the page. */
 function SessionPagination({ sessions }: { sessions: SessionPage }) {
+  const t = useTranslations("auth.settings.sessions");
   const lastPage = Math.max(1, Math.ceil(sessions.total / sessions.pageSize));
   const paged = lastPage > 1;
 
   return (
     <div className="ui:flex ui:flex-wrap ui:items-center ui:justify-between ui:gap-2 ui:text-sm ui:text-muted-foreground">
       <p>
-        {sessions.total} active {sessions.total === 1 ? "session" : "sessions"}
-        {paged && ` · page ${sessions.page} of ${lastPage}`}
+        {t("count", { total: sessions.total })}
+        {paged && t("pageOf", { page: sessions.page, pages: lastPage })}
       </p>
       {paged && (
-        <nav aria-label="Session pages" className="ui:flex ui:gap-2">
+        <nav aria-label={t("pagesLabel")} className="ui:flex ui:gap-2">
           <PageLink page={sessions.page - 1} enabled={sessions.page > 1}>
-            Previous
+            {t("previous")}
           </PageLink>
           <PageLink page={sessions.page + 1} enabled={sessions.page < lastPage}>
-            Next
+            {t("next")}
           </PageLink>
         </nav>
       )}
@@ -105,9 +114,10 @@ export function SessionList({
   pending: boolean;
   onRevoke: (session: SessionItem) => void;
 }) {
+  const t = useTranslations("auth.settings.sessions");
   return (
     <div className="ui:flex ui:flex-col ui:gap-3">
-      <ul aria-label="Sessions" className="ui:flex ui:list-none ui:flex-col ui:divide-y ui:p-0">
+      <ul aria-label={t("listLabel")} className="ui:flex ui:list-none ui:flex-col ui:divide-y ui:p-0">
         {sessions.items.map((session) => (
           <SessionRow key={session.id} session={session} pending={pending} onRevoke={onRevoke} />
         ))}
