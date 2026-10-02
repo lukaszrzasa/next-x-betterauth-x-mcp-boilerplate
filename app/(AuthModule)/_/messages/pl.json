@@ -247,7 +247,7 @@
     "goToSignIn": "Przejdź do logowania",
     "currentIntro": "Potwierdź, że {maskedEmail} zgadza się na zmianę adresu e-mail do logowania. Następnie wróć do ustawień konta, aby wpisać nowy adres.",
     "newIntro": "Potwierdź {maskedEmail} jako nowy adres e-mail do logowania. To kończy zmianę i wylogowuje wszystkie istniejące sesje.",
-    "validUntil": "Ten link działa do {expiresAt, date, dateTime}.",
+    "validUntil": "Ten link działa do {expiresAt}.",
     "confirm": "Potwierdź adres e-mail",
     "confirming": "Potwierdzanie…"
   },
@@ -540,7 +540,7 @@
         "qrTitle": "Zeskanuj, aby skonfigurować aplikację uwierzytelniającą",
         "manualKey": "Nie możesz zeskanować? Wpisz ten klucz ręcznie:",
         "code": "Kod z nowej aplikacji uwierzytelniającej",
-        "expiresAt": "Ta konfiguracja wygasa {expiresAt, date, dateTime}.",
+        "expiresAt": "Ta konfiguracja wygasa {expiresAt}.",
         "cancel": "Anuluj konfigurację",
         "submitEnroll": "Aktywuj aplikację",
         "submitReplace": "Zastąp aplikację",
@@ -583,7 +583,7 @@
         "saved": "Zapisałem/am te kody w bezpiecznym miejscu.",
         "done": "Gotowe",
         "fileHeading": "Kody odzyskiwania {appName}",
-        "fileGenerated": "Wygenerowano {issuedAt, date, dateTime}",
+        "fileGenerated": "Wygenerowano {issuedAt}",
         "fileNote": "Każdego kodu można użyć raz zamiast kodu z aplikacji uwierzytelniającej."
       }
     },
@@ -617,7 +617,7 @@
       },
       "confirmSession": {
         "title": "Wylogować tę sesję?",
-        "description": "{device}, zalogowane {signedIn, date, dateTime}, zostanie wylogowane natychmiast. Może zalogować się ponownie.",
+        "description": "{device}, zalogowane {signedIn}, zostanie wylogowane natychmiast. Może zalogować się ponownie.",
         "confirm": "Wyloguj sesję"
       }
     }

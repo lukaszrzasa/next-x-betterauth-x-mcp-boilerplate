@@ -79,7 +79,7 @@ test("rows show identity, roles, verification, effective access and UTC dates; l
   const roles = grace.getByRole("list", { name: "Roles" });
   expect(within(roles).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["User", "wizard"]);
   expect(grace.getByText("Unverified")).toBeTruthy();
-  expect(grace.getByText("Temporarily banned").getAttribute("title")).toBe("Ban ends Oct 1, 2026 at 12:30 PM UTC");
+  expect(grace.getByText("Temporarily banned").getAttribute("title")).toBe("Ban ends Oct 1, 2026, 12:30 PM UTC");
   expect(grace.getByText("Aug 15, 2026").getAttribute("datetime")).toBe("2026-08-15T09:00:00.000Z");
   expect(document.querySelector("tr[onclick]")).toBeNull();
 });

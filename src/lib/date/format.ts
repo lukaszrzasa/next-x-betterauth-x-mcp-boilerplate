@@ -1,7 +1,7 @@
 import { createFormatter } from "next-intl";
 
 import { appConfig } from "@/src/lib/config";
-import { formats } from "@/src/lib/i18n/formats";
+import { DATE_TIME_JOINER, DATE_TIME_ZONE_LABEL, formats } from "@/src/lib/i18n/formats";
 import type { Locale } from "@/src/lib/i18n/locales";
 
 /**
@@ -31,11 +31,17 @@ export function formatUtcDate(value: Date | string, locale: Locale, fallback = "
   return formatterFor(locale).dateTime(date, "date");
 }
 
-/** "Sep 25, 2026, 02:32 PM UTC" / "25 wrz 2026, 14:32 UTC". */
+/**
+ * "Sep 25, 2026, 02:32 PM UTC" / "25 wrz 2026, 14:32 UTC". Composed from the
+ * date and time presets so the result is the same on every ICU build; a
+ * combined pattern would read "at" on one machine and "," on another, and
+ * this text is stored (staff log) and hydrated (server markup in a browser).
+ */
 export function formatUtcDateTime(value: Date | string, locale: Locale, fallback = ""): string {
   const date = toInstant(value);
   if (!date) return fallback;
-  return formatterFor(locale).dateTime(date, "dateTime");
+  const format = formatterFor(locale);
+  return `${format.dateTime(date, "date")}${DATE_TIME_JOINER}${format.dateTime(date, "time")} ${DATE_TIME_ZONE_LABEL}`;
 }
 
 /** The machine-readable value for `<time dateTime>`. */

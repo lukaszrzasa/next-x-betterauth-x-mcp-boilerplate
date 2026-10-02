@@ -29,13 +29,13 @@ describe("entries of user administration", () => {
       "Changed email of Anna Kowalska from a@example.com to b@example.com",
     );
     expect(sentence(banned(account, { replacing: false, expires: until, reason: "Spam" }))).toBe(
-      "Banned Anna Kowalska until Sep 25, 2026 at 02:32 PM UTC. Reason: Spam",
+      "Banned Anna Kowalska until Sep 25, 2026, 02:32 PM UTC. Reason: Spam",
     );
     expect(sentence(banned(account, { replacing: false, expires: null, reason: "Spam" }))).toBe(
       "Banned Anna Kowalska permanently. Reason: Spam",
     );
     expect(sentence(banned(account, { replacing: true, expires: until, reason: null }))).toBe(
-      "Updated ban of Anna Kowalska: until Sep 25, 2026 at 02:32 PM UTC",
+      "Updated ban of Anna Kowalska: until Sep 25, 2026, 02:32 PM UTC",
     );
     expect(sentence(unbanned(account))).toBe("Unbanned Anna Kowalska");
     expect(sentence(sessionsRevoked(account))).toBe("Signed out all sessions of Anna Kowalska");

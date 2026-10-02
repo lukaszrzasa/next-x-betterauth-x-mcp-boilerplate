@@ -1,6 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatUtcDateTime } from "@/src/lib/date/format";
 import { confirm, type ConfirmRequest } from "@/src/components/feedback/ConfirmDialog";
 import { describeUserAgent, deviceWording } from "@/src/lib/userAgent";
 import { useFeedback } from "@/src/lib/hooks/useFeedback";
@@ -22,6 +23,7 @@ export function useSessionRevocation() {
   const t = useTranslations("auth.settings.sessions");
   const tCommon = useTranslations("common");
   const tDevice = useTranslations("common.device");
+  const locale = useLocale();
   const { feedback, setFeedback, dismiss } = useFeedback<Feedback>();
   const revokeOne = useRevokeSession({ onSettled: setFeedback });
   const revokeOthers = useRevokeOtherSessions({ onSettled: setFeedback });
@@ -55,7 +57,7 @@ export function useSessionRevocation() {
     title: t("confirmSession.title"),
     description: t("confirmSession.description", {
       device: describeUserAgent(session.userAgent, deviceWording(tDevice)),
-      signedIn: new Date(session.createdAt),
+      signedIn: formatUtcDateTime(session.createdAt, locale),
     }),
     confirmLabel: t("confirmSession.confirm"),
   });

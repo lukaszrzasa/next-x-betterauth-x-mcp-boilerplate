@@ -1,7 +1,9 @@
 "use client";
 
 import { useId } from "react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatUtcDateTime } from "@/src/lib/date/format";
+import type { Locale } from "@/src/lib/i18n/locales";
 import { Controller, useWatch } from "react-hook-form";
 import { FormError } from "@/src/components/forms/FormError";
 import { Button } from "@/src/components/ui/button";
@@ -22,16 +24,15 @@ import { BAN_DURATIONS } from "@/app/(AuthModule)/admin/_/schema";
 import type { UserDetail } from "@/app/(AuthModule)/admin/_/types";
 
 type BanTranslator = ReturnType<typeof useTranslations<"authAdmin.detail.ban">>;
-type Formatter = ReturnType<typeof useFormatter>;
 
 /** What the dialog says about the account before a ban is chosen. */
-function describeCurrentState(t: BanTranslator, format: Formatter, user: UserDetail): string {
+function describeCurrentState(t: BanTranslator, locale: Locale, user: UserDetail): string {
   const who = `${user.name} (${user.email})`;
   if (user.accessStatus === "active") return t("stateActive", { who });
   const current =
     user.accessStatus === "permanently-banned" || !user.banExpires
       ? t("bannedPermanently")
-      : t("bannedUntil", { date: format.dateTime(new Date(user.banExpires), "dateTime") });
+      : t("bannedUntil", { date: formatUtcDateTime(user.banExpires, locale) });
   return t("stateBanned", { who, current });
 }
 
@@ -53,7 +54,7 @@ export function UserBanDialog({
   onSettled: (feedback: Feedback) => void;
 }) {
   const t = useTranslations("authAdmin.detail.ban");
-  const format = useFormatter();
+  const locale = useLocale();
   const ids = { duration: useId(), reason: useId() };
   const replacing = user.accessStatus !== "active";
   const submitLabel = replacing ? t("submitReplace") : t("submit");
@@ -84,7 +85,7 @@ export function UserBanDialog({
         <form noValidate onSubmit={onSubmit} className="ui:flex ui:flex-col ui:gap-5">
           <DialogHeader>
             <DialogTitle>{replacing ? t("titleReplace") : t("title")}</DialogTitle>
-            <DialogDescription>{describeCurrentState(t, format, user)}</DialogDescription>
+            <DialogDescription>{describeCurrentState(t, locale, user)}</DialogDescription>
           </DialogHeader>
 
           <FieldGroup className="ui:gap-4">

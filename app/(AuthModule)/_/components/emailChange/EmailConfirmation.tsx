@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatUtcDateTime } from "@/src/lib/date/format";
 import { Alert, AlertDescription, AlertTitle } from "@/src/components/ui/alert";
 import { Button } from "@/src/components/ui/button";
 import { FieldDescription, FieldGroup } from "@/src/components/ui/field";
@@ -16,6 +17,7 @@ import type { EmailProofInspection } from "@/app/(AuthModule)/_/types/settings";
  */
 export function EmailConfirmation({ token, inspection }: { token: string | null; inspection: EmailProofInspection | null }) {
   const t = useTranslations("auth.emailProof");
+  const locale = useLocale();
   const { confirmProof, pending, result } = useEmailProofConfirmation(token ?? "");
 
   if (result) {
@@ -57,7 +59,7 @@ export function EmailConfirmation({ token, inspection }: { token: string | null;
           ? t("currentIntro", { maskedEmail: inspection.maskedEmail })
           : t("newIntro", { maskedEmail: inspection.maskedEmail })}
       </FieldDescription>
-      <FieldDescription>{t("validUntil", { expiresAt: new Date(inspection.expiresAt) })}</FieldDescription>
+      <FieldDescription>{t("validUntil", { expiresAt: formatUtcDateTime(inspection.expiresAt, locale) })}</FieldDescription>
       <Button type="button" className="ui:h-11" disabled={pending} onClick={() => void confirmProof()}>
         {pending ? t("confirming") : t("confirm")}
       </Button>

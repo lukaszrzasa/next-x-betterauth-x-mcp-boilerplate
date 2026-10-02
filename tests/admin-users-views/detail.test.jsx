@@ -104,7 +104,7 @@ test("the header and sections present the account; controls follow capabilities,
     expect(screen.getByRole("button", { name })).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Remove ban" })).toBeNull();
   expect(screen.queryByText(/Delete/)).toBeNull();
-  expect(screen.getByText("Sep 20, 2026 at 02:32 PM UTC").getAttribute("datetime")).toBe("2026-09-20T14:32:00.000Z");
+  expect(screen.getByText("Sep 20, 2026, 02:32 PM UTC").getAttribute("datetime")).toBe("2026-09-20T14:32:00.000Z");
   expect(screen.getByRole("button", { name: "Copy user ID" })).toBeTruthy();
 });
 
@@ -307,7 +307,7 @@ test("replacing a ban says the new period starts now; a partial ban offers to fi
   renderDetail(userOf({ accessStatus: "temporarily-banned", banExpires: "2026-10-01T12:30:00.000Z", banReason: "old" }));
   fireEvent.click(screen.getByRole("button", { name: "Update ban" }));
   const dialog = await screen.findByRole("dialog");
-  expect(dialog.textContent).toContain("banned until Oct 1, 2026 at 12:30 PM UTC");
+  expect(dialog.textContent).toContain("banned until Oct 1, 2026, 12:30 PM UTC");
   expect(dialog.textContent).toContain("period starts now");
   fireEvent.change(within(dialog).getByLabelText("Duration"), { target: { value: "24h" } });
   fireEvent.change(within(dialog).getByLabelText("Reason"), { target: { value: "Escalated" } });

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatUtcDateTime } from "@/src/lib/date/format";
+import type { Locale } from "@/src/lib/i18n/locales";
 import { CopyIcon, DownloadIcon } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent } from "@/src/components/ui/card";
@@ -16,10 +18,10 @@ const DOWNLOAD_FILE_NAME = "account-recovery-codes.txt";
 type ResultTranslator = ReturnType<typeof useTranslations<"auth.settings.recoveryCodes.result">>;
 
 /** The downloaded file: a heading, when the set was issued, the codes, and how to use them. */
-function recoveryCodesFile(t: ResultTranslator, codes: readonly string[], issuedAt: string): string {
+function recoveryCodesFile(t: ResultTranslator, locale: Locale, codes: readonly string[], issuedAt: string): string {
   const lines = [
     t("fileHeading", { appName }),
-    t("fileGenerated", { issuedAt: new Date(issuedAt) }),
+    t("fileGenerated", { issuedAt: formatUtcDateTime(issuedAt, locale) }),
     "",
     ...codes,
     "",
@@ -46,6 +48,7 @@ export function RecoveryCodesResult({
   onAcknowledge: () => void;
 }) {
   const t = useTranslations("auth.settings.recoveryCodes.result");
+  const locale = useLocale();
   const [saved, setSaved] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -82,7 +85,7 @@ export function RecoveryCodesResult({
           type="button"
           size="sm"
           variant="outline"
-          onClick={() => downloadTextFile(DOWNLOAD_FILE_NAME, recoveryCodesFile(t, codes, issuedAt))}
+          onClick={() => downloadTextFile(DOWNLOAD_FILE_NAME, recoveryCodesFile(t, locale, codes, issuedAt))}
         >
           <DownloadIcon aria-hidden="true" />
           {t("download")}

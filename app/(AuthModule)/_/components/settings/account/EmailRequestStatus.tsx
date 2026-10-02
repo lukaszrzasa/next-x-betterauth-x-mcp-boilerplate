@@ -1,6 +1,7 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatUtcDateTime } from "@/src/lib/date/format";
 import { Button } from "@/src/components/ui/button";
 import { secondsUntil, useNowSeconds } from "@/src/lib/hooks/useNow";
 import { formatTimeLeft } from "@/src/lib/date/duration";
@@ -40,7 +41,7 @@ export function EmailRequestStatus({
 }) {
   const t = useTranslations("auth.settings.email.status");
   const tTimeLeft = useTranslations("common.timeLeft");
-  const format = useFormatter();
+  const locale = useLocale();
   const now = useNowSeconds();
   const remaining = secondsUntil(request.expiresAt, now);
   const cooldown = isAwaitingMail(request) ? resendCooldown(request, now) : 0;
@@ -63,7 +64,7 @@ export function EmailRequestStatus({
         <dt className="ui:text-muted-foreground">{t("expires")}</dt>
         <dd>
           <time dateTime={toIsoInstant(request.expiresAt)}>
-            {format.dateTime(new Date(request.expiresAt), "dateTime")}
+            {formatUtcDateTime(request.expiresAt, locale)}
           </time>
           {remaining !== null && <span aria-live="off"> ({formatTimeLeft(remaining, tTimeLeft)})</span>}
         </dd>

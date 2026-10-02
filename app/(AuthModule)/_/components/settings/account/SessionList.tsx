@@ -2,7 +2,8 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { useFormatter, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatUtcDateTime } from "@/src/lib/date/format";
 import { LogOutIcon } from "lucide-react";
 import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
@@ -33,7 +34,7 @@ function SessionRow({
 }) {
   const t = useTranslations("auth.settings.sessions");
   const tDevice = useTranslations("common.device");
-  const format = useFormatter();
+  const locale = useLocale();
   return (
     <li className="ui:flex ui:flex-col ui:gap-2 ui:py-3 ui:first:pt-0 ui:sm:flex-row ui:sm:items-start ui:sm:justify-between ui:sm:gap-6">
       <div className="ui:min-w-0 ui:text-sm">
@@ -44,7 +45,7 @@ function SessionRow({
         <p className="ui:text-muted-foreground">
           {t("signedIn")}{" "}
           <time dateTime={toIsoInstant(session.createdAt)}>
-            {format.dateTime(new Date(session.createdAt), "dateTime")}
+            {formatUtcDateTime(session.createdAt, locale)}
           </time>
           {" · "}
           {t("ip", { ip: session.ipAddress ?? t("unknownIp") })}
@@ -53,7 +54,7 @@ function SessionRow({
           <details className="ui:mt-1 ui:text-xs ui:text-muted-foreground">
             <summary className="ui:cursor-pointer">{t("details")}</summary>
             <p className="ui:mt-1 ui:break-all">{session.userAgent}</p>
-            <p>{t("expires", { time: format.dateTime(new Date(session.expiresAt), "dateTime") })}</p>
+            <p>{t("expires", { time: formatUtcDateTime(session.expiresAt, locale) })}</p>
           </details>
         )}
       </div>

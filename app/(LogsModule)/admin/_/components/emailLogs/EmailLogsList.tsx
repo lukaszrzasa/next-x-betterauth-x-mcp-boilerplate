@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { DataTable } from "@/src/components/data-table/DataTable";
 import type { TablePageState, TableSort } from "@/src/components/data-table/types";
 import type { RawSearchParams } from "@/src/lib/data-table/queryState";
@@ -47,8 +47,8 @@ export function EmailLogsList({ page, headingId }: { page: EmailLogsPage; headin
   const { navigate, navigateDebounced, flush, pending } = useTableNavigation({ pathname, query: page.query, serialize });
   const { query } = page;
   const t = useTranslations("logsAdmin.emailLogs");
-  const format = useFormatter();
-  const columns = useMemo(() => emailLogsColumns({ onOpen: selection.open, t, format }), [selection.open, t, format]);
+  const locale = useLocale();
+  const columns = useMemo(() => emailLogsColumns({ onOpen: selection.open, t, locale }), [selection.open, t, locale]);
 
   const sorting: TableSort = { id: query.sort, desc: query.direction === "desc" };
   const onSortingChange = (next: TableSort) => {

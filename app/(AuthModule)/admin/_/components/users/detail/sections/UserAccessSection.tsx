@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatUtcDateTime } from "@/src/lib/date/format";
 import { BanIcon, KeyRoundIcon, ShieldOffIcon } from "lucide-react";
 import { DetailRow, DetailSection } from "@/src/components/detail/DetailSection";
 import { confirm } from "@/src/components/feedback/ConfirmDialog";
@@ -27,7 +28,7 @@ import { policyNote } from "@/app/(AuthModule)/admin/_/components/users/detail/p
 export function UserAccessSection({ user }: { user: UserDetail }) {
   const t = useTranslations("authAdmin.detail");
   const policyT = useTranslations("authAdmin.detail.policy");
-  const format = useFormatter();
+  const locale = useLocale();
   const [banOpen, setBanOpen] = useState(false);
   const { feedback, setFeedback, dismiss } = useFeedback<Feedback>();
   const unban = useUnbanUser(user.id, { onSettled: setFeedback });
@@ -114,7 +115,7 @@ export function UserAccessSection({ user }: { user: UserDetail }) {
             <DetailRow label={t("access.banEnds")}>
               {user.banExpires ? (
                 <time dateTime={toIsoInstant(user.banExpires)}>
-                  {format.dateTime(new Date(user.banExpires), "dateTime")}
+                  {formatUtcDateTime(user.banExpires, locale)}
                 </time>
               ) : (
                 t("access.never")

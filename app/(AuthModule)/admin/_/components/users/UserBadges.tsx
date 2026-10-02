@@ -1,7 +1,8 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatUtcDateTime } from "@/src/lib/date/format";
 import { Badge } from "@/src/components/ui/badge";
 import { toIsoInstant } from "@/src/lib/date/format";
 import { ROLE_NAMES, type RoleName } from "@/src/lib/auth/permissions";
@@ -63,12 +64,12 @@ export function AccessBadge({
   banExpires: string | null;
 }) {
   const t = useTranslations("authAdmin.badges");
-  const format = useFormatter();
+  const locale = useLocale();
   if (status === "active") return <Badge variant="outline">{t("access.active")}</Badge>;
 
   const expiry =
     status === "temporarily-banned" && banExpires
-      ? t("banEnds", { date: format.dateTime(new Date(banExpires), "dateTime") })
+      ? t("banEnds", { date: formatUtcDateTime(banExpires, locale) })
       : undefined;
 
   return (

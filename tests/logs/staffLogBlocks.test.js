@@ -78,16 +78,16 @@ describe("the rendered sentence", () => {
     expect(blockText(user(anna))).toBe("Anna");
     expect(blockText(url("/admin/users/user-42", "Anna's page"))).toBe("Anna's page");
     expect(blockText(value("Spam"))).toBe("Spam");
-    expect(blockText(date("2026-09-25T14:32:00.000Z"))).toBe("Sep 25, 2026 at 02:32 PM UTC");
+    expect(blockText(date("2026-09-25T14:32:00.000Z"))).toBe("Sep 25, 2026, 02:32 PM UTC");
   });
 
   test("a message joins into one sentence, dates formatted in UTC", () => {
-    expect(messageText(banned)).toBe("Banned Anna until Sep 25, 2026 at 02:32 PM UTC");
+    expect(messageText(banned)).toBe("Banned Anna until Sep 25, 2026, 02:32 PM UTC");
     expect(messageText([text("Changed the name of "), user(anna), text(" to "), value("Anna\nMaria")])).toBe(
       "Changed the name of Anna to Anna Maria",
     );
     // A single-digit day and hour: the day is not padded, the time is.
-    expect(messageText([text("Unbanned at "), date("2026-01-05T04:07:59.999Z")])).toBe("Unbanned at Jan 5, 2026 at 04:07 AM UTC");
+    expect(messageText([text("Unbanned at "), date("2026-01-05T04:07:59.999Z")])).toBe("Unbanned at Jan 5, 2026, 04:07 AM UTC");
   });
 
   test("the sentence is one trimmed line", () => {

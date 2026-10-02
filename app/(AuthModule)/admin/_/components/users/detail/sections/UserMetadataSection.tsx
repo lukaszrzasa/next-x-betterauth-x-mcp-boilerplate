@@ -1,15 +1,16 @@
 "use client";
 
 import { InfoIcon } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatUtcDateTime } from "@/src/lib/date/format";
 import { CopyButton } from "@/src/components/actions/CopyButton";
 import { DetailRow, DetailSection } from "@/src/components/detail/DetailSection";
 import { toIsoInstant } from "@/src/lib/date/format";
 import type { UserDetail } from "@/app/(AuthModule)/admin/_/types";
 
 function Timestamp({ value }: { value: string }) {
-  const format = useFormatter();
-  return <time dateTime={toIsoInstant(value)}>{format.dateTime(new Date(value), "dateTime")}</time>;
+  const locale = useLocale();
+  return <time dateTime={toIsoInstant(value)}>{formatUtcDateTime(value, locale)}</time>;
 }
 
 export function UserMetadataSection({ user }: { user: UserDetail }) {

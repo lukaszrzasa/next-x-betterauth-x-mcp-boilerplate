@@ -1,7 +1,9 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { useFormatter, useTranslations } from "next-intl";
+import type { useTranslations } from "next-intl";
+import { formatUtcDateTime } from "@/src/lib/date/format";
+import type { Locale } from "@/src/lib/i18n/locales";
 import { DataTableColumnHeader } from "@/src/components/data-table/DataTableColumnHeader";
 import { Button } from "@/src/components/ui/button";
 import { EntityLabel } from "@/app/(LogsModule)/admin/_/components/shared/EntityLabel";
@@ -23,7 +25,7 @@ export type EmailLogsColumnsOptions = {
   /** Opens the dialog; the button is passed so focus can return to it. */
   onOpen: (id: string, from: HTMLElement) => void;
   t: ReturnType<typeof useTranslations<"logsAdmin.emailLogs">>;
-  format: ReturnType<typeof useFormatter>;
+  locale: Locale;
 };
 
 /** The recipient as captured: name (linked to the user when allowed) over the address. */
@@ -43,7 +45,7 @@ function Recipient({ log }: { log: EmailLogListItem }) {
   );
 }
 
-export function emailLogsColumns({ onOpen, t, format }: EmailLogsColumnsOptions): ColumnDef<EmailLogListItem>[] {
+export function emailLogsColumns({ onOpen, t, locale }: EmailLogsColumnsOptions): ColumnDef<EmailLogListItem>[] {
   return [
     {
       id: EMAIL_LOGS_COLUMN_IDS.time,
@@ -102,7 +104,7 @@ export function emailLogsColumns({ onOpen, t, format }: EmailLogsColumnsOptions)
           className="ui:text-muted-foreground"
           aria-label={t("viewDetailsOf", {
             email: row.original.recipientEmail,
-            time: format.dateTime(new Date(row.original.startedAt), "dateTime"),
+            time: formatUtcDateTime(row.original.startedAt, locale),
           })}
           onClick={(event) => onOpen(row.original.id, event.currentTarget)}
         >

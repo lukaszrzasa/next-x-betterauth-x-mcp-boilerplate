@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useFormatter, type useTranslations } from "next-intl";
+import { useFormatter, useLocale, type useTranslations } from "next-intl";
+import { formatUtcDateTime } from "@/src/lib/date/format";
 import { DataTableColumnHeader } from "@/src/components/data-table/DataTableColumnHeader";
 import { UserAvatar } from "@/src/components/identity/UserAvatar";
 import { buttonVariants } from "@/src/components/ui/button";
@@ -36,9 +37,10 @@ export type UsersColumnsOptions = {
 /** A cell that renders an instant: the day shown, the full moment on hover. */
 function CreatedCell({ value }: { value: string }) {
   const format = useFormatter();
+  const locale = useLocale();
   const date = new Date(value);
   return (
-    <time dateTime={toIsoInstant(value)} title={format.dateTime(date, "dateTime")} className="ui:text-muted-foreground">
+    <time dateTime={toIsoInstant(value)} title={formatUtcDateTime(date, locale)} className="ui:text-muted-foreground">
       {format.dateTime(date, "date")}
     </time>
   );

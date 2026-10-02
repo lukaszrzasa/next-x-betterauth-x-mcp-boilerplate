@@ -32,7 +32,7 @@
       "preview": "Confirm the sign-in email change for your {appName} account",
       "heading": "Confirm your sign-in email change",
       "body": "{greeting}a change of the sign-in email address of your {appName} account was requested from your account settings. Confirm from this mailbox to continue; you will then choose the new address in your account settings.",
-      "validUntil": "This link works until {expiresAt, date, dateTime}. Nothing changes until the new address is confirmed as well.",
+      "validUntil": "This link works until {expiresAt}. Nothing changes until the new address is confirmed as well.",
       "button": "Confirm email address",
       "note": "If you did not request this, cancel the request in your account settings and change your password."
     },
@@ -41,7 +41,7 @@
       "preview": "Confirm this address as the sign-in email for your {appName} account",
       "heading": "Confirm your new sign-in email",
       "body": "{greeting}this address was chosen as the new sign-in email for your {appName} account. Confirming completes the change and signs out every existing session; sign in afterwards with this address.",
-      "validUntil": "This link works until {expiresAt, date, dateTime}.",
+      "validUntil": "This link works until {expiresAt}.",
       "button": "Confirm email address",
       "note": "If you did not expect this email, you can ignore it; nothing changes without confirmation."
     }

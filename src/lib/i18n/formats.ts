@@ -19,15 +19,17 @@ export const formats = {
       year: "numeric",
       timeZone: appConfig.timeZone,
     },
-    /** "Sep 25, 2026, 02:32 PM UTC" / "25 wrz 2026, 14:32 UTC" */
-    dateTime: {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
+    /**
+     * "02:32 PM" / "14:32". A date and a time are composed by
+     * `formatUtcDateTime`, never asked of ICU as one pattern: the joiner of a
+     * combined pattern ("," or "at") differs between ICU builds, and the
+     * stored staff-log text and server-rendered markup must not depend on
+     * which machine produced them.
+     */
+    time: {
       hour: "2-digit",
       minute: "2-digit",
       timeZone: appConfig.timeZone,
-      timeZoneName: "short",
     },
   },
   number: {
@@ -36,3 +38,7 @@ export const formats = {
 } as const satisfies Formats;
 
 export type DateTimeFormatName = keyof typeof formats.dateTime;
+
+/** How a date and a time are joined, and the zone every instant is shown in. */
+export const DATE_TIME_JOINER = ", ";
+export const DATE_TIME_ZONE_LABEL = "UTC";

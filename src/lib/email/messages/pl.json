@@ -32,7 +32,7 @@
       "preview": "Potwierdź zmianę adresu e-mail do logowania w Twoim koncie {appName}",
       "heading": "Potwierdź zmianę adresu e-mail do logowania",
       "body": "{greeting}z ustawień Twojego konta w {appName} zgłoszono zmianę adresu e-mail do logowania. Potwierdź z tej skrzynki, aby kontynuować; następnie wybierzesz nowy adres w ustawieniach konta.",
-      "validUntil": "Ten link działa do {expiresAt, date, dateTime}. Nic się nie zmieni, dopóki nowy adres również nie zostanie potwierdzony.",
+      "validUntil": "Ten link działa do {expiresAt}. Nic się nie zmieni, dopóki nowy adres również nie zostanie potwierdzony.",
       "button": "Potwierdź adres e-mail",
       "note": "Jeśli to nie Ty zgłaszasz tę zmianę, anuluj ją w ustawieniach konta i zmień hasło."
     },
@@ -41,7 +41,7 @@
       "preview": "Potwierdź ten adres jako adres e-mail do logowania w Twoim koncie {appName}",
       "heading": "Potwierdź nowy adres e-mail do logowania",
       "body": "{greeting}ten adres został wybrany jako nowy adres e-mail do logowania w Twoim koncie {appName}. Potwierdzenie kończy zmianę i wylogowuje wszystkie aktywne sesje; potem zaloguj się tym adresem.",
-      "validUntil": "Ten link działa do {expiresAt, date, dateTime}.",
+      "validUntil": "Ten link działa do {expiresAt}.",
       "button": "Potwierdź adres e-mail",
       "note": "Jeśli nie spodziewasz się tej wiadomości, zignoruj ją; bez potwierdzenia nic się nie zmieni."
     }

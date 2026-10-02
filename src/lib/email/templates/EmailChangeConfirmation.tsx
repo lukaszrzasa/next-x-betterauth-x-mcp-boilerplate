@@ -1,3 +1,4 @@
+import { formatUtcDateTime } from "@/src/lib/date/format";
 import type { Locale } from "@/src/lib/i18n/locales";
 import {
   appName,
@@ -42,7 +43,7 @@ export default function EmailChangeConfirmation({
     <EmailLayout locale={locale} preview={t(`${copy}.preview`, { appName })}>
       <EmailHeading>{t(`${copy}.heading`)}</EmailHeading>
       <EmailText>{t(`${copy}.body`, { greeting, appName })}</EmailText>
-      <EmailText>{t(`${copy}.validUntil`, { expiresAt })}</EmailText>
+      <EmailText>{t(`${copy}.validUntil`, { expiresAt: formatUtcDateTime(expiresAt, locale) })}</EmailText>
       <EmailButton href={url}>{t(`${copy}.button`)}</EmailButton>
       <EmailFallbackLink href={url} intro={t("layout.fallbackIntro")} note={t(`${copy}.note`)} />
     </EmailLayout>

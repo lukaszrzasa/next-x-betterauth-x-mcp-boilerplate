@@ -218,7 +218,7 @@ test("email change: read-only current address, password only, consequence dialog
 
   renderAccount(accountOf({ pendingEmail: { state: "awaiting_new_address", id: "req-1", kind: "change", originalEmail: "ada@example.com", expiresAt: "2026-09-27T12:00:00.000Z" } }));
   expect(screen.getByText("Current address confirmed")).toBeTruthy();
-  expect(screen.getByText("Sep 27, 2026 at 12:00 PM UTC")).toBeTruthy();
+  expect(screen.getByText("Sep 27, 2026, 12:00 PM UTC")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Enter new address" }));
   fireEvent.change(screen.getByLabelText("New email address"), { target: { value: "New@Example.com" } });
   await act(async () => {
